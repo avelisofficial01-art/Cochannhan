@@ -10,9 +10,9 @@
 
 # Current Sprint
 
-**Sprint:** 2 — NPC & QUEST
+**Sprint:** 3 — Combat Core
 
-**Status:** ✅ COMPLETED (2026-07-04)
+**Status:** 🔄 In Progress (2026-07-04)
 
 **Started:** 2026-07-04
 
@@ -27,7 +27,7 @@
 | Sprint 0 | Foundation | ✅ Completed |
 | Sprint 1 | Core Infrastructure | ✅ Completed |
 | Sprint 2 | NPC & Quest | ✅ Completed |
-| Sprint 3 | Combat Core | ⬜ Not Started |
+| Sprint 3 | Combat Core | 🔄 In Progress |
 | Sprint 4 | Gu System | ⬜ Not Started |
 | Sprint 5 | Equipment & Craft | ⬜ Not Started |
 | Sprint 6 | Chapter 1 Complete | ⬜ Not Started |
@@ -37,11 +37,43 @@
 
 # Current Task
 
-Current Module: ✅ Sprint 2 — NPC & QUEST (completed)
+Current Module: 🔄 Sprint 3 — Combat Core (backend done, frontend pending)
 
-Next Module: Sprint 3 — Combat Core
+Next Module: Sprint 4 — Gu System
 
 ---
+
+---
+
+# Sprint 3 Checklist
+
+## Shared Combat Engine
+- [x] Combat types — CombatResult, DamageInput, MonsterInstance, CombatStats
+- [x] Damage Calculator — damage formula from SYSTEM_BIBLE
+- [x] Status Effect system — 10 status effects with stacking logic
+
+## Database Schema
+- [x] monster_templates — Monster definitions (name, realm, stats, element, drop_table, map, respawn)
+- [x] combat_logs — Combat log table for analysis
+
+## Backend
+- [x] Monster module — repository, service, controller, routes
+- [x] Combat module — repository, service, controller, routes
+- [x] Socket.IO combat events — player:attack, monster:spawn, monster:dead, monster:update, item:drop
+- [x] Combat Engine integration — in-memory monster instances, tick system, death/drop handling
+- [x] Player service: added getPlayerById + getPlayerStats methods
+- [x] Seed data: 3 monster templates for Bắc Nguyên
+
+## Frontend
+- [ ] Combat UI — HP bar, damage numbers, cooldown indicators (S3.5 pending)
+
+## Monsters for Bắc Nguyên
+
+| Monster | Realm | HP | ATK | DEF | Element | Respawn |
+|---------|-------|----|-----|-----|---------|---------|
+| Quái Thú Hoang Dã | Phàm Nhân | 80 | 12 | 5 | Physical | 30s |
+| Sói Bắc Nguyên | Phàm Nhân | 120 | 18 | 8 | Physical | 45s |
+| Hỏa Hồ Yêu | Luyện Khí | 200 | 25 | 12 | Fire | 60s |
 
 ---
 
@@ -177,9 +209,9 @@ Next Module: Sprint 3 — Combat Core
 
 # Next Task
 
-→ **Sprint 3 — Combat Core** (theo GAME_BUILD_PLAN.md)
+→ **Hoàn thành Sprint 3** — Frontend Combat UI (S3.5) + build/lint/typecheck
 
-Không được thực hiện Sprint tiếp theo nếu Sprint hiện tại chưa hoàn thành 100%.
+Sprint 3 backend hoàn thành. Cần thêm Combat UI (Frontend) để đánh dấu completed.
 
 ---
 

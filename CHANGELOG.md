@@ -357,3 +357,82 @@ Chuyển từ Docker Compose local development sang Render Cloud deployment. Kh�
 - [x] Production: backend serves `frontend/dist/` as static files
 - [x] CORS: configurable via CORS_ORIGIN env var
 - [x] Docker Compose: marked as legacy optional only
+
+---
+
+## Sprint 3: COMBAT CORE — 2026-07-04
+
+### Mục tiêu
+Hệ thống chiến đấu real-time (ARPG style): Combat Engine, Monster module, Socket.IO real-time events, Drop system, Combat logs.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S3.1 | Combat Engine | ✅ | Damage Calculator, Critical, Status System — shared/src/combat/ |
+| S3.2 | Monster module | ✅ | Monster template CRUD, spawn, AI, drop table — backend/src/monster/ |
+| S3.3 | Monster spawning | ✅ | Socket events: monster:spawn, monster:update, monster:dead |
+| S3.4 | Player attack flow | ✅ | Socket: player:attack → Server validate damage → Sync |
+| S3.5 | Combat UI | ⬜ | Frontend HP bar, damage numbers, cooldown indicators (pending) |
+| S3.6 | Drop system | ✅ | Drop table → item:drop event → auto-pickup (in combat.service.ts) |
+| S3.7 | Combat log | ✅ | combat_logs table + repository for analysis |
+
+### Files created
+
+```
+shared/src/combat/
+  ├── types.ts                    # CombatResult, DamageInput, MonsterInstance (Phaser-sync), CombatStats, DropEntry
+  ├── damage-calculator.ts        # Damage formula: (Base ATK) × Critical × Element - Defense, pierce/block/leech
+  ├── status-effect.ts            # 10 status effects: Poison, Bleed, Burn, Freeze, Stun, Weaken, etc.
+  └── index.ts                    # Barrel export
+
+backend/src/monster/
+  ├── monster.schema.ts           # Zod: createMonsterSchema, spawnMonstersSchema
+  ├── monster.repository.ts       # Drizzle queries: monster_templates
+  ├── monster.service.ts          # Business logic: CRUD, spawn, despawn
+  ├── monster.controller.ts       # REST: GET /, GET /:id, POST /, POST /spawn
+  └── monster.route.ts            # Route definitions
+
+backend/src/combat/
+  ├── combat.repository.ts        # Drizzle queries: combat_logs
+  ├── combat.service.ts           # CombatEngine: in-memory instances, tick system, attack, death, drops
+  ├── combat.controller.ts        # REST: POST /attack, GET /monsters/:mapId, POST /spawn
+  └── combat.route.ts             # Route definitions
+```
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `shared/src/index.ts` | Added combat module exports (CombatResult, DamageInput, etc.) |
+| `backend/src/database/schema/index.ts` | Added monster_templates + combat_logs tables |
+| `backend/src/config/index.ts` | Added monsterSeeds (3 monsters for Bắc Nguyên) |
+| `backend/src/player/player.service.ts` | Added getPlayerById + getPlayerStats methods |
+| `backend/src/app.ts` | Mounted monsterRouter, combatRouter; Added Socket.IO combat events (player:attack, monster:spawn, monster:dead, monster:update, item:drop) |
+
+### Xác nhận
+
+- [x] Typecheck: 0 lỗi (shared + backend)
+- [x] Lint: 0 errors, 52 warnings (chỉ explicit-function-return-type — consistent với codebase)
+- [x] Build: backend `tsc --noEmit` pass
+- [x] Damage formula theo SYSTEM_BIBLE: (Base ATK) × Critical × Element - Defense
+- [x] Status effect system hỗ trợ 10 loại status
+- [x] Monster template seed: 3 monsters cho Bắc Nguyên (Quái Thú, Sói, Hỏa Hồ Yêu)
+- [x] Combat hoàn toàn xử lý trong RAM (in-memory), chỉ log để phân tích
+
+### Bug fixes trong quá trình verify
+
+| File | Vấn đề | Fix |
+|------|--------|-----|
+| `combat.controller.ts:22` | `playerId!` non-null assertion | Guard `if (!currentPlayerId)` check |
+| `monster.repository.ts:22` | Missing return type | Added `Record<string, unknown>` |
+| `combat.service.ts` | Unused imports (ActiveStatusEffect, DropEntry, monsterService) | Removed |
+| `damage-calculator.ts` | `calculateElementBonus` unused function | Removed (dead code) |
+| `status-effect.ts` | Unused imports (DamageType, CombatStats) | Removed |
+| `monster.controller.ts` | `success()`/`error()` missing `res` first arg | Fixed all calls |
+| `combat.controller.ts` | `success()`/`error()` missing `res` first arg | Fixed all calls |
+
+### Ghi chú
+- S3.5 (Frontend Combat UI) pending — cần PhaserJS HP bar, damage numbers, cooldown indicators
+- Cần chạy `drizzle-kit push` sau khi deploy để tạo monster_templates + combat_logs tables
+- Monster AI sử dụng simple tick-based approach (không pathfinding phức tạp ở Sprint 3)
