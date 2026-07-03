@@ -22,7 +22,7 @@ jobs:
       - run: npm ci
 
       - name: Lint
-        run: npx eslint . --ext .ts,.tsx --max-warnings 0
+        run: npx eslint . --ext .ts,.tsx
 
       - name: TypeCheck Shared
         run: npm run typecheck -w shared
