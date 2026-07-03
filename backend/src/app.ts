@@ -13,6 +13,7 @@ import questRouter from './quest/quest.route.js';
 import inventoryRouter from './inventory/inventory.route.js';
 import monsterRouter from './monster/monster.route.js';
 import combatRouter from './combat/combat.route.js';
+import guRouter from './gu/gu.route.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { config } from './config/index.js';
 
@@ -66,6 +67,7 @@ app.use('/api/quest', questRouter);
 app.use('/api/inventory', inventoryRouter);
 app.use('/api/monster', monsterRouter);
 app.use('/api/combat', combatRouter);
+app.use('/api/gu', guRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

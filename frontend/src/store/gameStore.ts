@@ -27,6 +27,21 @@ export interface CombatResult {
   targetY: number;
 }
 
+export interface PlayerGuState {
+  id: string;
+  guTemplateId: string;
+  name: string;
+  element: string;
+  rank: number;
+  level: number;
+  enhancement: number;
+  mastery: number;
+  bondLevel: number;
+  isEquipped: boolean;
+  slotIndex: number | null;
+  sprite: string | null;
+}
+
 interface GameState {
   currentMapId: string;
   playerX: number;
@@ -35,6 +50,9 @@ interface GameState {
   isConnected: boolean;
   monsters: MonsterSprite[];
   combatResult: CombatResult | null;
+  playerGuList: PlayerGuState[];
+  guSynergies: string[];
+  isGuPanelOpen: boolean;
 
   setPosition: (x: number, y: number) => void;
   setMap: (mapId: string) => void;
@@ -43,6 +61,9 @@ interface GameState {
   setConnected: (connected: boolean) => void;
   setMonsters: (monsters: MonsterSprite[]) => void;
   setCombatResult: (result: CombatResult | null) => void;
+  setPlayerGuList: (guList: PlayerGuState[]) => void;
+  setGuSynergies: (synergies: string[]) => void;
+  toggleGuPanel: () => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -53,6 +74,9 @@ export const useGameStore = create<GameState>((set) => ({
   isConnected: false,
   monsters: [],
   combatResult: null,
+  playerGuList: [],
+  guSynergies: [],
+  isGuPanelOpen: false,
 
   setPosition: (x, y): void => set({ playerX: x, playerY: y }),
   setMap: (mapId): void => set({ currentMapId: mapId }),
@@ -72,4 +96,7 @@ export const useGameStore = create<GameState>((set) => ({
   setConnected: (connected): void => set({ isConnected: connected }),
   setMonsters: (monsters): void => set({ monsters }),
   setCombatResult: (result): void => set({ combatResult: result }),
+  setPlayerGuList: (guList): void => set({ playerGuList: guList }),
+  setGuSynergies: (synergies): void => set({ guSynergies: synergies }),
+  toggleGuPanel: (): void => set((state) => ({ isGuPanelOpen: !state.isGuPanelOpen })),
 }));

@@ -23,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   private playerSprite!: Phaser.GameObjects.Rectangle;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private spaceKey!: Phaser.Input.Keyboard.Key;
+  private guKey!: Phaser.Input.Keyboard.Key;
   private playerX = 400;
   private playerY = 300;
   private readonly moveSpeed = 200;
@@ -106,6 +107,7 @@ export class GameScene extends Phaser.Scene {
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
       this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      this.guKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G);
     }
 
     /* ── Attack cooldown indicator (bottom center) ── */
@@ -141,6 +143,7 @@ export class GameScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     this.updatePlayerMovement(delta);
     this.updateAttackCooldown(delta);
+    this.handleGuToggle();
     this.syncMonsters();
     this.updateFloatTexts(delta);
   }
@@ -222,6 +225,15 @@ export class GameScene extends Phaser.Scene {
       emitAttack(nearest.instanceId);
       this.attackReady = false;
       this.attackCooldownRemaining = this.attackCooldownMs;
+    }
+  }
+
+  /* ───────────────────────────────────────
+   *  Gu Panel toggle (G key)
+   * ─────────────────────────────────────── */
+  private handleGuToggle(): void {
+    if (this.guKey && Phaser.Input.Keyboard.JustDown(this.guKey)) {
+      useGameStore.getState().toggleGuPanel();
     }
   }
 

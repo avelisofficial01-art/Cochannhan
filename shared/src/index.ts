@@ -264,3 +264,93 @@ export interface MoveItemRequest {
 export interface SortInventoryRequest {
   sortBy: 'name' | 'type' | 'quantity';
 }
+
+// ============================================================
+// Gu System
+// ============================================================
+
+export type GuElement = 'Fire' | 'Water' | 'Lightning' | 'Wind' | 'Earth' | 'Wood' | 'Metal' | 'Ice' | 'Poison' | 'Blood' | 'Soul' | 'Space' | 'Time' | 'Light' | 'Dark';
+
+export type GuRole = 'damage' | 'tank' | 'support' | 'control' | 'summon' | 'utility' | 'economy';
+
+export type GuQuality = 'common' | 'rare' | 'epic' | 'legendary' | 'immortal';
+
+export type GuSkillType = 'active' | 'passive' | 'aura' | 'trigger';
+
+export interface GuTemplate {
+  id: string;
+  name: string;
+  rank: number;
+  element: string;
+  role: string;
+  quality: string;
+  description: string | null;
+  sprite: string | null;
+  isImmortal: string;
+  uniqueWorld: string;
+  maxEnhance: number;
+  canEvolve: string;
+  evolveTo: string | null;
+}
+
+export interface GuStats {
+  id: string;
+  guTemplateId: string;
+  hp: number;
+  atk: number;
+  def: number;
+  crit: number;
+  critDamage: number;
+  moveSpeed: number;
+  attackSpeed: number;
+  lifeSteal: number;
+}
+
+export interface GuSkill {
+  id: string;
+  guTemplateId: string;
+  skillId: string;
+  name: string;
+  type: string;
+  description: string | null;
+  cooldown: number;
+  damageMultiplier: number;
+  targetType: string;
+  aoeRadius: number | null;
+}
+
+export interface PlayerGu {
+  id: string;
+  playerId: string;
+  guTemplateId: string;
+  guTemplate?: GuTemplate;
+  stats?: GuStats;
+  skills?: GuSkill[];
+  level: number;
+  enhancement: number;
+  mastery: number;
+  bondLevel: number;
+  isEquipped: string;
+  slotIndex: number | null;
+}
+
+export interface GuSynergy {
+  id: string;
+  guA: string;
+  guB: string;
+  resultName: string;
+  resultDescription: string | null;
+  resultSkillId: string | null;
+  bonusHp: number;
+  bonusAtk: number;
+  bonusDef: number;
+}
+
+export interface EquipGuRequest {
+  playerGuId: string;
+  slotIndex: number;
+}
+
+export interface EnhanceGuRequest {
+  playerGuId: string;
+}

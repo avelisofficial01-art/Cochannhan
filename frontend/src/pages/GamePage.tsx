@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { GameScene } from '../game/GameScene.js';
 import { useSocket } from '../hooks/useSocket.js';
+import GuPanel from '../components/GuPanel.js';
 
 export default function GamePage(): React.ReactElement {
   const gameRef = useRef<Phaser.Game | null>(null);
@@ -67,10 +68,13 @@ export default function GamePage(): React.ReactElement {
       </header>
 
       {/* Game area */}
-      <div
-        ref={containerRef}
-        className="w-full max-w-4xl flex-1 flex items-center justify-center bg-gu-darker"
-      />
+      <div className="relative w-full max-w-4xl flex-1 flex items-center justify-center bg-gu-darker">
+        <GuPanel />
+        <div
+          ref={containerRef}
+          className="flex-1 h-full"
+        />
+      </div>
 
       {/* Bottom hint */}
       <footer className="w-full max-w-4xl px-6 py-2 text-xs text-gray-500 text-center border-t border-gu-border">

@@ -444,3 +444,96 @@ backend/src/combat/
 - Cần chạy `drizzle-kit push` sau khi deploy để tạo monster_templates + combat_logs tables
 - Monster AI sử dụng simple tick-based approach (không pathfinding phức tạp ở Sprint 3)
 - Combat UI: SPACE để attack monster gần nhất (bán kính 100px), cooldown 1s
+
+---
+
+## Sprint 4: GU SYSTEM — 2026-07-04
+
+### Mục tiêu
+Hệ thống Cổ Trùng — trái tim của game. Template, Player Gu, Equip/Unequip, Enhancement, Skills, Synergy, Crafting, Frontend UI.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S4.1 | Gu module | ✅ | Template, Player Gu, Equip/Unequip, Stats — backend/src/gu/ |
+| S4.2 | Gu Enhancement | ✅ | Cường hóa +0→+20, check maxEnhance từ template |
+| S4.3 | Gu Skills | ✅ | gu_skills table, load từ template (active/passive/aura/trigger) |
+| S4.4 | Gu Synergy | ✅ | gu_synergy table, kiểm tra pair + bonus stats |
+| S4.5 | Gu Craft | ✅ | POST /api/gu/craft — kết hợp 2 Gu từ synergy pair |
+| S4.6 | Gu UI | ✅ | GuPanel component (G key toggle), 6 equip slots, gameStore Gu state |
+| S4.7 | Seed 5 Gu mẫu | ✅ | Hỏa, Phong, Thạch, Huyết, Độc — mỗi con stats + skills + lore |
+
+### Files created
+
+```
+backend/src/gu/
+  ├── gu.repository.ts           # Drizzle queries: gu_templates, gu_stats, gu_skills, player_gu, gu_synergy
+  ├── gu.service.ts              # Business logic: equip, unequip, enhance, craft, synergy check, stats calc
+  ├── gu.controller.ts           # REST: 8 endpoints (templates, player gu, equip, unequip, enhance, craft, synergies)
+  └── gu.route.ts                # Route definitions
+
+frontend/src/components/
+  └── GuPanel.tsx                # Gu UI panel: list, equip slots, enhancement display, G key toggle
+```
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `shared/src/index.ts` | Added GuTemplate, PlayerGu, GuStats, GuSkill, GuSynergy types + GuElement/GuRole/GuQuality enums |
+| `shared/package.json` | Added `"build": "tsc"` script |
+| `package.json` | Root build script: added `npm run build -w shared` |
+| `backend/src/database/schema/index.ts` | Added gu_templates, player_gu, gu_stats, gu_skills, gu_synergy tables |
+| `backend/src/config/index.ts` | Added defaultMaxGuSlots: 6 + 5 Gu seed templates |
+| `backend/src/app.ts` | Mounted guRouter at /api/gu |
+| `frontend/src/store/gameStore.ts` | Added playerGuList, equippedSlots, toggleGuPanel, setPlayerGuList |
+| `frontend/src/pages/GamePage.tsx` | Integrated GuPanel sidebar |
+| `frontend/src/game/GameScene.ts` | Added G key handler for GuPanel toggle |
+
+### API Endpoints
+
+| Method | Path | Auth | Mô tả |
+|--------|------|------|-------|
+| GET | /api/gu/templates | No | Danh sách tất cả Gu templates |
+| GET | /api/gu/templates/:id | No | Chi tiết 1 Gu template |
+| GET | /api/gu/player | Yes | Danh sách Gu của player |
+| POST | /api/gu/equip | Yes | Trang bị Gu vào slot |
+| POST | /api/gu/unequip | Yes | Tháo Gu khỏi slot |
+| POST | /api/gu/enhance | Yes | Cường hóa Gu |
+| POST | /api/gu/craft | Yes | Luyện chế Gu từ synergy pair |
+| GET | /api/gu/synergies | Yes | Kiểm tra synergy từ equipped Gu |
+
+### 5 Gu mẫu
+
+| # | Tên | Element | Rank | Role | Skill |
+|---|-----|---------|------|------|-------|
+| 1 | Hỏa Cổ | Fire | 1 | Damage | Hỏa Diệm Cầu (AoE Fire) |
+| 2 | Phong Cổ | Wind | 1 | Support | Phong Hành Thuật (Move Speed) |
+| 3 | Thạch Cổ | Earth | 1 | Tank | Thạch Thuẫn (Shield Self) |
+| 4 | Huyết Cổ | Blood | 1 | Utility | Huyết Thực (Life Steal) |
+| 5 | Độc Cổ | Poison | 1 | Control | Độc Vụ (Poison DoT) |
+
+### Synergies
+
+| Gu A | Gu B | Result | Bonus |
+|------|------|--------|-------|
+| Hỏa Cổ | Phong Cổ | Hỏa Phong Bạo | +10 ATK |
+| Thạch Cổ | Huyết Cổ | Huyết Thạch Giáp | +15 DEF |
+| Độc Cổ | Hỏa Cổ | Hỏa Độc Vụ | +5 ATK, +5 DEF |
+
+### Xác nhận
+
+- [x] Typecheck: 0 lỗi (shared + backend + frontend)
+- [x] Lint: 0 errors (Gu module clean; 52 pre-existing warnings in inventory/npc/quest)
+- [x] Build: shared + backend + frontend compile OK
+- [x] Clean Architecture: Route → Controller → Service → Repository
+- [x] 8 REST endpoints với Zod validation
+- [x] 5 Gu seeds với đầy đủ stats, skills, lore
+- [x] Frontend GuPanel với G key toggle, hiển thị equip slots
+
+### Ghi chú
+- ✅ Sprint 4 COMPLETED — toàn bộ 7/7 tasks hoàn thành
+- Cần chạy `drizzle-kit push` sau deploy để tạo 5 Gu tables
+- Gu Skill usage trong combat sẽ được tích hợp ở Sprint 5/6
+- Synergy auto-check khi equip/unequip

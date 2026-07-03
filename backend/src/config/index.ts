@@ -17,6 +17,10 @@ export const config = {
   redis: {
     url: process.env.REDIS_URL ?? 'redis://localhost:6379',
   },
+  game: {
+    defaultMaxGuSlots: parseInt(process.env.MAX_GU_SLOTS ?? '5', 10),
+    maxEnhance: parseInt(process.env.MAX_ENHANCE ?? '20', 10),
+  },
 };
 
 // ============================================================
@@ -143,5 +147,166 @@ export const monsterSeeds = [
     ]),
     map_id: 'bac_nguyen',
     respawn_time: 60,
+  },
+];
+
+// ============================================================
+// SEED DATA — 5 Gu Mẫu (Phàm Cổ)
+// ============================================================
+
+export const guSeeds = [
+  {
+    template: {
+      name: 'Hỏa Cổ',
+      rank: 1,
+      element: 'Fire',
+      role: 'damage',
+      quality: 'common',
+      description: 'Cổ Trùng hệ Hỏa. Tăng sát thương hỏa và thiêu đốt kẻ địch.',
+      sprite: 'gu_fire',
+      is_immortal: 'false',
+      unique_world: 'false',
+      max_enhance: 20,
+      can_evolve: 'true',
+    },
+    stats: { hp: 0, atk: 25, def: 0, crit: 5, crit_damage: 10, move_speed: 0, attack_speed: 0, life_steal: 0 },
+    skills: [
+      {
+        skill_id: 'fire_blast',
+        name: 'Hỏa Cầu',
+        type: 'active',
+        description: 'Bắn một quả cầu lửa về phía kẻ địch, gây sát thương Hỏa.',
+        cooldown: 3,
+        damage_multiplier: 150,
+        target_type: 'single',
+        aoe_radius: null,
+      },
+    ],
+  },
+  {
+    template: {
+      name: 'Phong Cổ',
+      rank: 1,
+      element: 'Wind',
+      role: 'support',
+      quality: 'common',
+      description: 'Cổ Trùng hệ Phong. Tăng tốc độ di chuyển và tốc đánh.',
+      sprite: 'gu_wind',
+      is_immortal: 'false',
+      unique_world: 'false',
+      max_enhance: 20,
+      can_evolve: 'true',
+    },
+    stats: { hp: 0, atk: 5, def: 0, crit: 0, crit_damage: 0, move_speed: 10, attack_speed: 8, life_steal: 0 },
+    skills: [
+      {
+        skill_id: 'wind_step',
+        name: 'Phong Bộ',
+        type: 'passive',
+        description: 'Tăng tốc độ di chuyển.',
+        cooldown: 0,
+        damage_multiplier: 0,
+        target_type: 'self',
+        aoe_radius: null,
+      },
+    ],
+  },
+  {
+    template: {
+      name: 'Thạch Cổ',
+      rank: 1,
+      element: 'Earth',
+      role: 'tank',
+      quality: 'common',
+      description: 'Cổ Trùng hệ Thổ. Tăng phòng thủ và máu tối đa.',
+      sprite: 'gu_stone',
+      is_immortal: 'false',
+      unique_world: 'false',
+      max_enhance: 20,
+      can_evolve: 'true',
+    },
+    stats: { hp: 150, atk: 0, def: 20, crit: 0, crit_damage: 0, move_speed: 0, attack_speed: 0, life_steal: 0 },
+    skills: [
+      {
+        skill_id: 'stone_armor',
+        name: 'Thạch Giáp',
+        type: 'passive',
+        description: 'Tăng phòng thủ.',
+        cooldown: 0,
+        damage_multiplier: 0,
+        target_type: 'self',
+        aoe_radius: null,
+      },
+    ],
+  },
+  {
+    template: {
+      name: 'Huyết Cổ',
+      rank: 1,
+      element: 'Blood',
+      role: 'utility',
+      quality: 'common',
+      description: 'Cổ Trùng hệ Huyết. Hút máu từ kẻ địch, hồi phục bản thân.',
+      sprite: 'gu_blood',
+      is_immortal: 'false',
+      unique_world: 'false',
+      max_enhance: 20,
+      can_evolve: 'true',
+    },
+    stats: { hp: 50, atk: 10, def: 5, crit: 0, crit_damage: 0, move_speed: 0, attack_speed: 0, life_steal: 5 },
+    skills: [
+      {
+        skill_id: 'blood_drain',
+        name: 'Hấp Huyết',
+        type: 'active',
+        description: 'Hút máu từ kẻ địch, hồi 50% sát thương gây ra.',
+        cooldown: 6,
+        damage_multiplier: 120,
+        target_type: 'single',
+        aoe_radius: null,
+      },
+    ],
+  },
+  {
+    template: {
+      name: 'Độc Cổ',
+      rank: 1,
+      element: 'Poison',
+      role: 'control',
+      quality: 'common',
+      description: 'Cổ Trùng hệ Độc. Gây độc lên kẻ địch, giảm tốc và sát thương theo thời gian.',
+      sprite: 'gu_poison',
+      is_immortal: 'false',
+      unique_world: 'false',
+      max_enhance: 20,
+      can_evolve: 'true',
+    },
+    stats: { hp: 0, atk: 15, def: 0, crit: 3, crit_damage: 0, move_speed: 0, attack_speed: 0, life_steal: 0 },
+    skills: [
+      {
+        skill_id: 'poison_sting',
+        name: 'Độc Châm',
+        type: 'active',
+        description: 'Tiêm độc vào kẻ địch, gây sát thương độc trong 5 giây.',
+        cooldown: 4,
+        damage_multiplier: 100,
+        target_type: 'single',
+        aoe_radius: null,
+      },
+    ],
+  },
+];
+
+// Synergy seeds
+export const guSynergySeeds = [
+  {
+    gu_a: '', // filled at runtime with Hỏa Cổ template ID
+    gu_b: '', // filled at runtime with Phong Cổ template ID
+    result_name: 'Hỏa Phong Bạo',
+    result_description: 'Hỏa + Phong = Bão Lửa. Tăng 15% sát thương Hỏa.',
+    result_skill_id: 'fire_storm',
+    bonus_hp: 0,
+    bonus_atk: 15,
+    bonus_def: 0,
   },
 ];

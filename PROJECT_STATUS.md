@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 3 — Combat Core
+**Sprint:** 4 — Gu System
 
 **Status:** ✅ Completed (2026-07-04)
 
@@ -28,7 +28,7 @@
 | Sprint 1 | Core Infrastructure | ✅ Completed |
 | Sprint 2 | NPC & Quest | ✅ Completed |
 | Sprint 3 | Combat Core | ✅ Completed |
-| Sprint 4 | Gu System | ⬜ Not Started |
+| Sprint 4 | Gu System | ✅ Completed |
 | Sprint 5 | Equipment & Craft | ⬜ Not Started |
 | Sprint 6 | Chapter 1 Complete | ⬜ Not Started |
 | Sprint 7 | Polish & Stabilize | ⬜ Not Started |
@@ -37,9 +37,9 @@
 
 # Current Task
 
-Current Module: ✅ Sprint 3 — Combat Core (COMPLETED)
+Current Module: ✅ Sprint 4 — Gu System (COMPLETED)
 
-Next Module: Sprint 4 — Gu System
+Next Module: Sprint 5 — Equipment & Craft
 
 ---
 
