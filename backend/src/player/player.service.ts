@@ -1,4 +1,5 @@
 import { playerRepository } from './player.repository.js';
+import type { PlayerRow } from './player.repository.js';
 import type { CreatePlayerInput } from './player.schema.js';
 import type { PlayerProfile, PlayerStatsResponse } from '@co-dao/shared';
 import { ERROR_CODES } from '@co-dao/shared';
@@ -77,10 +78,31 @@ export async function createPlayer(
   return toProfile(player);
 }
 
+export async function getPlayerById(playerId: string): Promise<PlayerRow | null> {
+  const player = await playerRepository.findById(playerId);
+  return player ?? null;
+}
+
+export async function getPlayerStats(
+  playerId: string,
+): Promise<{ hpBonus: number; atkBonus: number; defBonus: number; critBonus: number; moveSpeed: number } | null> {
+  const stats = await playerRepository.findStatsByPlayerId(playerId);
+  if (!stats) return null;
+  return {
+    hpBonus: stats.hp_bonus,
+    atkBonus: stats.atk_bonus,
+    defBonus: stats.def_bonus,
+    critBonus: stats.crit_bonus,
+    moveSpeed: stats.move_speed,
+  };
+}
+
 export const playerService = {
   getProfile,
   getStats,
   createPlayer,
+  getPlayerById,
+  getPlayerStats,
 };
 
 export { ERROR_CODES };

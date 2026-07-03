@@ -110,6 +110,9 @@ export interface CreatePlayerResponse {
 export { calculatePlayerStats } from './stat-calculator.js';
 export type { StatInput } from './stat-calculator.js';
 
+// Re-export Combat Engine
+export * from './combat/index.js';
+
 // ============================================================
 // NPC
 // ============================================================

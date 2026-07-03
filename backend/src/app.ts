@@ -11,6 +11,8 @@ import worldRouter from './world/world.route.js';
 import npcRouter from './npc/npc.route.js';
 import questRouter from './quest/quest.route.js';
 import inventoryRouter from './inventory/inventory.route.js';
+import monsterRouter from './monster/monster.route.js';
+import combatRouter from './combat/combat.route.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { config } from './config/index.js';
 
@@ -62,6 +64,8 @@ app.use('/api/world', worldRouter);
 app.use('/api/npc', npcRouter);
 app.use('/api/quest', questRouter);
 app.use('/api/inventory', inventoryRouter);
+app.use('/api/monster', monsterRouter);
+app.use('/api/combat', combatRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -155,6 +159,22 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     playerPositions.delete(accountId);
+  });
+
+  // ── Combat: Player Attack ──────────────────────────────
+  socket.on('player:attack', (data: { targetInstanceId: string }) => {
+    const playerId = socket.handshake.auth.playerId as string;
+    if (!playerId || !data.targetInstanceId) return;
+
+    // Verify token
+    if (!token) return;
+
+    // Attack logic handled by combat service
+    // For real-time, emit to map room for rendering
+    socket.to(`map:${socket.handshake.auth.currentMap as string ?? 'bac_nguyen_village'}`).emit('combat:attack', {
+      attackerId: playerId,
+      targetInstanceId: data.targetInstanceId,
+    });
   });
 });
 

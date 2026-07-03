@@ -241,3 +241,38 @@ export const playerInventory = pgTable('player_inventory', {
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// ============================================================
+// COMBAT MODULE
+// ============================================================
+
+export const monsterTemplates = pgTable('monster_templates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 200 }).notNull(),
+  realm: integer('realm').notNull().default(1),
+  hp: integer('hp').notNull().default(50),
+  atk: integer('atk').notNull().default(10),
+  def: integer('def').notNull().default(5),
+  speed: integer('speed').notNull().default(200),
+  element: varchar('element', { length: 30 }).notNull().default('physical'),
+  sprite: varchar('sprite', { length: 255 }).notNull().default('monster_1'),
+  drop_table: text('drop_table'), // JSON: [{itemId, chance, quantityMin, quantityMax}]
+  map_id: uuid('map_id')
+    .notNull()
+    .references(() => maps.id, { onDelete: 'cascade' }),
+  respawn_time: integer('respawn_time').notNull().default(30), // seconds
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const combatLogs = pgTable('combat_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  player_id: uuid('player_id')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  monster_id: uuid('monster_id').notNull(),
+  damage: integer('damage').notNull(),
+  skill: varchar('skill', { length: 100 }),
+  is_critical: varchar('is_critical', { length: 5 }).notNull().default('false'),
+  damage_type: varchar('damage_type', { length: 30 }).notNull().default('physical'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
