@@ -58,13 +58,22 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     /* ── Error callback — log to console so we can debug on Render ── */
-    this.load.on('loaderror', (file: { key: string; url: string }) => {
-      console.error(`[PreloadScene] ❌ Failed to load: "${file.key}" from "${file.url}"`);
+    this.load.on('loaderror', (file: Record<string, unknown>) => {
+      console.error(
+        `[PreloadScene] ❌ Load failed: key="${file.key}", url="${file.url}", src="${file.src}", type="${file.type}", state="${file.state}"`,
+        file,
+      );
     });
 
     /* ── File progress (debug) ── */
-    this.load.on('fileprogress', (file: { key: string }) => {
-      console.log(`[PreloadScene] ✓ Loaded: ${file.key}`);
+    this.load.on('fileprogress', (file: { key: string; url: string }) => {
+      console.log(`[PreloadScene] ⏳ Loading: "${file.key}" from "${file.url}"`);
+    });
+
+    /* ── File complete (debug) ── */
+    this.load.on('filecomplete', (_key: string, _type: string, _data: unknown) => {
+      // Log successful loads (verbose — uncomment to debug specific files)
+      // console.log(`[PreloadScene] ✅ Loaded: "${_key}" (type: ${_type})`);
     });
 
     /* ── Complete callback ── */
@@ -82,7 +91,7 @@ export class PreloadScene extends Phaser.Scene {
     preloadScene(this);
   }
 
-  create(): void {
+  async create(): Promise<void> {
     /* ── Verify 3 essential textures exist before handing off ── */
     const essential = [
       { key: 'player', path: '/characters/char_1.png' },
@@ -91,10 +100,23 @@ export class PreloadScene extends Phaser.Scene {
     ];
 
     let allOk = true;
-    for (const { key, path } of essential) {
+    for (const { key, path: url } of essential) {
       const exists = this.textures.exists(key);
       if (!exists) {
-        console.error(`[PreloadScene] ❌ ESSENTIAL TEXTURE MISSING: "${key}" (file: ${path})`);
+        console.error(`[PreloadScene] ❌ ESSENTIAL TEXTURE MISSING: "${key}" (file: ${url})`);
+
+        // Fetch the URL to see what the server actually returns
+        try {
+          const res = await fetch(url);
+          const ct = res.headers.get('content-type') ?? 'unknown';
+          const bodyPreview = (await res.text()).slice(0, 80);
+          console.error(
+            `[PreloadScene] 🔍 Diagnostics for ${url}: HTTP ${res.status} ${res.statusText}, Content-Type: "${ct}", body preview: "${bodyPreview}"`,
+          );
+        } catch (fetchErr) {
+          console.error(`[PreloadScene] 🔍 Fetch failed for ${url}:`, fetchErr);
+        }
+
         allOk = false;
       }
     }
