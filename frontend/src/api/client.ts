@@ -27,6 +27,13 @@ async function request<T>(
     headers,
   });
 
+  if (response.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    window.location.href = '/login';
+    throw new Error('Unauthorized');
+  }
+
   const body = (await response.json()) as ApiResponse<T>;
 
   if (!response.ok) {

@@ -214,7 +214,7 @@ io.on('connection', (socket) => {
 
     // Sync map metadata, npcs, portals, and monsters
     try {
-      const [map] = await db
+      let [map] = await db
         .select()
         .from(worldMaps)
         .where(
@@ -224,6 +224,19 @@ io.on('connection', (socket) => {
           )
         )
         .limit(1);
+
+      if (!map && (targetMapId === 'bac_nguyen_village' || targetMapId === 'lang_cothao')) {
+        [map] = await db
+          .select()
+          .from(worldMaps)
+          .where(eq(worldMaps.name, 'Làng Cổ Thảo'))
+          .limit(1);
+      }
+
+      if (!map) {
+        const firstMaps = await db.select().from(worldMaps).limit(1);
+        map = firstMaps[0];
+      }
 
       if (map) {
         // Emit map metadata
