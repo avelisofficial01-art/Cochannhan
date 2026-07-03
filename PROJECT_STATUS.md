@@ -52,6 +52,7 @@ Current Module: 🚧 Sprint 7 — Polish & Stabilize
 - [x] Rendering Architecture — Map: luôn dùng map image, grid chỉ fallback
 - [x] Rendering Architecture — Vite `publicDir: '../assets'` để serve assets
 - [x] Rendering Architecture — Tạo BootScene + PreloadScene + UIScene
+- [x] Helmet configuration — Thêm CSP directive cho `blob:` và `ws:`, tắt COEP để không chặn asset loader
 
 ## Performance Optimization (S7.2)
 - [ ] Tối ưu socket sync, map rendering, database query

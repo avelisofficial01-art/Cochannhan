@@ -309,7 +309,7 @@ backend/src/
 ### Mục tiêu
 Sửa bug critical, tối ưu performance, polish UI/UX, đảm bảo production readiness.
 
-### S7.1 — Bug Fixing ✅ (3 bugs fixed)
+### S7.1 — Bug Fixing ✅ (4 bugs fixed)
 
 | Bug | File(s) | Fix |
 |-----|---------|-----|
@@ -318,13 +318,14 @@ Sửa bug critical, tối ưu performance, polish UI/UX, đảm bảo production
 | Socket không verify JWT | `backend/src/app.ts` | Thêm `jwt.verify(token, config.jwt.secret)` trong `connection` handler |
 | Disconnect không broadcast | `backend/src/app.ts` | `socket.on('disconnect')` → emit `player:left` đến map room |
 | Frontend không xử lý `player:left` | `frontend/src/hooks/useSocket.ts` | Thêm listener `player:left` → xóa player khỏi store |
+| Lỗi load asset trên Render do Helmet | `backend/src/app.ts` | Cấu hình Helmet CSP cho phép 'blob:' và WebSockets ('ws:', 'wss:'), tắt COEP |
 
 ### Files modified
 
 | File | Change |
 |------|--------|
 | `frontend/src/hooks/useSocket.ts` | Socket URL dynamic, player:left handler, attack flow |
-| `backend/src/app.ts` | JWT verify, combat server-authoritative, disconnect broadcast |
+| `backend/src/app.ts` | JWT verify, combat server-authoritative, disconnect broadcast, Helmet CSP & COEP configuration |
 | `backend/src/world/world.route.ts` | Fixed import: `authMiddleware` → `authenticate` |
 
 ### Xác nhận
