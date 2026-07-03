@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
-import { preloadScene, getMapKey, getPlayerKey } from './AssetManager.js';
+import {
+  getMapKey,
+  getPlayerKey,
+  getMonsterKey,
+} from './AssetManager.js';
 import { useGameStore, type MonsterSprite } from '../store/gameStore.js';
 
 /**
@@ -14,13 +18,12 @@ interface FloatText {
 
 /**
  * GameScene — Map rendering, player movement, combat UI.
- * Sprint 3: Monsters, HP bars, damage numbers, attack cooldown.
  *
- * All asset references go through AssetManager — no hardcoded paths.
- * If an asset fails to load, the scene falls back to geometric placeholders.
+ * All gameplay visuals use real asset sprites loaded via AssetManager.
+ * Rectangle placeholders are ONLY a last-resort fallback when textures fail to load.
  */
 export class GameScene extends Phaser.Scene {
-  private playerSprite!: Phaser.GameObjects.Rectangle;
+  private playerSprite!: Phaser.GameObjects.Image;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private spaceKey!: Phaser.Input.Keyboard.Key;
   private guKey!: Phaser.Input.Keyboard.Key;
@@ -30,13 +33,13 @@ export class GameScene extends Phaser.Scene {
   private playerY = 300;
   private readonly moveSpeed = 200;
 
-  /** Current map ID received from game state (default: Bắc Nguyên) */
+  /** Current map ID */
   private mapId = 'bnp';
 
   /** Monsters rendered on screen */
   private monsterSprites: Map<
     string,
-    { sprite: Phaser.GameObjects.Rectangle; hpBar: Phaser.GameObjects.Graphics; nameLabel: Phaser.GameObjects.Text }
+    { sprite: Phaser.GameObjects.Image; hpBar: Phaser.GameObjects.Graphics; nameLabel: Phaser.GameObjects.Text }
   > = new Map();
 
   /** Floating damage texts */
@@ -54,45 +57,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   /* ───────────────────────────────────────
-   *  Preload — register all assets via AssetManager
-   * ─────────────────────────────────────── */
-  preload(): void {
-    preloadScene(this);
-  }
-
-  /* ───────────────────────────────────────
-   *  Create — build the scene from loaded assets
+   *  Create — build the scene from preloaded assets
    * ─────────────────────────────────────── */
   create(): void {
     this.cameras.main.setBackgroundColor('#1a1a2e');
 
-    /* ── Map background (try loaded asset, fallback to grid) ── */
+    /* ── Map background ── */
     const mapKey = getMapKey(this.mapId);
     if (this.textures.exists(mapKey)) {
-      this.add.image(400, 300, mapKey).setDisplaySize(800, 600);
+      const mapImg = this.add.image(400, 300, mapKey);
+      mapImg.setDisplaySize(800, 600);
     } else {
+      // Last-resort fallback — only if the asset truly failed
       this.drawGridFallback();
     }
 
-    /* ── Map title ── */
-    this.add
-      .text(400, 20, 'Bắc Nguyên — Village', {
-        fontSize: '16px',
-        color: '#cccccc',
-        fontFamily: 'monospace',
-      })
-      .setOrigin(0.5);
-
-    /* ── Player sprite (try loaded asset, fallback to rectangle) ── */
+    /* ── Player sprite ── */
     const playerKey = getPlayerKey();
     if (this.textures.exists(playerKey)) {
-      const img = this.add.image(this.playerX, this.playerY, playerKey);
-      img.setDisplaySize(32, 32);
-      this.playerSprite = this.add.rectangle(this.playerX, this.playerY, 0, 0).setVisible(false);
-      this._playerImage = img;
+      this.playerSprite = this.add.image(this.playerX, this.playerY, playerKey);
+      this.playerSprite.setDisplaySize(32, 32);
     } else {
-      this.playerSprite = this.add.rectangle(this.playerX, this.playerY, 32, 32, 0x00ff88);
-      this.playerSprite.setStrokeStyle(2, 0xffffff);
+      // Last-resort fallback
+      this.createPlayerFallback();
     }
 
     /* ── Player name label ── */
@@ -114,31 +101,33 @@ export class GameScene extends Phaser.Scene {
       this.craftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
     }
 
-    /* ── Attack cooldown indicator (bottom center) ── */
+    /* ── Launch overlay UI scene ── */
+    this.scene.launch('UIScene');
+
+    /* ── Attack cooldown indicator ── */
     this.cooldownBg = this.add.graphics();
     this.cooldownBg.fillStyle(0x333333, 0.8);
     this.cooldownBg.fillRect(300, 585, 200, 8);
     this.cooldownBar = this.add.graphics();
-    this.cooldownBar.fillStyle(0xff8800, 1);
-    this.cooldownBar.fillRect(300, 585, 200, 8);
+    this.drawCooldownReady();
 
+    /* ── Hint ── */
     this.add
-      .text(400, 572, 'SPACE: Attack', {
+      .text(400, 572, 'SPACE: Attack  |  G: Gu  |  E: Equipment  |  C: Craft', {
         fontSize: '10px',
         color: '#888888',
         fontFamily: 'monospace',
       })
       .setOrigin(0.5);
 
-    /* ── Hint ── */
     this.add
-      .text(400, 580, 'Use Arrow Keys to move  |  SPACE to attack nearest monster', {
-        fontSize: '11px',
+      .text(400, 582, 'Arrow Keys: Move', {
+        fontSize: '9px',
         color: '#666666',
         fontFamily: 'monospace',
       })
       .setOrigin(0.5)
-      .setAlpha(0.7);
+      .setAlpha(0.6);
   }
 
   /* ───────────────────────────────────────
@@ -182,9 +171,6 @@ export class GameScene extends Phaser.Scene {
 
     if (moved) {
       this.playerSprite.setPosition(this.playerX, this.playerY);
-      if (this._playerImage) {
-        this._playerImage.setPosition(this.playerX, this.playerY);
-      }
 
       const label = this.children.getByName('playerLabel') as Phaser.GameObjects.Text;
       if (label) {
@@ -208,7 +194,6 @@ export class GameScene extends Phaser.Scene {
     const monsters = useGameStore.getState().monsters;
     if (monsters.length === 0) return;
 
-    // Find nearest monster within 100px range
     let nearest: MonsterSprite | null = null;
     let nearestDist = Infinity;
 
@@ -224,7 +209,6 @@ export class GameScene extends Phaser.Scene {
 
     if (!nearest) return;
 
-    // Emit attack via socket bridge
     const emitAttack = (window as unknown as Record<string, (instanceId: string) => void>)
       .__socketEmitAttack;
     if (emitAttack) {
@@ -235,7 +219,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   /* ───────────────────────────────────────
-   *  Gu Panel toggle (G key)
+   *  Panel toggles
    * ─────────────────────────────────────── */
   private handleGuToggle(): void {
     if (this.guKey && Phaser.Input.Keyboard.JustDown(this.guKey)) {
@@ -243,18 +227,12 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /* ───────────────────────────────────────
-   *  Equipment Panel toggle (E key)
-   * ─────────────────────────────────────── */
   private handleEquipToggle(): void {
     if (this.eqKey && Phaser.Input.Keyboard.JustDown(this.eqKey)) {
       useGameStore.getState().toggleEquipmentPanel();
     }
   }
 
-  /* ───────────────────────────────────────
-   *  Craft Panel toggle (C key)
-   * ─────────────────────────────────────── */
   private handleCraftToggle(): void {
     if (this.craftKey && Phaser.Input.Keyboard.JustDown(this.craftKey)) {
       useGameStore.getState().toggleCraftPanel();
@@ -265,7 +243,6 @@ export class GameScene extends Phaser.Scene {
    *  Attack cooldown visual
    * ─────────────────────────────────────── */
   private updateAttackCooldown(delta: number): void {
-    // Check spacebar
     if (this.spaceKey && Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
       this.handleAttack();
     }
@@ -280,23 +257,25 @@ export class GameScene extends Phaser.Scene {
       if (this.attackCooldownRemaining <= 0) {
         this.attackReady = true;
         this.attackCooldownRemaining = 0;
-        this.cooldownBar.clear();
-        this.cooldownBar.fillStyle(0x00ff88, 1);
-        this.cooldownBar.fillRect(300, 585, 200, 8);
+        this.drawCooldownReady();
       }
     }
   }
 
+  private drawCooldownReady(): void {
+    this.cooldownBar.clear();
+    this.cooldownBar.fillStyle(0x00ff88, 1);
+    this.cooldownBar.fillRect(300, 585, 200, 8);
+  }
+
   /* ───────────────────────────────────────
-   *  Monster sync — read from store, render sprites + HP bars
+   *  Monster sync — render sprites + HP bars
    * ─────────────────────────────────────── */
   private syncMonsters(): void {
     const storeMonsters = useGameStore.getState().monsters;
-
-    // Track which instanceIds are currently in the store
     const storeIds = new Set(storeMonsters.map((m) => m.instanceId));
 
-    // Remove monsters that are no longer in the store
+    // Remove dead / despawned monsters
     for (const [id, obj] of this.monsterSprites) {
       if (!storeIds.has(id)) {
         obj.sprite.destroy();
@@ -310,13 +289,10 @@ export class GameScene extends Phaser.Scene {
     for (const m of storeMonsters) {
       const existing = this.monsterSprites.get(m.instanceId);
       if (existing) {
-        // Update position
         existing.sprite.setPosition(m.x, m.y);
         existing.nameLabel.setPosition(m.x, m.y - 22);
-        // Update HP bar
         this.drawHpBar(existing.hpBar, m.x, m.y - 14, m.currentHp, m.maxHp);
       } else {
-        // Create new monster sprite
         this.spawnMonsterSprite(m);
       }
     }
@@ -330,12 +306,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   /* ───────────────────────────────────────
-   *  Spawn a monster sprite with HP bar
+   *  Spawn a new monster sprite (real asset or fallback)
    * ─────────────────────────────────────── */
   private spawnMonsterSprite(m: MonsterSprite): void {
-    // Try monster sprite asset, fallback to rectangle
-    const sprite = this.add.rectangle(m.x, m.y, 28, 28, 0xff4444);
-    sprite.setStrokeStyle(2, 0x000000);
+    let sprite: Phaser.GameObjects.Image;
+
+    // Try to map monster templateId to a monster sprite index
+    const monsterKey = getMonsterKey(this.getMonsterIndex(m.templateId));
+
+    if (this.textures.exists(monsterKey)) {
+      sprite = this.add.image(m.x, m.y, monsterKey);
+      sprite.setDisplaySize(28, 28);
+    } else {
+      // Last-resort fallback
+      const rect = this.add.rectangle(m.x, m.y, 28, 28, 0xff4444);
+      rect.setStrokeStyle(2, 0x000000);
+      // Wrap rectangle as an Image-like object — we use a proxy pattern via
+      // type assertion since Phaser.Rectangle shares setPosition/setDisplaySize
+      sprite = rect as unknown as Phaser.GameObjects.Image;
+    }
 
     const nameLabel = this.add
       .text(m.x, m.y - 22, m.name, {
@@ -351,8 +340,20 @@ export class GameScene extends Phaser.Scene {
     this.monsterSprites.set(m.instanceId, { sprite, hpBar, nameLabel });
   }
 
+  /**
+   * Map a monster templateId to a sprite index (1-based) for AssetManager.
+   * Uses a simple hash so the same template always gets the same sprite.
+   */
+  private getMonsterIndex(templateId: string): number {
+    let hash = 0;
+    for (let i = 0; i < templateId.length; i++) {
+      hash = (hash * 31 + templateId.charCodeAt(i)) >>> 0;
+    }
+    return (hash % 11) + 1; // 11 monster sprites available
+  }
+
   /* ───────────────────────────────────────
-   *  Draw HP bar over a monster
+   *  HP bar
    * ─────────────────────────────────────── */
   private drawHpBar(
     gfx: Phaser.GameObjects.Graphics,
@@ -366,10 +367,9 @@ export class GameScene extends Phaser.Scene {
     const hpRatio = Math.max(0, currentHp / maxHp);
 
     gfx.clear();
-    // Background (dark red)
     gfx.fillStyle(0x330000, 0.9);
     gfx.fillRect(x - barWidth / 2, y, barWidth, barHeight);
-    // HP fill (green → yellow → red)
+
     let color = 0x00ff00;
     if (hpRatio < 0.3) color = 0xff0000;
     else if (hpRatio < 0.6) color = 0xffaa00;
@@ -424,10 +424,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   /* ───────────────────────────────────────
-   *  Helpers
+   *  Last-resort fallbacks (when textures fail to load)
    * ─────────────────────────────────────── */
 
-  private _playerImage?: Phaser.GameObjects.Image;
+  private createPlayerFallback(): void {
+    const rect = this.add.rectangle(this.playerX, this.playerY, 32, 32, 0x00ff88);
+    rect.setStrokeStyle(2, 0xffffff);
+    this.playerSprite = rect as unknown as Phaser.GameObjects.Image;
+  }
 
   private drawGridFallback(): void {
     const gfx = this.add.graphics();

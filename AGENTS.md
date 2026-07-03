@@ -267,3 +267,37 @@ If an asset is unavailable:
 - never hardcode asset paths
 - never generate replacement art
 - continue implementing gameplay
+
+## Rendering Architecture (Mandatory)
+
+This is a browser H5 RPG built with PhaserJS.
+
+React is only responsible for:
+- Login
+- Menus
+- Settings
+- Modals
+- Outside-game UI
+
+All gameplay must be rendered by PhaserJS.
+
+Never implement gameplay using:
+- HTML div
+- CSS Grid
+- DOM positioning
+- Colored placeholder squares
+
+If game assets exist, they MUST be loaded and rendered through Phaser Loader.
+
+The documentation is always the source of truth.
+
+If existing code conflicts with the documentation, refactor the code instead of modifying the documentation.
+
+Every sprint must end with a playable game.
+
+The game must always display:
+- A real map
+- A real player sprite
+- Real assets from the assets folder
+
+A sprint is NOT considered complete if gameplay is rendered only with HTML placeholders.

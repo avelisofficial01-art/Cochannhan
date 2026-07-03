@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
+import { BootScene } from '../game/BootScene.js';
+import { PreloadScene } from '../game/PreloadScene.js';
 import { GameScene } from '../game/GameScene.js';
+import { UIScene } from '../game/UIScene.js';
 import { useSocket } from '../hooks/useSocket.js';
 import GuPanel from '../components/GuPanel.js';
 import EquipmentPanel from '../components/EquipmentPanel.js';
@@ -20,7 +23,7 @@ export default function GamePage(): React.ReactElement {
       height: 600,
       parent: containerRef.current,
       backgroundColor: '#1a1a2e',
-      scene: [GameScene],
+      scene: [BootScene, PreloadScene, GameScene, UIScene],
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,

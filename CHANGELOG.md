@@ -336,6 +336,33 @@ Sửa bug critical, tối ưu performance, polish UI/UX, đảm bảo production
 - [x] Auth: authenticate + resolvePlayer middleware hoạt động
 - [x] Các module tuân thủ Clean Architecture (Route → Controller → Service → Repository)
 
+### S7.1a — Rendering Architecture Refactoring ✅
+
+| Issue | File(s) | Fix |
+|-------|---------|-----|
+| Player là Rectangle màu xanh `0x00ff88` | `frontend/src/game/GameScene.ts` | Dùng `Phaser.GameObjects.Image` + `char_1.png` sprite |
+| Monster là Rectangle màu đỏ `0xff4444` | `frontend/src/game/GameScene.ts` | Dùng monster sprite images từ AssetManager |
+| Map là grid lines màu tím | `frontend/src/game/GameScene.ts` | Luôn dùng map image (grid chỉ fallback nếu texture không tồn tại) |
+| Vite không serve assets từ workspace root | `frontend/vite.config.ts` | Thêm `publicDir: '../assets'` |
+| Không có BootScene/PreloadScene | `frontend/src/game/BootScene.ts`, `PreloadScene.ts` | **Tạo mới** — Boot → Preload (progress bar) → GameScene |
+| Không có UIScene overlay | `frontend/src/game/UIScene.ts` | **Tạo mới** — overlay HUD skeleton, launch song song GameScene |
+| Scene array chỉ có GameScene | `frontend/src/pages/GamePage.tsx` | Cập nhật: `[BootScene, PreloadScene, GameScene, UIScene]` |
+
+#### Files created
+- `frontend/src/game/BootScene.ts` — Bootstrap scene, transition → PreloadScene
+- `frontend/src/game/PreloadScene.ts` — Preload assets via AssetManager + progress bar
+- `frontend/src/game/UIScene.ts` — Overlay HUD skeleton (song song GameScene)
+
+#### Files refactored
+- `frontend/src/game/GameScene.ts` — toàn bộ sprite dùng Image/Sprite thay Rectangle, map image thay grid
+- `frontend/src/pages/GamePage.tsx` — scene array: Boot → Preload → Game + UIScene
+- `frontend/vite.config.ts` — `publicDir: '../assets'`
+
+#### Xác nhận
+- [x] Typecheck: 0 lỗi (shared + backend + frontend)
+- [x] Build: OK, 1.81MB bundle
+- [x] Lint: 0 errors, 52 warnings
+
 ### Bắc Nguyên NPCs
 
 | NPC | Vai trò | Vị trí | Quest |

@@ -8,7 +8,9 @@
  * Key naming convention: TYPE_IDENTIFIER (e.g. CHARACTER_PLAYER, MAP_BAC_NGUYEN)
  */
 
-const BASE = '/assets';
+// When using Vite with publicDir pointing to workspace assets/,
+// files are served at root (no /assets prefix needed).
+const BASE = '';
 
 /* ───── Character & NPC ───── */
 

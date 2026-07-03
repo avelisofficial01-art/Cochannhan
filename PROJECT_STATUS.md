@@ -12,7 +12,7 @@
 
 **Sprint:** 7 — Polish & Stabilize
 
-**Status:** 🚧 In Progress (3/7 tasks)
+**Status:** 🚧 In Progress (4/7 tasks)
 
 **Started:** 2026-07-04
 
@@ -47,6 +47,11 @@ Current Module: 🚧 Sprint 7 — Polish & Stabilize
 - [x] Socket JWT verification — Token được verify bằng `jwt.verify()` khi connect
 - [x] Socket disconnect — Broadcast `player:left` cho các player trong map
 - [x] Frontend `player:left` handler — Xóa player khỏi store khi disconnect
+- [x] Rendering Architecture — Player: Image thay Rectangle, dùng `char_1.png` sprite
+- [x] Rendering Architecture — Monster: dùng monster sprite thay Rectangle màu đỏ
+- [x] Rendering Architecture — Map: luôn dùng map image, grid chỉ fallback
+- [x] Rendering Architecture — Vite `publicDir: '../assets'` để serve assets
+- [x] Rendering Architecture — Tạo BootScene + PreloadScene + UIScene
 
 ## Performance Optimization (S7.2)
 - [ ] Tối ưu socket sync, map rendering, database query
