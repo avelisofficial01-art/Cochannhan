@@ -69,7 +69,8 @@ export class PreloadScene extends Phaser.Scene {
 
     /* ── Complete callback ── */
     this.load.on('complete', () => {
-      console.log('[PreloadScene] ✅ All assets loaded (or failed). Starting GameScene...');
+      console.log('[PreloadScene] ✅ All assets loaded (or failed).');
+      console.log('[PreloadScene] 📋 Registered texture keys:', this.textures.getTextureKeys());
       this.progressBar.destroy();
       this.progressBox.destroy();
       this.loadingText.destroy();
@@ -82,6 +83,28 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    /* ── Verify 3 essential textures exist before handing off ── */
+    const essential = [
+      { key: 'player', path: '/characters/char_1.png' },
+      { key: 'map_bnp', path: '/maps/map_bac_nguyen.png' },
+      { key: 'monster_1', path: '/monsters/monster_1.png' },
+    ];
+
+    let allOk = true;
+    for (const { key, path } of essential) {
+      const exists = this.textures.exists(key);
+      if (!exists) {
+        console.error(`[PreloadScene] ❌ ESSENTIAL TEXTURE MISSING: "${key}" (file: ${path})`);
+        allOk = false;
+      }
+    }
+
+    if (allOk) {
+      console.log('[PreloadScene] ✅ All 3 essential textures verified. Starting GameScene...');
+    } else {
+      console.error('[PreloadScene] ⚠️ Some essential textures missing — GameScene will use fallback rectangles.');
+    }
+
     this.scene.start('GameScene');
   }
 }
