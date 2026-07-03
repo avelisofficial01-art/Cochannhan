@@ -90,3 +90,58 @@ export const itemSeeds = [
   { name: 'Đá Linh Hồn', type: 'material', description: 'Nguyên liệu luyện khí cơ bản', stackable: 'true', maxStack: 999, sellPrice: 5, sprite: 'gui_icon_gem' },
   { name: 'Lông Thú', type: 'quest_item', description: 'Lông của Quái Thú Hoang Dã', stackable: 'true', maxStack: 99, sellPrice: 2, sprite: 'gui_icon_feather' },
 ];
+
+// ============================================================
+// SEED DATA — Monster Templates
+// ============================================================
+
+export const monsterSeeds = [
+  {
+    name: 'Quái Thú Hoang Dã',
+    realm: 'pham_nhan',
+    hp: 80,
+    atk: 12,
+    def: 5,
+    speed: 3,
+    element: 'physical',
+    sprite: 'mob_beast',
+    drop_table: JSON.stringify([
+      { itemName: 'Lông Thú', chance: 0.6, minQuantity: 1, maxQuantity: 3 },
+      { itemName: 'Đá Linh Hồn', chance: 0.15, minQuantity: 1, maxQuantity: 2 },
+    ]),
+    map_id: 'bac_nguyen',
+    respawn_time: 30,
+  },
+  {
+    name: 'Sói Bắc Nguyên',
+    realm: 'pham_nhan',
+    hp: 120,
+    atk: 18,
+    def: 8,
+    speed: 5,
+    element: 'physical',
+    sprite: 'mob_wolf',
+    drop_table: JSON.stringify([
+      { itemName: 'Lông Thú', chance: 0.7, minQuantity: 2, maxQuantity: 4 },
+      { itemName: 'Đá Linh Hồn', chance: 0.2, minQuantity: 2, maxQuantity: 5 },
+    ]),
+    map_id: 'bac_nguyen',
+    respawn_time: 45,
+  },
+  {
+    name: 'Hỏa Hồ Yêu',
+    realm: 'luyen_khi',
+    hp: 200,
+    atk: 25,
+    def: 12,
+    speed: 6,
+    element: 'fire',
+    sprite: 'mob_fox',
+    drop_table: JSON.stringify([
+      { itemName: 'Đá Linh Hồn', chance: 0.4, minQuantity: 3, maxQuantity: 8 },
+      { itemName: 'Bình Hồi Máu Nhỏ', chance: 0.1, minQuantity: 1, maxQuantity: 1 },
+    ]),
+    map_id: 'bac_nguyen',
+    respawn_time: 60,
+  },
+];
