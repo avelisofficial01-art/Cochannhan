@@ -56,6 +56,7 @@ export function useSocket(): { isConnected: boolean } {
 
     socket.on('monster:spawn', (monsters: MonsterSprite[]) => {
       setMonsters(monsters);
+      // Also notify GameScene to render them (in case scene registers late)
     });
 
     socket.on('monster:dead', (data: { instanceId: string }) => {
@@ -87,29 +88,34 @@ export function useSocket(): { isConnected: boolean } {
     });
 
     // ── Map synchronization events ───────────────────
+    // Helper: emit to GameScene with retry (fixes race condition where socket
+    // connects before GameScene.create() registers its event listeners)
+    const emitToGameScene = (eventName: string, payload: unknown, maxRetries = 10): void => {
+      const tryEmit = (retriesLeft: number): void => {
+        const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
+        const scene = game?.scene.getScene('GameScene');
+        // Check if the scene is active and its event system is ready
+        if (scene && scene.sys.isActive()) {
+          scene.events.emit(eventName, payload);
+        } else if (retriesLeft > 0) {
+          // Retry after 200ms — scene might still be loading
+          setTimeout(() => tryEmit(retriesLeft - 1), 200);
+        }
+      };
+      tryEmit(maxRetries);
+    };
+
     socket.on('map:init', (data: { id: string; name: string; region: string; width: number; height: number; background: string }) => {
       useGameStore.getState().setMap(data.id);
-      const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
-      const scene = game?.scene.getScene('GameScene');
-      if (scene) {
-        scene.events.emit('map:init', data);
-      }
+      emitToGameScene('map:init', data);
     });
 
     socket.on('map:npcs', (npcs: Array<{ id: string; name: string; sprite: string; x: number; y: number; hasShop: boolean }>) => {
-      const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
-      const scene = game?.scene.getScene('GameScene');
-      if (scene) {
-        scene.events.emit('map:npcs', npcs);
-      }
+      emitToGameScene('map:npcs', npcs);
     });
 
     socket.on('map:portals', (portals: Array<{ id: string; from_x: number; from_y: number; portal_name: string; to_map_id: string; to_map_name: string; to_x: number; to_y: number }>) => {
-      const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
-      const scene = game?.scene.getScene('GameScene');
-      if (scene) {
-        scene.events.emit('map:portals', portals);
-      }
+      emitToGameScene('map:portals', portals);
     });
 
     return (): void => {

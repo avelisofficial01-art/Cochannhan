@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 7 — Polish & Stabilize
+**Sprint:** 8 — Critical Bug Fixes & H5 Gameplay Foundation
 
 **Status:** ✅ Completed
 
@@ -30,12 +30,26 @@
 | Sprint 5 | Equipment & Craft | ✅ Completed |
 | Sprint 6 | Chapter 1 Complete | ✅ Completed |
 | Sprint 7 | Polish & Stabilize | ✅ Completed |
+| Sprint 8 | Critical Bug Fixes | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 7 — Polish & Stabilize
+Current Module: ✅ Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation
+
+---
+
+# Sprint 8 Checklist
+
+## Critical Bug Fixes (S8.1)
+- [x] Fix **delta-time bug** — `delta` (ms) not divided by 1000, caused `moveSpeed×16` instead of `moveSpeed×0.016` per frame → teleport movement
+- [x] Fix **player spawn position** — `handleMapInit` now resets `playerX/Y` to map center (or server-provided spawn) instead of leaving player stuck at `(400,300)`
+- [x] Fix **race condition** — Socket `map:init/npcs/portals` emitted before `GameScene.create()` registered listeners. Fixed with `emitToGameScene()` retry helper (200ms interval, max 10 retries)
+- [x] Fix **GameScene late join** — Added `delayedCall(300ms)` in `create()` to re-emit `map:join` ensuring server resends all map state after scene is ready
+- [x] Fix **setPlayers Zustand bug** — `setPlayers` returned plain object instead of calling `set()`, so multiplayer positions never updated in store
+- [x] Fix **401 global redirect** — `api/client.ts` now clears localStorage and redirects to `/login` on any 401 response
+- [x] Fix **map lookup fallback** — `app.ts` falls back to 'Làng Cổ Thảo' then first available map when `'bac_nguyen_village'` not found in DB
 
 ---
 

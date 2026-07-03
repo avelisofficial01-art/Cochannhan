@@ -119,12 +119,12 @@ export const useGameStore = create<GameState>((set) => ({
       next.set(pos.accountId, pos);
       return { players: next };
     }),
-  setPlayers: (playerList): { players: Map<string, PlayerPosition> } => {
+  setPlayers: (playerList): void => {
     const next = new Map<string, PlayerPosition>();
     for (const p of playerList) {
       next.set(p.accountId, p);
     }
-    return { players: next };
+    set({ players: next });
   },
   setConnected: (connected): void => set({ isConnected: connected }),
   setMonsters: (monsters): void => set({ monsters }),

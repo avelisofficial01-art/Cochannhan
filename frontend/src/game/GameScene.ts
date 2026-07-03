@@ -85,7 +85,6 @@ export class GameScene extends Phaser.Scene {
    *  Create — build the scene from preloaded assets
    * ─────────────────────────────────────── */
   create(): void {
-    console.log('[GameScene] 🎮 Creating scene...');
     this.cameras.main.setBackgroundColor('#1a1a2e');
 
     /* ── Bind Socket.IO Map Events ── */
@@ -103,7 +102,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Camera follow
-    this.cameras.main.startFollow(this.playerSprite, true, 0.05, 0.05);
+    this.cameras.main.startFollow(this.playerSprite, true, 0.08, 0.08);
 
     /* ── Player name label ── */
     this.add
@@ -153,13 +152,28 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setAlpha(0.6);
+
+    /* ── Re-request map state after scene is fully initialized ──
+     * Socket may have connected and received map:init before GameScene.create()
+     * registered listeners. Re-emitting map:join ensures server re-sends all
+     * map:init, map:npcs, map:portals, and monster:spawn events.
+     */
+    this.time.delayedCall(300, () => {
+      const mapId = useGameStore.getState().currentMapId || 'bac_nguyen_village';
+      const joinBridge = (window as unknown as Record<string, (input: unknown) => void>).__socketEmitMapJoin;
+      if (joinBridge) {
+        joinBridge({ mapId });
+      }
+    });
   }
 
   /* ───────────────────────────────────────
    *  Update — called every frame
    * ─────────────────────────────────────── */
   update(_time: number, delta: number): void {
-    this.updatePlayerMovement(delta);
+    // delta is in milliseconds — convert to seconds for physics calculations
+    const deltaSec = delta / 1000;
+    this.updatePlayerMovement(deltaSec);
     this.updateAttackCooldown(delta);
     this.handleGuToggle();
     this.handleEquipToggle();
@@ -531,7 +545,7 @@ export class GameScene extends Phaser.Scene {
     this.gridGfx = gfx;
   }
 
-  private handleMapInit(data: { id: string; name: string; region: string; width: number; height: number; background: string }): void {
+  private handleMapInit(data: { id: string; name: string; region: string; width: number; height: number; background: string; spawnX?: number; spawnY?: number }): void {
     this.mapId = data.id;
     this.mapWidth = data.width;
     this.mapHeight = data.height;
@@ -539,6 +553,18 @@ export class GameScene extends Phaser.Scene {
     // Reset physics and camera bounds
     this.physics.world.setBounds(0, 0, data.width, data.height);
     this.cameras.main.setBounds(0, 0, data.width, data.height);
+
+    // Reset player to spawn position (default: map center)
+    const spawnX = data.spawnX ?? Math.round(data.width / 2);
+    const spawnY = data.spawnY ?? Math.round(data.height / 2);
+    this.playerX = spawnX;
+    this.playerY = spawnY;
+    if (this.playerSprite) {
+      this.playerSprite.setPosition(spawnX, spawnY);
+    }
+
+    // Re-attach camera follow on new map
+    this.cameras.main.startFollow(this.playerSprite, true, 0.1, 0.1);
 
     // Render map background
     if (this.mapImage) {
