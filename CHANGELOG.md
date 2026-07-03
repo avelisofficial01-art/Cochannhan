@@ -634,7 +634,7 @@ frontend/src/components/
 
 ---
 
-## Sprint 6: CHAPTER 1 — BẮC NGUYÊN (Partial) — 2026-07-04
+## Sprint 6: CHAPTER 1 — BẮC NGUYÊN ✅ — 2026-07-04
 
 ### Mục tiêu
 Hệ thống truyện (Story Flags), Đột phá tu luyện (Cultivation Breakthrough), Save System, và dữ liệu bản đồ Bắc Nguyên.
@@ -644,7 +644,7 @@ Hệ thống truyện (Story Flags), Đột phá tu luyện (Cultivation Breakth
 | ID | Nhiệm vụ | Trạng thái | Chi tiết |
 |----|----------|-----------|----------|
 | S6.1 | Story Engine | ✅ | Backend story flags CRUD hoàn chỉnh |
-| S6.2 | Chapter 1 Content | ⬜ DEFERRED | Dời sang Sprint 7 (content data) |
+| S6.2 | Chapter 1 Content | ✅ | 17 dialogues + 5 quest chain cho Chapter 1 |
 | S6.3 | Boss Bạch Lang Vương | ✅ | Boss AI 3-phase + story flag integration |
 | S6.4 | Cultivation Breakthrough | ✅ | Realm definitions + breakthrough logic |
 | S6.5 | Save System | ✅ | Auto/manual save với snapshot đầy đủ |
@@ -686,8 +686,24 @@ Hệ thống truyện (Story Flags), Đột phá tu luyện (Cultivation Breakth
 - [x] Clean Architecture: Route → Controller → Service → Repository
 - [x] 9 REST endpoints (story: 3, cultivation: 3, save: 4)
 - [x] Seed data: cultivation realms, Bắc Nguyên maps, NPCs, monsters, portals
-- [ ] Chapter 1 dialogue/quest content (DEFERRED → Sprint 7)
+- [x] Chapter 1 dialogue/quest content — 17 dialogues + 5 quests ✅
 - [x] Boss AI for Bạch Lang Vương
+
+### Chapter 1 Content (S6.2)
+- **17 Dialogues** cho 4 NPCs ở Làng Cổ Thảo:
+  - Trưởng làng: Intro, threat warning, quest accept, quest complete
+  - Trưởng lão: Prophecy, seal explanation, boss warning
+  - Thợ rèn: Equipment offer, quest, weapon reward
+  - Thương nhân: Shop intro, boss tips, rumor
+- **5 Quest Chain:**
+  1. Tỉnh Giấc Mộng — Talk to Trưởng làng → flag: `ch1_awakened`
+  2. Mối Đe Dọa Sói Tuyết — Kill 3 Sói Tuyết → flag: `ch1_wolves_hunted`
+  3. Lời Tiên Tri Cổ — Talk to Trưởng lão → flag: `ch1_prophecy_heard`
+  4. Hành Trình Lên Núi — Reach Đỉnh Băng Phong → flag: `ch1_reached_peak`
+  5. Bạch Lang Vương — Defeat boss → flag: `ch1_complete`
+- **Flag-based progression:** Mỗi quest mở khóa sau khi quest trước hoàn thành
+- **Choices:** Dialogue có nhánh lựa chọn (JSON)
+- **Seeds:** `dialogueSeeds` + `chapter1QuestSeeds` trong `config/index.ts`
 
 ### Boss Bạch Lang Vương (S6.3)
 - **File:** `backend/src/combat/boss-ai.ts`
@@ -707,4 +723,4 @@ Hệ thống truyện (Story Flags), Đột phá tu luyện (Cultivation Breakth
 - `backend/src/database/redis.ts`: Production mode — nếu không có `REDIS_URL` env → skip Redis, không cố connect
 - `backend/src/index.ts`: Check null trước khi ping, tránh crash khi Redis unavailable
 
-**Next: Sprint 7 — Polish & Stabilize + Chapter 1 dialogue/quest content**
+**Next: Sprint 7 — Polish & Stabilize**

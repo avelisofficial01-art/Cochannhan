@@ -12,11 +12,11 @@
 
 **Sprint:** 6 — Chapter 1 Complete: BẮC NGUYÊN
 
-**Status:** 🚧 In Progress (5/6 tasks — S6.2 content deferred to Sprint 7)
+**Status:** ✅ Completed (6/6 tasks)
 
 **Started:** 2026-07-04
 
-**Completed:** —
+**Completed:** 2026-07-04
 
 ---
 
@@ -30,14 +30,14 @@
 | Sprint 3 | Combat Core | ✅ Completed |
 | Sprint 4 | Gu System | ✅ Completed |
 | Sprint 5 | Equipment & Craft | ✅ Completed |
-| Sprint 6 | Chapter 1 Complete | 🚧 In Progress |
+| Sprint 6 | Chapter 1 Complete | ✅ Completed |
 | Sprint 7 | Polish & Stabilize | ⬜ Not Started |
 
 ---
 
 # Current Task
 
-Current Module: 🚧 Sprint 6 — Chapter 1 Complete: BẮC NGUYÊN (IN PROGRESS)
+Current Module: ✅ Sprint 6 — Chapter 1 Complete: BẮC NGUYÊN (COMPLETED)
 
 Next Module: Sprint 7 — Polish & Stabilize
 
@@ -57,9 +57,9 @@ Next Module: Sprint 7 — Polish & Stabilize
 - [x] Integration into combat service — auto-detect boss by name, phase transitions
 
 ## Chapter 1 Content (S6.2)
-- [ ] Dialogue data — Chapter 1 dialogue trees (DEFERRED to Sprint 7)
-- [ ] Quest chain — Chapter 1 quest sequence (DEFERRED to Sprint 7)
-- [ ] Cutscenes — Intro/transition cutscenes (DEFERRED to Sprint 7)
+- [x] Dialogue data — 17 dialogues for 4 NPCs (Trưởng làng, Trưởng lão, Thợ rèn, Thương nhân)
+- [x] Quest chain — 5 main quests (Tỉnh Giấc Mộng → Săn Sói → Lời Tiên Tri → Hành Trình → Bạch Lang Vương)
+- [x] Quest-dialogue integration — Flag-based progression: ch1_awakened → ch1_wolves_hunted → ch1_prophecy_heard → ch1_reached_peak → ch1_complete
 
 ## Cultivation Breakthrough (S6.4)
 - [x] cultivation_realms table — Realm definitions (1-9 Chuyển)

@@ -564,3 +564,260 @@ export const mapSpawnSeeds = [
   { map_ref: 'canhdong_tuyet', spawn_type: 'monster', spawn_ref: 'Thỏ Tuyết', x: 400, y: 1000, respawn_time: 20 },
   { map_ref: 'canhdong_tuyet', spawn_type: 'monster', spawn_ref: 'Gấu Trắng', x: 1800, y: 800, respawn_time: 45 },
 ];
+
+// ============================================================
+// SEED DATA — Chapter 1 Dialogues (Sprint 6)
+// ============================================================
+
+export const dialogueSeeds = [
+  // ─── Trưởng làng (Làng Cổ Thảo) ─────────────────────────
+  {
+    ref: 'dlg_village_chief_intro',
+    npc_ref: 'Trưởng làng',
+    order_index: 0,
+    text: 'Chào mừng ngươi đến Làng Cổ Thảo, lữ khách. Ta là trưởng làng nơi đây. Ngươi có vẻ mệt mỏi sau chặng đường dài — hãy nghỉ ngơi đã.',
+    speaker: 'Trưởng làng',
+    set_flag: 'ch1_intro_done',
+  },
+  {
+    ref: 'dlg_village_chief_threat',
+    npc_ref: 'Trưởng làng',
+    order_index: 1,
+    text: 'Thật không may, làng ta đang gặp nguy hiểm. Bầy Sói Tuyết từ Đồng Cỏ Hoang ngày càng hung hãn. Chúng đã tấn công mấy người dân trong làng rồi.',
+    speaker: 'Trưởng làng',
+    condition_flag: 'ch1_intro_done',
+    set_flag: 'ch1_threat_known',
+    choices: JSON.stringify([
+      { text: 'Để ta giúp!', next_dialogue_ref: 'dlg_village_chief_accept' },
+      { text: 'Kể thêm cho ta nghe...', next_dialogue_ref: 'dlg_village_chief_detail' },
+    ]),
+  },
+  {
+    ref: 'dlg_village_chief_detail',
+    npc_ref: 'Trưởng làng',
+    order_index: 2,
+    text: 'Đồng Cỏ Hoang nằm ở phía Đông ngôi làng. Ở đó có rất nhiều Sói Tuyết. Những thợ săn của làng không đủ sức chống lại chúng.',
+    speaker: 'Trưởng làng',
+  },
+  {
+    ref: 'dlg_village_chief_accept',
+    npc_ref: 'Trưởng làng',
+    order_index: 3,
+    text: 'Cảm ơn ngươi, lữ khách dũng cảm! Hãy đến Đồng Cỏ Hoang và tiêu diệt 3 con Sói Tuyết. Làng chúng ta sẽ mãi ghi ơn.',
+    speaker: 'Trưởng làng',
+    set_flag: 'ch1_quest_wolves_accepted',
+  },
+  {
+    ref: 'dlg_village_chief_thanks',
+    npc_ref: 'Trưởng làng',
+    order_index: 4,
+    text: 'Ngươi đã làm được! Làng chúng ta an toàn hơn rồi. Nhưng... ta e rằng vấn đề còn lớn hơn thế. Hãy đến gặp Trưởng lão — ông ấy có điều quan trọng muốn nói.',
+    speaker: 'Trưởng làng',
+    condition_flag: 'ch1_wolves_hunted',
+    set_flag: 'ch1_sent_to_elder',
+  },
+  // ─── Trưởng lão (Làng Cổ Thảo) ─────────────────────────
+  {
+    ref: 'dlg_elder_intro',
+    npc_ref: 'Trưởng lão',
+    order_index: 0,
+    text: 'Ta đã chờ ngươi... từ rất lâu rồi. Ngồi xuống đi, lữ khách.',
+    speaker: 'Trưởng lão',
+    set_flag: 'ch1_elder_met',
+  },
+  {
+    ref: 'dlg_elder_prophecy',
+    npc_ref: 'Trưởng lão',
+    order_index: 1,
+    text: 'Ngàn năm trước, một con yêu thú khổng lồ xuất hiện ở Đỉnh Băng Phong — Bạch Lang Vương. Nó bị phong ấn bởi một vị tu sĩ cổ đại. Nhưng bây giờ... phong ấn đang yếu dần.',
+    speaker: 'Trưởng lão',
+    condition_flag: 'ch1_sent_to_elder',
+    set_flag: 'ch1_prophecy_heard',
+    choices: JSON.stringify([
+      { text: 'Ta sẽ lên núi!', next_dialogue_ref: 'dlg_elder_bless' },
+      { text: 'Phong ấn là gì?', next_dialogue_ref: 'dlg_elder_seal' },
+    ]),
+  },
+  {
+    ref: 'dlg_elder_seal',
+    npc_ref: 'Trưởng lão',
+    order_index: 2,
+    text: 'Phong ấn là một trận pháp cổ xưa, dùng để giam giữ Bạch Lang Vương trên đỉnh núi. Nhưng sau ngàn năm, sức mạnh của nó đã suy yếu. Nếu không có ai ngăn chặn, nó sẽ thoát ra và hủy diệt cả vùng Bắc Nguyên.',
+    speaker: 'Trưởng lão',
+    set_flag: 'ch1_prophecy_heard',
+  },
+  {
+    ref: 'dlg_elder_bless',
+    npc_ref: 'Trưởng lão',
+    order_index: 3,
+    text: 'Dũng khí của ngươi khiến ta nhớ đến vị tu sĩ năm xưa. Hãy đến gặp Thợ rèn — ông ấy sẽ giúp ngươi chuẩn bị cho cuộc chiến. Đường lên Đỉnh Băng Phong rất nguy hiểm, qua Rừng Tuyết lạnh giá.',
+    speaker: 'Trưởng lão',
+    set_flag: 'ch1_sent_to_blacksmith',
+  },
+  {
+    ref: 'dlg_elder_warning',
+    npc_ref: 'Trưởng lão',
+    order_index: 4,
+    text: 'Hãy nhớ: Bạch Lang Vương có ba giai đoạn sức mạnh. Khi máu nó giảm xuống 70% và 40%, nó sẽ trở nên hung dữ hơn. Đừng chủ quan!',
+    speaker: 'Trưởng lão',
+    condition_flag: 'ch1_sent_to_blacksmith',
+  },
+  // ─── Thợ rèn (Làng Cổ Thảo) ──────────────────────────
+  {
+    ref: 'dlg_blacksmith_intro',
+    npc_ref: 'Thợ rèn',
+    order_index: 0,
+    text: 'Hừm, một gương mặt mới. Ta là thợ rèn của làng. Cần vũ khí hay giáp trụ gì không?',
+    speaker: 'Thợ rèn',
+    set_flag: 'ch1_blacksmith_met',
+  },
+  {
+    ref: 'dlg_blacksmith_quest',
+    npc_ref: 'Thợ rèn',
+    order_index: 1,
+    text: 'Ồ, Trưởng lão bảo ngươi đến à? Được rồi, ta sẽ rèn cho ngươi một món vũ khí. Nhưng trước hết, hãy lên Đỉnh Băng Phong và mang về cho ta một ít Đá Linh Hồn.',
+    speaker: 'Thợ rèn',
+    condition_flag: 'ch1_sent_to_blacksmith',
+    set_flag: 'ch1_blacksmith_quest',
+  },
+  {
+    ref: 'dlg_blacksmith_reward',
+    npc_ref: 'Thợ rèn',
+    order_index: 2,
+    text: 'Tốt lắm! Cầm lấy thanh kiếm này. Nó được tôi luyện từ băng hàn của Đỉnh Băng Phong — sẽ giúp ích cho ngươi trong trận chiến với Bạch Lang Vương.',
+    speaker: 'Thợ rèn',
+    condition_flag: 'ch1_reached_peak',
+    set_flag: 'ch1_got_weapon',
+  },
+  // ─── Thương nhân (Làng Cổ Thảo) ──────────────────────
+  {
+    ref: 'dlg_merchant_intro',
+    npc_ref: 'Thương nhân',
+    order_index: 0,
+    text: 'Chào khách! Hàng hóa của ta tốt nhất vùng Bắc Nguyên đấy. Bình máu, thức ăn, bản đồ — muốn gì cũng có!',
+    speaker: 'Thương nhân',
+  },
+  {
+    ref: 'dlg_merchant_tips',
+    npc_ref: 'Thương nhân',
+    order_index: 1,
+    text: 'Nghe nói ngươi định đối đầu với Bạch Lang Vương? Mang theo nhiều bình máu vào. Và nếu có Thảo Dược thì càng tốt — nó giải độc được đấy.',
+    speaker: 'Thương nhân',
+    condition_flag: 'ch1_prophecy_heard',
+  },
+  {
+    ref: 'dlg_merchant_rumor',
+    npc_ref: 'Thương nhân',
+    order_index: 2,
+    text: 'Ta nghe nói ở Rừng Tuyết có Gấu Trắng rất hung dữ. Nhưng da của chúng bán được giá lắm. Tiện đường thì săn vài con nhé!',
+    speaker: 'Thương nhân',
+  },
+];
+
+// ============================================================
+// SEED DATA — Chapter 1 Quests (Sprint 6)
+// ============================================================
+
+export const chapter1QuestSeeds = [
+  {
+    ref: 'q_ch1_awaken',
+    name: 'Tỉnh Giấc Mộng',
+    type: 'main',
+    description: 'Ngươi tỉnh dậy ở một ngôi làng xa lạ giữa vùng Bắc Nguyên băng giá. Hãy tìm Trưởng làng để biết mình đang ở đâu.',
+    npc_giver_ref: 'Trưởng làng',
+    objectives: JSON.stringify([
+      { type: 'talk', target: 'Trưởng làng', count: 1, description: 'Nói chuyện với Trưởng làng' },
+    ]),
+    rewards: JSON.stringify([
+      { type: 'gold', amount: 50 },
+      { type: 'exp', amount: 20 },
+    ]),
+    flag_complete: 'ch1_awakened',
+    min_realm: 1,
+  },
+  // Q2: Mối Đe Dọa Sói Tuyết
+  {
+    ref: 'q_ch1_wolves',
+    name: 'Mối Đe Dọa Sói Tuyết',
+    type: 'main',
+    description: 'Bầy Sói Tuyết đang đe dọa Làng Cổ Thảo. Hãy đến Đồng Cỏ Hoang và tiêu diệt 3 con Sói Tuyết để bảo vệ dân làng.',
+    npc_giver_ref: 'Trưởng làng',
+    prerequisites: JSON.stringify([
+      { type: 'flag', key: 'ch1_awakened' },
+    ]),
+    objectives: JSON.stringify([
+      { type: 'kill', target: 'Sói Tuyết', count: 3, description: 'Tiêu diệt Sói Tuyết ở Đồng Cỏ Hoang' },
+    ]),
+    rewards: JSON.stringify([
+      { type: 'gold', amount: 100 },
+      { type: 'exp', amount: 50 },
+      { type: 'item', item_ref: 'Thảo Dược', amount: 3 },
+    ]),
+    flag_complete: 'ch1_wolves_hunted',
+    min_realm: 1,
+  },
+  // Q3: Lời Tiên Tri Cổ
+  {
+    ref: 'q_ch1_prophecy',
+    name: 'Lời Tiên Tri Cổ',
+    type: 'main',
+    description: 'Trưởng làng bảo ngươi đến gặp Trưởng lão bộ lạc — ông ấy nắm giữ bí mật về mối đe dọa thực sự của vùng Bắc Nguyên.',
+    npc_giver_ref: 'Trưởng làng',
+    prerequisites: JSON.stringify([
+      { type: 'flag', key: 'ch1_wolves_hunted' },
+    ]),
+    objectives: JSON.stringify([
+      { type: 'talk', target: 'Trưởng lão', count: 1, description: 'Nghe lời tiên tri từ Trưởng lão' },
+    ]),
+    rewards: JSON.stringify([
+      { type: 'exp', amount: 50 },
+      { type: 'item', item_ref: 'Mảnh Bản Đồ', amount: 1 },
+    ]),
+    flag_complete: 'ch1_prophecy_heard',
+    min_realm: 1,
+  },
+  // Q4: Hành Trình Lên Núi
+  {
+    ref: 'q_ch1_journey',
+    name: 'Hành Trình Lên Núi',
+    type: 'main',
+    description: 'Con đường đến Đỉnh Băng Phong đi qua Rừng Tuyết nguy hiểm. Hãy vượt qua mọi chướng ngại và đặt chân lên đỉnh núi.',
+    npc_giver_ref: 'Thợ rèn',
+    prerequisites: JSON.stringify([
+      { type: 'flag', key: 'ch1_prophecy_heard' },
+    ]),
+    objectives: JSON.stringify([
+      { type: 'reach', target: 'dinh_bangphong', count: 1, description: 'Đến Đỉnh Băng Phong' },
+    ]),
+    rewards: JSON.stringify([
+      { type: 'gold', amount: 200 },
+      { type: 'exp', amount: 100 },
+      { type: 'item', item_ref: 'Kiếm Băng Hàn', amount: 1 },
+    ]),
+    flag_complete: 'ch1_reached_peak',
+    min_realm: 1,
+  },
+  // Q5: Bạch Lang Vương
+  {
+    ref: 'q_ch1_boss',
+    name: 'Bạch Lang Vương',
+    type: 'main',
+    description: 'Bạch Lang Vương — con yêu thú ngàn năm đang chờ trên Đỉnh Băng Phong. Đánh bại nó để giải thoát vùng Bắc Nguyên khỏi lời nguyền và mở khóa con đường tu luyện.',
+    npc_giver_ref: null,
+    prerequisites: JSON.stringify([
+      { type: 'flag', key: 'ch1_reached_peak' },
+    ]),
+    objectives: JSON.stringify([
+      { type: 'kill', target: 'Bạch Lang Vương', count: 1, description: 'Đánh bại Bạch Lang Vương' },
+    ]),
+    rewards: JSON.stringify([
+      { type: 'gold', amount: 500 },
+      { type: 'exp', amount: 300 },
+      { type: 'item', item_ref: 'Tinh Hoa Băng', amount: 1 },
+      { type: 'spirit_stone', amount: 10 },
+    ]),
+    flag_required: 'ch1_reached_peak',
+    flag_complete: 'ch1_complete',
+    min_realm: 1,
+  },
+];
