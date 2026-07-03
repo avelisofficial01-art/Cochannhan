@@ -10,13 +10,11 @@
 
 # Current Sprint
 
-**Sprint:** 6 — Chapter 1 Complete: BẮC NGUYÊN
+**Sprint:** 7 — Polish & Stabilize
 
-**Status:** ✅ Completed (6/6 tasks)
+**Status:** 🚧 In Progress (3/7 tasks)
 
 **Started:** 2026-07-04
-
-**Completed:** 2026-07-04
 
 ---
 
@@ -31,15 +29,42 @@
 | Sprint 4 | Gu System | ✅ Completed |
 | Sprint 5 | Equipment & Craft | ✅ Completed |
 | Sprint 6 | Chapter 1 Complete | ✅ Completed |
-| Sprint 7 | Polish & Stabilize | ⬜ Not Started |
+| Sprint 7 | Polish & Stabilize | 🚧 In Progress |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 6 — Chapter 1 Complete: BẮC NGUYÊN (COMPLETED)
+Current Module: 🚧 Sprint 7 — Polish & Stabilize
 
-Next Module: Sprint 7 — Polish & Stabilize
+---
+
+# Sprint 7 Checklist
+
+## Bug Fixing (S7.1)
+- [x] Socket URL — Từ `localhost:3000` cứng → dynamic origin (production-ready)
+- [x] Socket `player:attack` — Gọi `executePlayerAttack()` server-side (combat server-authoritative)
+- [x] Socket JWT verification — Token được verify bằng `jwt.verify()` khi connect
+- [x] Socket disconnect — Broadcast `player:left` cho các player trong map
+- [x] Frontend `player:left` handler — Xóa player khỏi store khi disconnect
+
+## Performance Optimization (S7.2)
+- [ ] Tối ưu socket sync, map rendering, database query
+
+## UI/UX Polish (S7.3)
+- [ ] Animation cơ bản, transition, loading state
+
+## Error Recovery (S7.4)
+- [ ] Xử lý disconnect, reconnect, data consistency
+
+## Admin Panel MVP (S7.5)
+- [ ] Quản lý người chơi, NPC, Quest cơ bản
+
+## Documentation (S7.6)
+- [ ] Cập nhật tất cả tài liệu sau MVP
+
+## Playtest (S7.7)
+- [ ] Internal playtest, thu thập feedback
 
 ---
 

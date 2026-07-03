@@ -18,7 +18,7 @@ export function useSocket(): { isConnected: boolean } {
   useEffect(() => {
     if (!token) return;
 
-    const socket = io('http://localhost:3000', {
+    const socket = io('/', {
       auth: {
         token,
         accountId: player?.id ?? '',
@@ -46,6 +46,12 @@ export function useSocket(): { isConnected: boolean } {
       setPlayers(data);
     });
 
+    socket.on('player:left', (data: { accountId: string }) => {
+      const currentMap = useGameStore.getState().players;
+      const asArray = Array.from(currentMap.values());
+      setPlayers(asArray.filter((p) => p.accountId !== data.accountId));
+    });
+
     // ── Combat events ────────────────────────────────
 
     socket.on('monster:spawn', (monsters: MonsterSprite[]) => {
@@ -58,22 +64,22 @@ export function useSocket(): { isConnected: boolean } {
       ));
     });
 
-    socket.on('monster:update', (data: MonsterSprite) => {
+    socket.on('monster:update', (data: { instanceId: string; currentHp: number; maxHp: number }) => {
       const current = useGameStore.getState().monsters;
       const idx = current.findIndex((m) => m.instanceId === data.instanceId);
       if (idx >= 0) {
         const updated = [...current];
-        updated[idx] = { ...updated[idx], ...data };
+        updated[idx] = { ...updated[idx], currentHp: data.currentHp, maxHp: data.maxHp };
         setMonsters(updated);
       }
     });
 
-    socket.on('combat:result', (data: { damage: number; isCritical: boolean; targetX: number; targetY: number }) => {
+    socket.on('combat:result', (data: { damage: number; isCritical: boolean }) => {
       const result: CombatResult = {
         damage: data.damage,
         isCritical: data.isCritical,
-        targetX: data.targetX,
-        targetY: data.targetY,
+        targetX: 0,
+        targetY: 0,
       };
       setCombatResult(result);
       // Auto-clear after 1.2s (animation duration)

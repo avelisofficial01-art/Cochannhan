@@ -21,6 +21,8 @@ import cultivationRouter from './cultivation/cultivation.controller.js';
 import saveRouter from './save/save.controller.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { config } from './config/index.js';
+import jwt from 'jsonwebtoken';
+import * as combatService from './combat/combat.service.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -102,7 +104,7 @@ if (config.nodeEnv === 'production') {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// ─── Socket.IO: Player Movement ──────────────────────────────
+// ─── Socket.IO: Player Movement & Combat ────────────────────
 
 interface PlayerPosition {
   accountId: string;
@@ -116,19 +118,30 @@ interface PlayerPosition {
 const playerPositions = new Map<string, PlayerPosition>();
 
 io.on('connection', (socket) => {
-  // Authentication: expect JWT token in handshake auth
+  // Authentication: verify JWT token from handshake auth
   const token = socket.handshake.auth?.token as string | undefined;
   if (!token) {
     socket.disconnect(true);
     return;
   }
 
-  // Token will be verified by the auth middleware; for now store the raw info
-  const accountId = socket.handshake.auth?.accountId as string | undefined;
+  let accountId: string;
+  try {
+    const payload = jwt.verify(token, config.jwt.secret) as { accountId: string };
+    accountId = payload.accountId;
+  } catch {
+    socket.disconnect(true);
+    return;
+  }
+
+  const playerId = socket.handshake.auth?.playerId as string | undefined;
+  const playerName = socket.handshake.auth?.playerName as string | undefined;
   if (!accountId) {
     socket.disconnect(true);
     return;
   }
+
+  let currentMapId = 'bac_nguyen_village';
 
   socket.join(`account:${accountId}`);
 
@@ -136,14 +149,15 @@ io.on('connection', (socket) => {
   socket.on('player:move', (data: { mapId: string; x: number; y: number }) => {
     const pos: PlayerPosition = {
       accountId,
-      playerId: socket.handshake.auth.playerId as string ?? '',
-      name: socket.handshake.auth.playerName as string ?? 'Unknown',
+      playerId: playerId ?? '',
+      name: playerName ?? 'Unknown',
       mapId: data.mapId,
       x: data.x,
       y: data.y,
     };
 
     playerPositions.set(accountId, pos);
+    currentMapId = data.mapId;
 
     // Broadcast to all players in the same map
     socket.to(`map:${data.mapId}`).emit('player:update', pos);
@@ -153,6 +167,7 @@ io.on('connection', (socket) => {
   // Join map room
   socket.on('map:join', (mapId: string) => {
     socket.join(`map:${mapId}`);
+    currentMapId = mapId;
 
     // Send current players in map
     const playersInMap: PlayerPosition[] = [];
@@ -171,22 +186,39 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     playerPositions.delete(accountId);
+    // Broadcast player left to current map room
+    socket.to(`map:${currentMapId}`).emit('player:left', { accountId });
   });
 
-  // ── Combat: Player Attack ──────────────────────────────
-  socket.on('player:attack', (data: { targetInstanceId: string }) => {
-    const playerId = socket.handshake.auth.playerId as string;
+  // ── Combat: Player Attack (server-authoritative) ─────────
+  socket.on('player:attack', async (data: { targetInstanceId: string }) => {
     if (!playerId || !data.targetInstanceId) return;
 
-    // Verify token
-    if (!token) return;
+    // Execute server-authoritative combat
+    const result = await combatService.executePlayerAttack(playerId, data.targetInstanceId);
+    if (!result) return;
 
-    // Attack logic handled by combat service
-    // For real-time, emit to map room for rendering
-    socket.to(`map:${socket.handshake.auth.currentMap as string ?? 'bac_nguyen_village'}`).emit('combat:attack', {
-      attackerId: playerId,
-      targetInstanceId: data.targetInstanceId,
+    // Emit damage to attacker
+    socket.emit('combat:result', {
+      damage: result.damage,
+      isCritical: result.isCritical,
+      targetX: 0, // will be filled from monster position by client
+      targetY: 0,
     });
+
+    // If monster defeated, emit death to all players in map
+    if (result.targetDefeated) {
+      io.to(`map:${currentMapId}`).emit('monster:dead', {
+        instanceId: data.targetInstanceId,
+      });
+    } else {
+      // Emit HP update to all players
+      io.to(`map:${currentMapId}`).emit('monster:update', {
+        instanceId: data.targetInstanceId,
+        currentHp: result.targetHpRemaining,
+        maxHp: result.targetMaxHp,
+      });
+    }
   });
 });
 

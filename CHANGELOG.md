@@ -301,6 +301,30 @@ backend/src/
 | `backend/src/middleware/auth.ts` | Added `authenticate` export alias + `resolvePlayer` middleware |
 | `backend/src/auth/auth.route.ts` | Fixed import: `authMiddleware` → `authenticate` |
 | `backend/src/player/player.route.ts` | Fixed import: `authMiddleware` → `authenticate` |
+
+---
+
+## Sprint 7: POLISH & STABILIZE — 2026-07-04
+
+### Mục tiêu
+Sửa bug critical, tối ưu performance, polish UI/UX, đảm bảo production readiness.
+
+### S7.1 — Bug Fixing ✅ (3 bugs fixed)
+
+| Bug | File(s) | Fix |
+|-----|---------|-----|
+| Socket URL hardcoded `localhost:3000` | `frontend/src/hooks/useSocket.ts` | Dùng dynamic origin → production-ready |
+| `player:attack` không gọi combat server-side | `backend/src/app.ts` | Socket handler gọi `executePlayerAttack()`, verify JWT, emit `monster:dead`/`monster:update`/`combat:result` |
+| Socket không verify JWT | `backend/src/app.ts` | Thêm `jwt.verify(token, config.jwt.secret)` trong `connection` handler |
+| Disconnect không broadcast | `backend/src/app.ts` | `socket.on('disconnect')` → emit `player:left` đến map room |
+| Frontend không xử lý `player:left` | `frontend/src/hooks/useSocket.ts` | Thêm listener `player:left` → xóa player khỏi store |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `frontend/src/hooks/useSocket.ts` | Socket URL dynamic, player:left handler, attack flow |
+| `backend/src/app.ts` | JWT verify, combat server-authoritative, disconnect broadcast |
 | `backend/src/world/world.route.ts` | Fixed import: `authMiddleware` → `authenticate` |
 
 ### Xác nhận
