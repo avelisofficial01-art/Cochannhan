@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, resolvePlayer } from '../middleware/auth.js';
 import {
   getAllTemplates,
   getTemplateById,
@@ -16,11 +16,11 @@ const router = Router();
 router.get('/templates', getAllTemplates);
 router.get('/templates/:id', getTemplateById);
 
-// Protected
-router.get('/player', authenticate, getPlayerEquipment);
-router.post('/give', authenticate, giveEquipment);
-router.post('/equip', authenticate, equipEquipment);
-router.post('/unequip', authenticate, unequipEquipment);
-router.post('/enhance', authenticate, enhanceEquipment);
+// Protected — resolvePlayer populates req.playerId
+router.get('/player', authenticate, resolvePlayer, getPlayerEquipment);
+router.post('/give', authenticate, resolvePlayer, giveEquipment);
+router.post('/equip', authenticate, resolvePlayer, equipEquipment);
+router.post('/unequip', authenticate, resolvePlayer, unequipEquipment);
+router.post('/enhance', authenticate, resolvePlayer, enhanceEquipment);
 
 export default router;

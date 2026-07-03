@@ -826,12 +826,16 @@ Khắc phục triệt để các root cause bug khiến gameplay H5 không hoạ
 | Bug | Root Cause | Fix |
 |-----|-----------|-----|
 | Di chuyển "teleport" | `delta` (milliseconds) nhân thẳng với `moveSpeed=200` → di chuyển 16000px/frame thay vì 3.2px/frame | Chia `delta / 1000` trước khi nhân với speed trong `updatePlayerMovement()` |
-| Map không hiện | Socket `map:init` đến TRƯỚC khi `GameScene.create()` đăng ký listener → event bị mất | Thêm `emitToGameScene()` retry helper (200ms, max 10 lần) trong `useSocket.ts` |
+| Map không hiện | Socket `map:init` đến TRƯỚC khi `GameScene.create()` đăng ký listener → event bị mất | Thêm `emitToGameScene()` retry helper (100ms, max 30 lần) trong `useSocket.ts` |
 | Nhân vật đứng giữa màn hình | `handleMapInit` không reset `playerX/Y` khi bản đồ thay đổi → player ở vị trí init `(400,300)` bất kể bản đồ nào | Reset `playerX/Y` đến `(width/2, height/2)` và gọi `startFollow` lại trong `handleMapInit()` |
 | Bản đồ không load lần đầu | `GameScene.create()` chạy sau khi socket đã nhận và bỏ `map:init` | `delayedCall(300ms)` trong `create()` tự động gọi `map:join` lại sau khi scene sẵn sàng |
 | Multiplayer list không cập nhật | `setPlayers` trong Zustand `return { players: next }` thay vì gọi `set()` | Sửa thành `set({ players: next })` |
 | Token loop 401 | Frontend không tự logout khi token hết hạn → lặp API 401 vô hạn | Toàn bộ fetch 401 trong `api/client.ts` sẽ xóa localStorage và redirect `/login` |
 | Map lookup fail | Server map `'bac_nguyen_village'` không có trong DB (tên thực là `'Làng Cổ Thảo'`) | Fallback chain: exact → 'Làng Cổ Thảo' → first map in DB |
+| Lỗi 404 quest/player/active | Khai báo route `:id` (wildcard) trước các route cụ thể → Express map 'player' thành `:id` | Reorder khai báo route trong `quest.route.ts` đưa route cụ thể lên trước |
+| Thiếu Player Character | Tài khoản mới đăng ký/chưa tạo nhân vật kết nối socket với `playerId = ""` khiến socket logic của server trả về early | Thêm logic tự động tạo nhân vật mặc định (theo username của account) trên cả login HTTP API, Socket connection, và GamePage frontend mount |
+| Lỗi 401 gu/player và equipment/player | Thiếu middleware `resolvePlayer` tại các file route tương ứng dẫn đến `req.playerId` bị undefined | Bổ sung `resolvePlayer` sau `authenticate` cho tất cả các route của Gu và Trang Bị |
+| Thiếu DB diagnostics trong prod | Khó kiểm chứng DB seeding thành công hay thất bại trên môi trường Render | Nâng cấp API `/api/health` truy vấn trực tiếp và trả về số lượng bản ghi của Maps, NPCs, Monsters, Quests |
 
 ### Files modified
 
@@ -841,9 +845,15 @@ Khắc phục triệt để các root cause bug khiến gameplay H5 không hoạ
 | `frontend/src/hooks/useSocket.ts` | `emitToGameScene()` retry helper thay thế direct scene.events.emit |
 | `frontend/src/store/gameStore.ts` | Fix `setPlayers` Zustand action (return → set) |
 | `frontend/src/api/client.ts` | Global 401 handler: clear token + redirect to /login |
-| `backend/src/app.ts` | Map lookup fallback chain |
+| `backend/src/app.ts` | Map lookup fallback chain, async socket connection, DB resolution of playerId/playerName, auto-create player on socket conn, health stats database count query |
+| `backend/src/auth/auth.service.ts` | Auto-create player on successful login if character not found |
+| `backend/src/quest/quest.route.ts` | Reorder Express endpoints, placing specific player/flags routes before wildcard |
+| `backend/src/gu/gu.route.ts` | Add `resolvePlayer` middleware to player routes |
+| `backend/src/equipment/equipment.route.ts` | Add `resolvePlayer` middleware to player routes |
+| `frontend/src/pages/GamePage.tsx` | Fetch profile on mount and auto-create character if profile returns 404 |
 
 ### Xác nhận
 - [x] Typecheck: 0 lỗi (shared + backend + frontend)
 - [x] Lint: 0 errors
 - [x] Build: `npm run build` thành công
+

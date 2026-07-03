@@ -45,11 +45,15 @@ Current Module: ✅ Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation
 ## Critical Bug Fixes (S8.1)
 - [x] Fix **delta-time bug** — `delta` (ms) not divided by 1000, caused `moveSpeed×16` instead of `moveSpeed×0.016` per frame → teleport movement
 - [x] Fix **player spawn position** — `handleMapInit` now resets `playerX/Y` to map center (or server-provided spawn) instead of leaving player stuck at `(400,300)`
-- [x] Fix **race condition** — Socket `map:init/npcs/portals` emitted before `GameScene.create()` registered listeners. Fixed with `emitToGameScene()` retry helper (200ms interval, max 10 retries)
+- [x] Fix **race condition** — Socket `map:init/npcs/portals` emitted before `GameScene.create()` registered listeners. Fixed with `emitToGameScene()` retry helper (100ms interval, max 30 retries)
 - [x] Fix **GameScene late join** — Added `delayedCall(300ms)` in `create()` to re-emit `map:join` ensuring server resends all map state after scene is ready
 - [x] Fix **setPlayers Zustand bug** — `setPlayers` returned plain object instead of calling `set()`, so multiplayer positions never updated in store
 - [x] Fix **401 global redirect** — `api/client.ts` now clears localStorage and redirects to `/login` on any 401 response
 - [x] Fix **map lookup fallback** — `app.ts` falls back to 'Làng Cổ Thảo' then first available map when `'bac_nguyen_village'` not found in DB
+- [x] Fix **missing player auto-creation** — Auto-create character for accounts without a player record on login, socket connection, and frontend mount
+- [x] Fix **Express routing 404** — Reordered routes in `quest.route.ts` so specific `/player/active` and `/flags` endpoints are registered before wildcard `/:id` route
+- [x] Fix **missing resolvePlayer 401s** — Added `resolvePlayer` middleware to `gu.route.ts` and `equipment.route.ts` to correctly populate `req.playerId`
+- [x] Enhance **database diagnostics** — Extended `/api/health` to return table counts, allowing immediate verification of seeding status in production
 
 ---
 

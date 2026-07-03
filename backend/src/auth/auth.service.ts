@@ -102,9 +102,21 @@ export async function login(input: LoginInput): Promise<{ tokens: TokenPair; pla
     .from(players)
     .where(eq(players.account_id, account.id));
 
+  let resolvedPlayer = player;
+  if (!resolvedPlayer) {
+    const { createPlayer } = await import('../player/player.service.js');
+    const newPlayer = await createPlayer(account.id, { name: account.username });
+    resolvedPlayer = {
+      id: newPlayer.id,
+      name: newPlayer.name,
+      realm: newPlayer.realm,
+      daoId: newPlayer.daoId,
+    };
+  }
+
   return {
     tokens: { token, refreshToken },
-    player: player ?? null,
+    player: resolvedPlayer,
   };
 }
 

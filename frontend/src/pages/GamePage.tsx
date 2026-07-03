@@ -5,6 +5,8 @@ import { PreloadScene } from '../game/PreloadScene.js';
 import { GameScene } from '../game/GameScene.js';
 import { UIScene } from '../game/UIScene.js';
 import { useSocket } from '../hooks/useSocket.js';
+import { useAuthStore } from '../store/auth.js';
+import { api } from '../api/client.js';
 import GuPanel from '../components/GuPanel.js';
 import EquipmentPanel from '../components/EquipmentPanel.js';
 import CraftPanel from '../components/CraftPanel.js';
@@ -15,6 +17,28 @@ export default function GamePage(): React.ReactElement {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { isConnected } = useSocket();
+  const { player, setPlayer } = useAuthStore();
+
+  useEffect(() => {
+    if (!player) {
+      api.getProfile()
+        .then((res) => {
+          if (res.data) {
+            setPlayer({ id: res.data.id, name: res.data.name });
+          }
+        })
+        .catch(() => {
+          // If profile returns 404, auto-create player
+          api.createPlayer('Hành giả')
+            .then((res) => {
+              if (res.data?.player) {
+                setPlayer({ id: res.data.player.id, name: res.data.player.name });
+              }
+            })
+            .catch(() => {});
+        });
+    }
+  }, [player, setPlayer]);
 
   useEffect(() => {
     if (!containerRef.current || gameRef.current) return;

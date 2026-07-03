@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { db } from './database/connection.js';
-import { worldMaps, mapPortals, mapSpawns, monsterTemplates, npcTemplates } from './database/schema/index.js';
+import { worldMaps, mapPortals, mapSpawns, monsterTemplates, npcTemplates, questTemplates, players } from './database/schema/index.js';
 import { eq, or } from 'drizzle-orm';
 import authRouter from './auth/auth.route.js';
 import playerRouter from './player/player.route.js';
@@ -96,11 +96,34 @@ app.use('/api/cultivation', cultivationRouter);
 app.use('/api/save', saveRouter);
 
 // Health check
-app.get('/api/health', (_req, res) => {
-  res.json({
-    success: true,
-    data: { status: 'ok', timestamp: new Date().toISOString() },
-  });
+app.get('/api/health', async (_req, res) => {
+  try {
+    const [mapsCount, npcsCount, monstersCount, questsCount] = await Promise.all([
+      db.select().from(worldMaps).then(r => r.length),
+      db.select().from(npcTemplates).then(r => r.length),
+      db.select().from(monsterTemplates).then(r => r.length),
+      db.select().from(questTemplates).then(r => r.length),
+    ]).catch(() => [0, 0, 0, 0]);
+
+    res.json({
+      success: true,
+      data: {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        database: {
+          maps: mapsCount,
+          npcs: npcsCount,
+          monsters: monstersCount,
+          quests: questsCount,
+        }
+      },
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 });
 
 // Serve frontend static files in production
@@ -131,7 +154,7 @@ interface PlayerPosition {
 
 const playerPositions = new Map<string, PlayerPosition>();
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   // Authentication: verify JWT token from handshake auth
   const token = socket.handshake.auth?.token as string | undefined;
   if (!token) {
@@ -148,11 +171,34 @@ io.on('connection', (socket) => {
     return;
   }
 
-  const playerId = socket.handshake.auth?.playerId as string | undefined;
-  const playerName = socket.handshake.auth?.playerName as string | undefined;
   if (!accountId) {
     socket.disconnect(true);
     return;
+  }
+
+  let playerId = socket.handshake.auth?.playerId as string | undefined;
+  let playerName = socket.handshake.auth?.playerName as string | undefined;
+
+  // Resolve player from DB using verified accountId
+  try {
+    const [dbPlayer] = await db
+      .select()
+      .from(players)
+      .where(eq(players.account_id, accountId))
+      .limit(1);
+    if (dbPlayer) {
+      playerId = dbPlayer.id;
+      playerName = dbPlayer.name;
+    } else {
+      // Auto-create player if not exists
+      const { createPlayer } = await import('./player/player.service.js');
+      const payload = jwt.verify(token, config.jwt.secret) as { accountId: string; username: string };
+      const newPlayer = await createPlayer(accountId, { name: payload.username || 'Unknown' });
+      playerId = newPlayer.id;
+      playerName = newPlayer.name;
+    }
+  } catch (err) {
+    console.error('[Socket] Failed to resolve/create player from DB:', err);
   }
 
   let currentMapId = 'bac_nguyen_village';
