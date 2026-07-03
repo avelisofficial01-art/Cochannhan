@@ -373,18 +373,23 @@ Hệ thống chiến đấu real-time (ARPG style): Combat Engine, Monster modul
 | S3.2 | Monster module | ✅ | Monster template CRUD, spawn, AI, drop table — backend/src/monster/ |
 | S3.3 | Monster spawning | ✅ | Socket events: monster:spawn, monster:update, monster:dead |
 | S3.4 | Player attack flow | ✅ | Socket: player:attack → Server validate damage → Sync |
-| S3.5 | Combat UI | ⬜ | Frontend HP bar, damage numbers, cooldown indicators (pending) |
+| S3.5 | Combat UI | ✅ | Frontend HP bar, damage numbers, cooldown indicators — frontend/src/game/GameScene.ts |
 | S3.6 | Drop system | ✅ | Drop table → item:drop event → auto-pickup (in combat.service.ts) |
 | S3.7 | Combat log | ✅ | combat_logs table + repository for analysis |
 
 ### Files created
 
 ```
-shared/src/combat/
-  ├── types.ts                    # CombatResult, DamageInput, MonsterInstance (Phaser-sync), CombatStats, DropEntry
-  ├── damage-calculator.ts        # Damage formula: (Base ATK) × Critical × Element - Defense, pierce/block/leech
-  ├── status-effect.ts            # 10 status effects: Poison, Bleed, Burn, Freeze, Stun, Weaken, etc.
-  └── index.ts                    # Barrel export
+frontend/src/game/GameScene.ts   # Monster rendering, HP bars, floating damage numbers, attack cooldown bar
+frontend/src/hooks/useSocket.ts  # Added combat socket listeners (monster:spawn/dead/update, combat:result)
+frontend/src/store/gameStore.ts  # Added MonsterSprite, CombatResult state + combat actions
+
+shared/
+  └── src/combat/
+      ├── types.ts                    # CombatResult, DamageInput, MonsterInstance (Phaser-sync), CombatStats, DropEntry
+      ├── damage-calculator.ts        # Damage formula: (Base ATK) × Critical × Element - Defense, pierce/block/leech
+      ├── status-effect.ts            # 10 status effects: Poison, Bleed, Burn, Freeze, Stun, Weaken, etc.
+      └── index.ts                    # Barrel export
 
 backend/src/monster/
   ├── monster.schema.ts           # Zod: createMonsterSchema, spawnMonstersSchema
@@ -412,13 +417,15 @@ backend/src/combat/
 
 ### Xác nhận
 
-- [x] Typecheck: 0 lỗi (shared + backend)
+- [x] Typecheck: 0 lỗi (shared + backend + frontend)
 - [x] Lint: 0 errors, 52 warnings (chỉ explicit-function-return-type — consistent với codebase)
-- [x] Build: backend `tsc --noEmit` pass
+- [x] Build: backend + frontend compile OK
 - [x] Damage formula theo SYSTEM_BIBLE: (Base ATK) × Critical × Element - Defense
 - [x] Status effect system hỗ trợ 10 loại status
 - [x] Monster template seed: 3 monsters cho Bắc Nguyên (Quái Thú, Sói, Hỏa Hồ Yêu)
 - [x] Combat hoàn toàn xử lý trong RAM (in-memory), chỉ log để phân tích
+- [x] Frontend: Monster sprites + HP bars + floating damage numbers + attack cooldown bar (spacebar)
+- [x] Socket.IO real-time: monster:spawn, monster:dead, monster:update, combat:result, item:drop
 
 ### Bug fixes trong quá trình verify
 
@@ -433,6 +440,7 @@ backend/src/combat/
 | `combat.controller.ts` | `success()`/`error()` missing `res` first arg | Fixed all calls |
 
 ### Ghi chú
-- S3.5 (Frontend Combat UI) pending — cần PhaserJS HP bar, damage numbers, cooldown indicators
+- ✅ Sprint 3 COMPLETED — toàn bộ 7/7 tasks hoàn thành
 - Cần chạy `drizzle-kit push` sau khi deploy để tạo monster_templates + combat_logs tables
 - Monster AI sử dụng simple tick-based approach (không pathfinding phức tạp ở Sprint 3)
+- Combat UI: SPACE để attack monster gần nhất (bán kính 100px), cooldown 1s

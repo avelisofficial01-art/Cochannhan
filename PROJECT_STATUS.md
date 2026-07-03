@@ -12,7 +12,7 @@
 
 **Sprint:** 3 — Combat Core
 
-**Status:** 🔄 In Progress (2026-07-04)
+**Status:** ✅ Completed (2026-07-04)
 
 **Started:** 2026-07-04
 
@@ -27,7 +27,7 @@
 | Sprint 0 | Foundation | ✅ Completed |
 | Sprint 1 | Core Infrastructure | ✅ Completed |
 | Sprint 2 | NPC & Quest | ✅ Completed |
-| Sprint 3 | Combat Core | 🔄 In Progress |
+| Sprint 3 | Combat Core | ✅ Completed |
 | Sprint 4 | Gu System | ⬜ Not Started |
 | Sprint 5 | Equipment & Craft | ⬜ Not Started |
 | Sprint 6 | Chapter 1 Complete | ⬜ Not Started |
@@ -37,7 +37,7 @@
 
 # Current Task
 
-Current Module: 🔄 Sprint 3 — Combat Core (backend done, frontend pending)
+Current Module: ✅ Sprint 3 — Combat Core (COMPLETED)
 
 Next Module: Sprint 4 — Gu System
 
@@ -65,7 +65,7 @@ Next Module: Sprint 4 — Gu System
 - [x] Seed data: 3 monster templates for Bắc Nguyên
 
 ## Frontend
-- [ ] Combat UI — HP bar, damage numbers, cooldown indicators (S3.5 pending)
+- [x] Combat UI — HP bar, damage numbers, cooldown indicators (S3.5 ✅)
 
 ## Monsters for Bắc Nguyên
 
@@ -209,24 +209,20 @@ Next Module: Sprint 4 — Gu System
 
 # Next Task
 
-→ **Hoàn thành Sprint 3** — Frontend Combat UI (S3.5) + build/lint/typecheck
-
-Sprint 3 backend hoàn thành. Cần thêm Combat UI (Frontend) để đánh dấu completed.
+→ **Sprint 4 — Gu System** (Gu template, equip/unequip, enhancement, synergy, skills, crafting)
 
 ---
 
 # Last Completed Task
 
-**2026-07-03**: Sprint 0 — Foundation completed & verified.
-- Monorepo initialized (3 packages: shared, backend, frontend)
-- npm install successful (293 packages)
-- Typecheck: 0 errors across all 3 workspaces
-- Lint: 0 errors, 0 warnings
-- Docker Compose with PostgreSQL 17 + Redis
-- Database schema: accounts, account_sessions, players (Drizzle ORM)
-- Auth module: Register, Login, Refresh Token, Logout
-- Frontend: Login + Register pages with TailwindCSS
-- CI/CD: GitHub Actions (Lint + TypeCheck)
+**2026-07-04**: Sprint 3 — Combat Core completed & verified.
+- Shared Combat Engine: Damage Calculator (SYSTEM_BIBLE formula), Status Effects (10 types)
+- Backend: Monster CRUD + Combat Engine (in-memory) + Socket.IO real-time combat
+- Database: monster_templates + combat_logs tables
+- Frontend: Monster sprites, HP bars, damage numbers (floating text), attack cooldown (spacebar)
+- Seed data: 3 monsters for Bắc Nguyên (Quái Thú Hoang Dã, Sói Bắc Nguyên, Hỏa Hồ Yêu)
+- Typecheck: 0 errors (shared + backend + frontend)
+- Lint: 0 errors, 52 warnings (pre-existing)
 
 ---
 
