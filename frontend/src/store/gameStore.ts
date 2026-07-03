@@ -9,18 +9,40 @@ interface PlayerPosition {
   y: number;
 }
 
+export interface MonsterSprite {
+  instanceId: string;
+  templateId: string;
+  name: string;
+  currentHp: number;
+  maxHp: number;
+  x: number;
+  y: number;
+  sprite: string;
+}
+
+export interface CombatResult {
+  damage: number;
+  isCritical: boolean;
+  targetX: number;
+  targetY: number;
+}
+
 interface GameState {
   currentMapId: string;
   playerX: number;
   playerY: number;
   players: Map<string, PlayerPosition>;
   isConnected: boolean;
+  monsters: MonsterSprite[];
+  combatResult: CombatResult | null;
 
   setPosition: (x: number, y: number) => void;
   setMap: (mapId: string) => void;
   updatePlayer: (pos: PlayerPosition) => void;
   setPlayers: (players: PlayerPosition[]) => void;
   setConnected: (connected: boolean) => void;
+  setMonsters: (monsters: MonsterSprite[]) => void;
+  setCombatResult: (result: CombatResult | null) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -29,6 +51,8 @@ export const useGameStore = create<GameState>((set) => ({
   playerY: 0,
   players: new Map(),
   isConnected: false,
+  monsters: [],
+  combatResult: null,
 
   setPosition: (x, y): void => set({ playerX: x, playerY: y }),
   setMap: (mapId): void => set({ currentMapId: mapId }),
@@ -46,4 +70,6 @@ export const useGameStore = create<GameState>((set) => ({
     return { players: next };
   },
   setConnected: (connected): void => set({ isConnected: connected }),
+  setMonsters: (monsters): void => set({ monsters }),
+  setCombatResult: (result): void => set({ combatResult: result }),
 }));
