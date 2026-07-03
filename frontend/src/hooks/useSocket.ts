@@ -86,6 +86,32 @@ export function useSocket(): { isConnected: boolean } {
       setTimeout(() => setCombatResult(null), 1200);
     });
 
+    // ── Map synchronization events ───────────────────
+    socket.on('map:init', (data: { id: string; name: string; region: string; width: number; height: number; background: string }) => {
+      useGameStore.getState().setMap(data.id);
+      const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
+      const scene = game?.scene.getScene('GameScene');
+      if (scene) {
+        scene.events.emit('map:init', data);
+      }
+    });
+
+    socket.on('map:npcs', (npcs: Array<{ id: string; name: string; sprite: string; x: number; y: number; hasShop: boolean }>) => {
+      const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
+      const scene = game?.scene.getScene('GameScene');
+      if (scene) {
+        scene.events.emit('map:npcs', npcs);
+      }
+    });
+
+    socket.on('map:portals', (portals: Array<{ id: string; from_x: number; from_y: number; portal_name: string; to_map_id: string; to_map_name: string; to_x: number; to_y: number }>) => {
+      const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
+      const scene = game?.scene.getScene('GameScene');
+      if (scene) {
+        scene.events.emit('map:portals', portals);
+      }
+    });
+
     return (): void => {
       socket.disconnect();
       socketRef.current = null;
@@ -103,6 +129,15 @@ export function useSocket(): { isConnected: boolean } {
     [setPosition],
   );
 
+  const emitMapJoin = useCallback(
+    (input: string | { mapId: string; x?: number; y?: number }): void => {
+      const socket = socketRef.current;
+      if (!socket?.connected) return;
+      socket.emit('map:join', input);
+    },
+    [],
+  );
+
   const emitAttack = useCallback(
     (instanceId: string): void => {
       const socket = socketRef.current;
@@ -115,12 +150,14 @@ export function useSocket(): { isConnected: boolean } {
   // Expose bridges globally for Phaser scene
   useEffect(() => {
     (window as unknown as Record<string, unknown>).__socketEmitMove = emitMove;
+    (window as unknown as Record<string, unknown>).__socketEmitMapJoin = emitMapJoin;
     (window as unknown as Record<string, unknown>).__socketEmitAttack = emitAttack;
     return (): void => {
       delete (window as unknown as Record<string, unknown>).__socketEmitMove;
+      delete (window as unknown as Record<string, unknown>).__socketEmitMapJoin;
       delete (window as unknown as Record<string, unknown>).__socketEmitAttack;
     };
-  }, [emitMove, emitAttack]);
+  }, [emitMove, emitMapJoin, emitAttack]);
 
   const isConnected = useGameStore((s) => s.isConnected);
   return { isConnected };

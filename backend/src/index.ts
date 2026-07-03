@@ -9,6 +9,10 @@ async function main(): Promise<void> {
   try {
     await db.execute('SELECT 1');
     console.log('[Server] PostgreSQL connected successfully.');
+    
+    // Seed database if empty
+    const { seedDatabase } = await import('./database/seed.js');
+    await seedDatabase();
   } catch (err) {
     console.error('[Server] PostgreSQL connection failed:', err);
     process.exit(1);

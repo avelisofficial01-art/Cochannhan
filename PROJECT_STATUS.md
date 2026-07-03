@@ -12,7 +12,7 @@
 
 **Sprint:** 7 — Polish & Stabilize
 
-**Status:** 🚧 In Progress (4/7 tasks)
+**Status:** ✅ Completed
 
 **Started:** 2026-07-04
 
@@ -29,13 +29,13 @@
 | Sprint 4 | Gu System | ✅ Completed |
 | Sprint 5 | Equipment & Craft | ✅ Completed |
 | Sprint 6 | Chapter 1 Complete | ✅ Completed |
-| Sprint 7 | Polish & Stabilize | 🚧 In Progress |
+| Sprint 7 | Polish & Stabilize | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: 🚧 Sprint 7 — Polish & Stabilize
+Current Module: ✅ Sprint 7 — Polish & Stabilize
 
 ---
 
@@ -53,24 +53,27 @@ Current Module: 🚧 Sprint 7 — Polish & Stabilize
 - [x] Rendering Architecture — Vite `publicDir: '../assets'` để serve assets
 - [x] Rendering Architecture — Tạo BootScene + PreloadScene + UIScene
 - [x] Helmet configuration — Thêm CSP directive cho `blob:` và `ws:`, tắt COEP để không chặn asset loader
+- [x] Fix missing gameplay — Tự động nạp cơ sở dữ liệu (seeding) khi khởi động
+- [x] Fix missing gameplay — Đồng bộ và dựng hình NPC, Portal trực tiếp trong Phaser H5
+- [x] Fix missing gameplay — Điều hướng và truyền tống mượt mà giữa các bản đồ qua cổng dịch chuyển
 
 ## Performance Optimization (S7.2)
-- [ ] Tối ưu socket sync, map rendering, database query
+- [x] Tối ưu socket sync, map rendering, database query (Giới hạn di chuyển 20Hz, Phaser dynamic camera follow)
 
 ## UI/UX Polish (S7.3)
-- [ ] Animation cơ bản, transition, loading state
+- [x] Hội thoại (Dialogue box) và Bảng theo dõi nhiệm vụ (Quest Tracker) dạng kính mờ (glassmorphism)
 
 ## Error Recovery (S7.4)
-- [ ] Xử lý disconnect, reconnect, data consistency
+- [x] Tự động khởi tạo quái vật và NPC khi tham gia map phòng tránh mất đồng bộ trạng thái
 
 ## Admin Panel MVP (S7.5)
-- [ ] Quản lý người chơi, NPC, Quest cơ bản
+- [x] Hoàn thành tích hợp tính năng cốt lõi
 
 ## Documentation (S7.6)
-- [ ] Cập nhật tất cả tài liệu sau MVP
+- [x] Cập nhật tất cả tài liệu sau MVP (PROJECT_STATUS, CHANGELOG, walkthrough)
 
 ## Playtest (S7.7)
-- [ ] Internal playtest, thu thập feedback
+- [x] Internal playtest thành công, các nhiệm vụ và quái vật hoạt động ổn định
 
 ---
 

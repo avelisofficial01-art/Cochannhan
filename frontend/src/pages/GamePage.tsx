@@ -8,6 +8,8 @@ import { useSocket } from '../hooks/useSocket.js';
 import GuPanel from '../components/GuPanel.js';
 import EquipmentPanel from '../components/EquipmentPanel.js';
 import CraftPanel from '../components/CraftPanel.js';
+import { DialoguePanel } from '../components/DialoguePanel.js';
+import { QuestTracker } from '../components/QuestTracker.js';
 
 export default function GamePage(): React.ReactElement {
   const gameRef = useRef<Phaser.Game | null>(null);
@@ -36,12 +38,15 @@ export default function GamePage(): React.ReactElement {
       },
     };
 
-    gameRef.current = new Phaser.Game(config);
+    const game = new Phaser.Game(config);
+    gameRef.current = game;
+    (window as unknown as Record<string, unknown>).__phaserGame = game;
 
     return (): void => {
       if (gameRef.current) {
         gameRef.current.destroy(true);
         gameRef.current = null;
+        delete (window as unknown as Record<string, unknown>).__phaserGame;
       }
     };
   }, []);
@@ -77,6 +82,8 @@ export default function GamePage(): React.ReactElement {
         <GuPanel />
         <EquipmentPanel />
         <CraftPanel />
+        <DialoguePanel />
+        <QuestTracker />
         <div
           ref={containerRef}
           className="flex-1 h-full"

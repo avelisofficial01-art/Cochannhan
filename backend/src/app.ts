@@ -5,6 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import { db } from './database/connection.js';
+import { worldMaps, mapPortals, mapSpawns, monsterTemplates, npcTemplates } from './database/schema/index.js';
+import { eq, or } from 'drizzle-orm';
 import authRouter from './auth/auth.route.js';
 import playerRouter from './player/player.route.js';
 import worldRouter from './world/world.route.js';
@@ -176,18 +179,138 @@ io.on('connection', (socket) => {
   });
 
   // Join map room
-  socket.on('map:join', (mapId: string) => {
-    socket.join(`map:${mapId}`);
-    currentMapId = mapId;
+  socket.on('map:join', async (input: string | { mapId: string; x?: number; y?: number }) => {
+    const targetMapId = typeof input === 'string' ? input : input.mapId;
+    const targetX = typeof input === 'string' ? undefined : input.x;
+    const targetY = typeof input === 'string' ? undefined : input.y;
+
+    // Leave old map room and notify others
+    if (currentMapId && currentMapId !== targetMapId) {
+      socket.leave(`map:${currentMapId}`);
+      socket.to(`map:${currentMapId}`).emit('player:left', { accountId });
+    }
+
+    socket.join(`map:${targetMapId}`);
+    currentMapId = targetMapId;
+
+    // Update position in cache
+    const pos = playerPositions.get(accountId);
+    if (pos) {
+      pos.mapId = targetMapId;
+      if (targetX !== undefined && targetY !== undefined) {
+        pos.x = targetX;
+        pos.y = targetY;
+      }
+    }
 
     // Send current players in map
     const playersInMap: PlayerPosition[] = [];
-    playerPositions.forEach((pos) => {
-      if (pos.mapId === mapId) {
-        playersInMap.push(pos);
+    playerPositions.forEach((p) => {
+      if (p.mapId === targetMapId) {
+        playersInMap.push(p);
       }
     });
     socket.emit('map:players', playersInMap);
+
+    // Sync map metadata, npcs, portals, and monsters
+    try {
+      const [map] = await db
+        .select()
+        .from(worldMaps)
+        .where(
+          or(
+            eq(worldMaps.id, targetMapId),
+            eq(worldMaps.name, targetMapId)
+          )
+        )
+        .limit(1);
+
+      if (map) {
+        // Emit map metadata
+        socket.emit('map:init', {
+          id: map.id,
+          name: map.name,
+          region: map.region,
+          width: map.width,
+          height: map.height,
+          background: map.background,
+        });
+
+        // Fetch NPCs
+        const npcs = await db.select().from(npcTemplates).where(eq(npcTemplates.map_id, map.id));
+        socket.emit('map:npcs', npcs.map(n => ({
+          id: n.id,
+          name: n.name,
+          sprite: n.sprite,
+          x: n.x,
+          y: n.y,
+          hasShop: n.has_shop === 'true',
+        })));
+
+        // Fetch Portals
+        const portals = await db.select().from(mapPortals).where(eq(mapPortals.from_map_id, map.id));
+        const portalsWithTarget = [];
+        for (const p of portals) {
+          const [targetMap] = await db.select().from(worldMaps).where(eq(worldMaps.id, p.to_map_id)).limit(1);
+          if (targetMap) {
+            portalsWithTarget.push({
+              id: p.id,
+              from_x: p.from_x,
+              from_y: p.from_y,
+              to_x: p.to_x,
+              to_y: p.to_y,
+              portal_name: p.portal_name,
+              to_map_id: targetMap.id,
+              to_map_name: targetMap.name,
+            });
+          }
+        }
+        socket.emit('map:portals', portalsWithTarget);
+
+        // Fetch / Spawn Monsters
+        let activeMonsters = combatService.getMonstersOnMap(map.id);
+        if (activeMonsters.length === 0) {
+          const spawns = await db.select().from(mapSpawns).where(eq(mapSpawns.map_id, map.id));
+          for (const spawn of spawns) {
+            if (spawn.spawn_type === 'monster' || spawn.spawn_type === 'boss') {
+              const [tmpl] = await db.select().from(monsterTemplates).where(eq(monsterTemplates.name, spawn.spawn_ref)).limit(1);
+              if (tmpl) {
+                const camelTemplate = {
+                  id: tmpl.id,
+                  name: tmpl.name,
+                  realm: tmpl.realm,
+                  hp: tmpl.hp,
+                  atk: tmpl.atk,
+                  def: tmpl.def,
+                  speed: tmpl.speed,
+                  element: tmpl.element as 'physical' | 'fire' | 'water' | 'lightning' | 'wind' | 'earth' | 'wood' | 'ice' | 'poison' | 'blood' | 'soul' | 'space' | 'time' | 'light' | 'dark',
+                  sprite: tmpl.sprite,
+                  dropTable: tmpl.drop_table ? JSON.parse(tmpl.drop_table) : null,
+                  mapId: tmpl.map_id,
+                  respawnTime: tmpl.respawn_time,
+                };
+                combatService.spawnMonster(camelTemplate, spawn.x, spawn.y);
+              }
+            }
+          }
+          activeMonsters = combatService.getMonstersOnMap(map.id);
+        }
+
+        // Emit monsters list to joiner
+        socket.emit('monster:spawn', activeMonsters.map(inst => ({
+          instanceId: inst.instanceId,
+          templateId: inst.templateId,
+          name: inst.template.name,
+          currentHp: inst.currentHp,
+          maxHp: inst.template.hp,
+          x: inst.x,
+          y: inst.y,
+          sprite: inst.template.sprite,
+        })));
+      }
+    } catch (err) {
+      console.error('[Socket] Map join sync failed:', err);
+    }
   });
 
   // Leave map room

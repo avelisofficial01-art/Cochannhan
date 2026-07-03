@@ -3,6 +3,7 @@ import {
   getMapKey,
   getPlayerKey,
   getMonsterKey,
+  getNpcKey,
 } from './AssetManager.js';
 import { useGameStore, type MonsterSprite } from '../store/gameStore.js';
 
@@ -16,11 +17,24 @@ interface FloatText {
   duration: number;
 }
 
+interface PortalData {
+  id: string;
+  from_x: number;
+  from_y: number;
+  portal_name: string;
+  to_map_id: string;
+  to_map_name: string;
+  to_x: number;
+  to_y: number;
+}
+
 /**
  * GameScene — Map rendering, player movement, combat UI.
  *
  * All gameplay visuals use real asset sprites loaded via AssetManager.
  * Rectangle placeholders are ONLY a last-resort fallback when textures fail to load.
+ *
+ * @eslint-disable-next-line @typescript-eslint/class-name-casing
  */
 export class GameScene extends Phaser.Scene {
   private playerSprite!: Phaser.GameObjects.Image;
@@ -35,6 +49,17 @@ export class GameScene extends Phaser.Scene {
 
   /** Current map ID */
   private mapId = 'bnp';
+  private mapWidth = 1024;
+  private mapHeight = 640;
+  private mapImage: Phaser.GameObjects.Image | null = null;
+  private gridGfx: Phaser.GameObjects.Graphics | null = null;
+
+  /** NPCs and Portals on map */
+  private npcSprites: Map<string, { sprite: Phaser.GameObjects.Image; nameLabel: Phaser.GameObjects.Text }> = new Map();
+  private portalSprites: Map<string, { gfx: Phaser.GameObjects.Graphics; nameLabel: Phaser.GameObjects.Text; data: PortalData }> = new Map();
+
+  /** Throttle socket emits */
+  private lastMoveEmitTime = 0;
 
   /** Monsters rendered on screen */
   private monsterSprites: Map<
@@ -63,36 +88,31 @@ export class GameScene extends Phaser.Scene {
     console.log('[GameScene] 🎮 Creating scene...');
     this.cameras.main.setBackgroundColor('#1a1a2e');
 
-    /* ── Map background ── */
-    const mapKey = getMapKey(this.mapId);
-    console.log(`[GameScene] Map key: "${mapKey}", texture exists: ${this.textures.exists(mapKey)}`);
-    if (this.textures.exists(mapKey)) {
-      const mapImg = this.add.image(512, 320, mapKey);
-      mapImg.setDisplaySize(1024, 640);
-      console.log('[GameScene] ✅ Map rendered from texture');
-    } else {
-      console.warn('[GameScene] ⚠️ Map texture not found, using grid fallback');
-      this.drawGridFallback();
-    }
+    /* ── Bind Socket.IO Map Events ── */
+    this.events.on('map:init', this.handleMapInit, this);
+    this.events.on('map:npcs', this.handleMapNpcs, this);
+    this.events.on('map:portals', this.handleMapPortals, this);
 
     /* ── Player sprite ── */
     const playerKey = getPlayerKey();
-    console.log(`[GameScene] Player key: "${playerKey}", texture exists: ${this.textures.exists(playerKey)}`);
     if (this.textures.exists(playerKey)) {
       this.playerSprite = this.add.image(this.playerX, this.playerY, playerKey);
-      this.playerSprite.setDisplaySize(24, 24);
-      console.log('[GameScene] ✅ Player rendered from texture');
+      this.playerSprite.setDisplaySize(36, 36);
     } else {
-      console.warn('[GameScene] ⚠️ Player texture not found, using rectangle fallback');
       this.createPlayerFallback();
     }
 
+    // Camera follow
+    this.cameras.main.startFollow(this.playerSprite, true, 0.05, 0.05);
+
     /* ── Player name label ── */
     this.add
-      .text(this.playerX, this.playerY - 24, 'You', {
+      .text(this.playerX, this.playerY - 28, 'You', {
         fontSize: '12px',
         color: '#00ff88',
         fontFamily: 'monospace',
+        stroke: '#000000',
+        strokeThickness: 2,
       })
       .setOrigin(0.5)
       .setName('playerLabel');
@@ -184,21 +204,55 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    this.playerX = Phaser.Math.Clamp(this.playerX, 12, 1012);
-    this.playerY = Phaser.Math.Clamp(this.playerY, 12, 628);
+    this.playerX = Phaser.Math.Clamp(this.playerX, 18, this.mapWidth - 18);
+    this.playerY = Phaser.Math.Clamp(this.playerY, 18, this.mapHeight - 18);
 
     if (moved) {
       this.playerSprite.setPosition(this.playerX, this.playerY);
 
       const label = this.children.getByName('playerLabel') as Phaser.GameObjects.Text;
       if (label) {
-        label.setPosition(this.playerX, this.playerY - 24);
+        label.setPosition(this.playerX, this.playerY - 28);
       }
 
-      const bridge = (window as unknown as Record<string, (mapId: string, x: number, y: number) => void>)
-        .__socketEmitMove;
-      if (bridge) {
-        bridge('bac_nguyen_village', Math.round(this.playerX), Math.round(this.playerY));
+      // Throttle movement updates to 50ms (20Hz)
+      const now = this.time.now;
+      if (now - this.lastMoveEmitTime >= 50) {
+        const bridge = (window as unknown as Record<string, (mapId: string, x: number, y: number) => void>)
+          .__socketEmitMove;
+        if (bridge) {
+          bridge(this.mapId, Math.round(this.playerX), Math.round(this.playerY));
+        }
+        this.lastMoveEmitTime = now;
+      }
+
+      // Check portal proximity
+      this.checkPortalCollision();
+    }
+  }
+
+  private checkPortalCollision(): void {
+    const joinBridge = (window as unknown as Record<string, (input: unknown) => void>).__socketEmitMapJoin;
+    if (!joinBridge) return;
+
+    for (const p of this.portalSprites.values()) {
+      const dx = this.playerX - p.data.from_x;
+      const dy = this.playerY - p.data.from_y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 32) {
+        console.log(`[GameScene] Teleporting through portal: ${p.data.portal_name} to map ${p.data.to_map_name}`);
+        
+        // Move player locally to portal destination
+        this.playerX = p.data.to_x;
+        this.playerY = p.data.to_y;
+        this.playerSprite.setPosition(this.playerX, this.playerY);
+        
+        joinBridge({
+          mapId: p.data.to_map_id,
+          x: p.data.to_x,
+          y: p.data.to_y,
+        });
+        break;
       }
     }
   }
@@ -465,14 +519,103 @@ export class GameScene extends Phaser.Scene {
     console.warn('[GameScene] ⚠️ Using grid fallback (map texture failed to load)');
     const gfx = this.add.graphics();
     gfx.lineStyle(1, 0x333355, 0.3);
-    for (let x = 0; x <= 800; x += 50) {
+    for (let x = 0; x <= this.mapWidth; x += 50) {
       gfx.moveTo(x, 0);
-      gfx.lineTo(x, 600);
+      gfx.lineTo(x, this.mapHeight);
     }
-    for (let y = 0; y <= 600; y += 50) {
+    for (let y = 0; y <= this.mapHeight; y += 50) {
       gfx.moveTo(0, y);
-      gfx.lineTo(800, y);
+      gfx.lineTo(this.mapWidth, y);
     }
     gfx.strokePath();
+    this.gridGfx = gfx;
+  }
+
+  private handleMapInit(data: { id: string; name: string; region: string; width: number; height: number; background: string }): void {
+    this.mapId = data.id;
+    this.mapWidth = data.width;
+    this.mapHeight = data.height;
+
+    // Reset physics and camera bounds
+    this.physics.world.setBounds(0, 0, data.width, data.height);
+    this.cameras.main.setBounds(0, 0, data.width, data.height);
+
+    // Render map background
+    if (this.mapImage) {
+      this.mapImage.destroy();
+    }
+    if (this.gridGfx) {
+      this.gridGfx.destroy();
+      this.gridGfx = null;
+    }
+
+    const mapKey = getMapKey(data.region);
+    if (this.textures.exists(mapKey)) {
+      this.mapImage = this.add.image(data.width / 2, data.height / 2, mapKey);
+      this.mapImage.setDisplaySize(data.width, data.height);
+      this.mapImage.setDepth(-1000);
+    } else {
+      this.drawGridFallback();
+    }
+  }
+
+  private handleMapNpcs(npcs: Array<{ id: string; name: string; sprite: string; x: number; y: number; hasShop: boolean }>): void {
+    // Clear old NPC sprites
+    for (const obj of this.npcSprites.values()) {
+      obj.sprite.destroy();
+      obj.nameLabel.destroy();
+    }
+    this.npcSprites.clear();
+
+    // Create new NPC sprites
+    npcs.forEach((npc) => {
+      // Map npc sprite index
+      const npcKey = getNpcKey(parseInt(npc.sprite.replace('char_', ''), 10) || 0);
+      const npcSprite = this.add.image(npc.x, npc.y, npcKey);
+      npcSprite.setDisplaySize(36, 36);
+      npcSprite.setInteractive();
+
+      const nameLabel = this.add.text(npc.x, npc.y - 28, npc.name, {
+        fontSize: '11px',
+        color: '#ffff00',
+        fontFamily: 'monospace',
+        stroke: '#000000',
+        strokeThickness: 2,
+      }).setOrigin(0.5);
+
+      npcSprite.on('pointerdown', () => {
+        useGameStore.getState().openDialogue(npc);
+      });
+
+      this.npcSprites.set(npc.id, { sprite: npcSprite, nameLabel });
+    });
+  }
+
+  private handleMapPortals(portals: PortalData[]): void {
+    // Clear old portal sprites
+    for (const obj of this.portalSprites.values()) {
+      obj.gfx.destroy();
+      obj.nameLabel.destroy();
+    }
+    this.portalSprites.clear();
+
+    // Create new portal graphics
+    portals.forEach((p) => {
+      const gfx = this.add.graphics();
+      gfx.lineStyle(2, 0x00ffff, 0.8);
+      gfx.fillStyle(0x00ffff, 0.2);
+      gfx.strokeCircle(p.from_x, p.from_y, 24);
+      gfx.fillCircle(p.from_x, p.from_y, 24);
+
+      const nameLabel = this.add.text(p.from_x, p.from_y - 32, p.portal_name || 'Portal', {
+        fontSize: '10px',
+        color: '#00ffff',
+        fontFamily: 'monospace',
+        stroke: '#000000',
+        strokeThickness: 2,
+      }).setOrigin(0.5);
+
+      this.portalSprites.set(p.id, { gfx, nameLabel, data: p });
+    });
   }
 }

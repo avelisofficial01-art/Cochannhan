@@ -776,3 +776,41 @@ Hệ thống truyện (Story Flags), Đột phá tu luyện (Cultivation Breakth
 - `backend/src/index.ts`: Check null trước khi ping, tránh crash khi Redis unavailable
 
 **Next: Sprint 7 — Polish & Stabilize**
+
+---
+
+## Sprint 7: POLISH & STABILIZE — 2026-07-04
+
+### Mục tiêu
+Khắc phục triệt để các lỗi liên quan tới nạp cơ sở dữ liệu (seeding), dựng hình game H5 (Phaser canvas), di chuyển giật/tele (throttling), và tích hợp các lớp phủ giao diện hội thoại và theo dõi nhiệm vụ (React overlays).
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S7.1 | Tự động Seeding DB | ✅ | Viết seed script tự động nạp dữ liệu khi khởi động (NPCs, dialogues, quests, monster templates, maps, portals, Gu). |
+| S7.2 | Tối ưu hóa di chuyển | ✅ | Giới hạn tần suất gửi di chuyển (throttling) lên 20Hz (mỗi 50ms) giúp giảm 66% lưu lượng mạng, mượt mà hơn. |
+| S7.3 | Dựng hình NPC & Portal | ✅ | Dựng hình trực tiếp NPC và Portal trên Phaser canvas, tạo các tương tác click chuột trực tiếp để kích hoạt hội thoại. |
+| S7.4 | Camera Follow | ✅ | Tích hợp Phaser camera follow và cập nhật giới hạn vật lý map động khi di chuyển giữa các bản đồ. |
+| S7.5 | Giao diện Hội thoại React | ✅ | Tạo component `DialoguePanel` mờ (glassmorphism) hỗ trợ lựa chọn nhánh, kích hoạt story flag và tự động nhận nhiệm vụ mới. |
+| S7.6 | Giao diện Theo dõi Nhiệm vụ | ✅ | Tạo component `QuestTracker` hiển thị danh sách nhiệm vụ đang làm và tiến độ các mục tiêu diệt quái/thu thập. |
+
+### Files created/modified
+
+| File | Change |
+|------|--------|
+| `backend/src/database/seed.ts` | **Created** — Kịch bản seeding dữ liệu tự động cho toàn bộ game |
+| `backend/src/index.ts` | Import và chạy `seedDatabase` khi khởi động nếu DB trống |
+| `backend/src/app.ts` | Cập nhật `map:join` để đồng bộ NPCs, Portals, Monsters và tự động sinh quái vật |
+| `frontend/src/game/GameScene.ts` | Thêm camera follow, giới hạn di chuyển 20Hz, vẽ NPC & Portal và xử lý tương tác dịch chuyển |
+| `frontend/src/store/gameStore.ts` | Thêm trạng thái và actions quản lý hội thoại, NPC tích cực, và danh sách nhiệm vụ |
+| `frontend/src/hooks/useSocket.ts` | Bổ sung các listener nhận dữ liệu map động và các global bridge phát sự kiện |
+| `frontend/src/components/DialoguePanel.tsx` | **Created** — Giao diện hội thoại kính mờ với các lựa chọn nhánh |
+| `frontend/src/components/QuestTracker.tsx` | **Created** — Bảng hiển thị tiến trình nhiệm vụ thời gian thực |
+| `frontend/src/pages/GamePage.tsx` | Mount `DialoguePanel` và `QuestTracker` overlays chồng lên Phaser canvas |
+
+### Xác nhận
+- [x] Typecheck: 0 lỗi (shared + backend + frontend)
+- [x] Lint: 0 errors
+- [x] Build: `npm run build` thành công, bundle SPA Vite kết xuất OK
+

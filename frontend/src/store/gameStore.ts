@@ -58,6 +58,12 @@ interface GameState {
   equipmentList: Array<{ id: string; name: string; type: string; slot: string; tier: string; baseHp: number; baseAtk: number; baseDef: number; baseCrit: number; requiredLevel: number; description: string; icon: string }>;
   equippedItems: Record<string, string | null>;
   recipeList: Array<{ id: string; name: string; resultType: string; resultName: string; requiredGold: number; successRate: number; materials: Array<{ itemName: string; quantity: number }> }>;
+  
+  // NPC Dialogue & Quests
+  activeNpc: { id: string; name: string; sprite: string; hasShop: boolean } | null;
+  activeDialogue: { id: string; text: string; speaker: string; choices: Array<{ text: string; next_dialogue_ref: string; next_dialogue_id?: string }> | null; set_flag?: string } | null;
+  isDialogueOpen: boolean;
+  activeQuests: unknown[];
 
   setEquipmentList: (list: GameState['equipmentList']) => void;
   setEquippedItems: (items: Record<string, string | null>) => void;
@@ -75,6 +81,12 @@ interface GameState {
   setPlayerGuList: (guList: PlayerGuState[]) => void;
   setGuSynergies: (synergies: string[]) => void;
   toggleGuPanel: () => void;
+
+  // NPC Dialogue actions
+  openDialogue: (npc: { id: string; name: string; sprite: string; hasShop: boolean }) => void;
+  closeDialogue: () => void;
+  setActiveDialogue: (dialogue: { id: string; text: string; speaker: string; choices: Array<{ text: string; next_dialogue_ref: string; next_dialogue_id?: string }> | null; set_flag?: string }) => void;
+  setActiveQuests: (quests: unknown[]) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -93,6 +105,11 @@ export const useGameStore = create<GameState>((set) => ({
   equipmentList: [],
   equippedItems: {},
   recipeList: [],
+
+  activeNpc: null,
+  activeDialogue: null,
+  isDialogueOpen: false,
+  activeQuests: [],
 
   setPosition: (x, y): void => set({ playerX: x, playerY: y }),
   setMap: (mapId): void => set({ currentMapId: mapId }),
@@ -120,4 +137,9 @@ export const useGameStore = create<GameState>((set) => ({
   setRecipeList: (list): void => set({ recipeList: list }),
   toggleEquipmentPanel: (): void => set((state) => ({ isEquipmentPanelOpen: !state.isEquipmentPanelOpen })),
   toggleCraftPanel: (): void => set((state) => ({ isCraftPanelOpen: !state.isCraftPanelOpen })),
+
+  openDialogue: (npc): void => set({ activeNpc: npc, isDialogueOpen: true, activeDialogue: null }),
+  closeDialogue: (): void => set({ activeNpc: null, isDialogueOpen: false, activeDialogue: null }),
+  setActiveDialogue: (dialogue): void => set({ activeDialogue: dialogue }),
+  setActiveQuests: (quests): void => set({ activeQuests: quests }),
 }));
