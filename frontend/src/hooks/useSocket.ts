@@ -35,7 +35,13 @@ export function useSocket(): { isConnected: boolean } {
       socket.emit('map:join', 'bac_nguyen_village');
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
+      console.warn(`[Socket] ⚠️ Disconnected — reason: "${reason}"`);
+      setConnected(false);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('[Socket] 🔴 Connection error:', err.message);
       setConnected(false);
     });
 

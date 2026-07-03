@@ -204,6 +204,7 @@ io.on('connection', async (socket) => {
   let currentMapId = 'bac_nguyen_village';
 
   socket.join(`account:${accountId}`);
+  console.log(`[Socket] ✅ Client connected — account="${accountId}", player="${playerName || 'unknown'}"`);
 
   // Player move
   socket.on('player:move', (data: { mapId: string; x: number; y: number }) => {
