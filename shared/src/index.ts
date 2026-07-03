@@ -234,11 +234,6 @@ export interface InventorySlot {
 // Story Flag
 // ============================================================
 
-export interface StoryFlag {
-  key: string;
-  value: string;
-}
-
 // Create Quest Request
 export interface AcceptQuestRequest {
   questId: string;
@@ -353,4 +348,177 @@ export interface EquipGuRequest {
 
 export interface EnhanceGuRequest {
   playerGuId: string;
+}
+
+// ============================================================
+// EQUIPMENT TYPES
+// ============================================================
+
+export interface EquipmentTemplate {
+  id: string;
+  name: string;
+  type: string; // weapon, armor, accessory
+  slot: string; // main_hand, off_hand, head, body, feet, ring, neck
+  tier: string; // common, uncommon, rare, epic, legendary
+  baseHp: number;
+  baseAtk: number;
+  baseDef: number;
+  baseCrit: number;
+  requiredLevel: number;
+  description: string | null;
+  icon: string | null;
+}
+
+export interface PlayerEquipment {
+  id: string;
+  playerId: string;
+  equipmentId: string;
+  equipment?: EquipmentTemplate;
+  enhancement: number;
+  isEquipped: string;
+  slotIndex: number | null;
+  obtainedAt: string;
+}
+
+export interface EquipEquipmentRequest {
+  playerEquipmentId: string;
+  slotIndex: number;
+}
+
+export interface EnhanceEquipmentRequest {
+  playerEquipmentId: string;
+}
+
+// ============================================================
+// CRAFT TYPES
+// ============================================================
+
+export interface CraftRecipe {
+  id: string;
+  name: string;
+  resultType: string;
+  resultId: string;
+  resultQuantity: number;
+  requiredGold: number;
+  successRate: number;
+  minRealm: number;
+  description: string | null;
+  materials: RecipeMaterial[];
+}
+
+export interface RecipeMaterial {
+  id: string;
+  recipeId: string;
+  itemId: string;
+  quantity: number;
+}
+
+export interface CraftRequest {
+  recipeId: string;
+}
+
+export interface CraftResult {
+  success: boolean;
+  recipeId: string;
+  resultType: string;
+  resultId: string;
+  resultQuantity: number;
+}
+
+// ============================================================
+// SHOP TYPES
+// ============================================================
+
+export interface ShopItem {
+  id: string;
+  itemId: string;
+  price: number;
+  stock: number;
+}
+
+// ============================================================
+// SPRINT 6: STORY, CULTIVATION, SAVE, MAP
+// ============================================================
+
+export interface StoryFlag {
+  id: string;
+  playerId: string;
+  flagKey: string;
+  flagValue: string;
+  updatedAt: string;
+}
+
+export interface CultivationRealm {
+  id: string;
+  name: string;
+  level: number;
+  statMultiplier: number;
+  requiredBreakthrough: string;
+  breakthroughGold: number;
+  breakthroughItemId: string | null;
+  description: string | null;
+}
+
+export interface PlayerCultivation {
+  id: string;
+  playerId: string;
+  realmLevel: number;
+  experience: number;
+  breakthroughCount: number;
+}
+
+export interface BreakthroughRequest {
+  // No extra body needed — auto-detects from player's current realm
+}
+
+export interface BreakthroughResult {
+  success: boolean;
+  fromLevel: number;
+  toLevel: number;
+  message: string;
+}
+
+export interface PlayerSave {
+  id: string;
+  playerId: string;
+  saveName: string;
+  isAuto: string;
+  saveData: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface SaveRequest {
+  saveName?: string;
+}
+
+export interface WorldMap {
+  id: string;
+  name: string;
+  region: string;
+  recommendedRealm: number;
+  isSafeZone: string;
+  background: string | null;
+  width: number;
+  height: number;
+}
+
+export interface MapPortal {
+  id: string;
+  fromMapId: string;
+  toMapId: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  portalName: string | null;
+}
+
+export interface MapSpawn {
+  id: string;
+  mapId: string;
+  spawnType: string;
+  spawnId: string;
+  x: number;
+  y: number;
+  respawnTime: number;
 }

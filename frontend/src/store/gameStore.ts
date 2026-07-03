@@ -53,6 +53,17 @@ interface GameState {
   playerGuList: PlayerGuState[];
   guSynergies: string[];
   isGuPanelOpen: boolean;
+  isEquipmentPanelOpen: boolean;
+  isCraftPanelOpen: boolean;
+  equipmentList: Array<{ id: string; name: string; type: string; slot: string; tier: string; baseHp: number; baseAtk: number; baseDef: number; baseCrit: number; requiredLevel: number; description: string; icon: string }>;
+  equippedItems: Record<string, string | null>;
+  recipeList: Array<{ id: string; name: string; resultType: string; resultName: string; requiredGold: number; successRate: number; materials: Array<{ itemName: string; quantity: number }> }>;
+
+  setEquipmentList: (list: GameState['equipmentList']) => void;
+  setEquippedItems: (items: Record<string, string | null>) => void;
+  setRecipeList: (list: GameState['recipeList']) => void;
+  toggleEquipmentPanel: () => void;
+  toggleCraftPanel: () => void;
 
   setPosition: (x: number, y: number) => void;
   setMap: (mapId: string) => void;
@@ -77,6 +88,11 @@ export const useGameStore = create<GameState>((set) => ({
   playerGuList: [],
   guSynergies: [],
   isGuPanelOpen: false,
+  isEquipmentPanelOpen: false,
+  isCraftPanelOpen: false,
+  equipmentList: [],
+  equippedItems: {},
+  recipeList: [],
 
   setPosition: (x, y): void => set({ playerX: x, playerY: y }),
   setMap: (mapId): void => set({ currentMapId: mapId }),
@@ -99,4 +115,9 @@ export const useGameStore = create<GameState>((set) => ({
   setPlayerGuList: (guList): void => set({ playerGuList: guList }),
   setGuSynergies: (synergies): void => set({ guSynergies: synergies }),
   toggleGuPanel: (): void => set((state) => ({ isGuPanelOpen: !state.isGuPanelOpen })),
+  setEquipmentList: (list): void => set({ equipmentList: list }),
+  setEquippedItems: (items): void => set({ equippedItems: items }),
+  setRecipeList: (list): void => set({ recipeList: list }),
+  toggleEquipmentPanel: (): void => set((state) => ({ isEquipmentPanelOpen: !state.isEquipmentPanelOpen })),
+  toggleCraftPanel: (): void => set((state) => ({ isCraftPanelOpen: !state.isCraftPanelOpen })),
 }));

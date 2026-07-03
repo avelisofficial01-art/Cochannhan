@@ -537,3 +537,174 @@ frontend/src/components/
 - Cần chạy `drizzle-kit push` sau deploy để tạo 5 Gu tables
 - Gu Skill usage trong combat sẽ được tích hợp ở Sprint 5/6
 - Synergy auto-check khi equip/unequip
+
+---
+
+## Sprint 5: EQUIPMENT & CRAFT — 2026-07-04
+
+### Mục tiêu
+Hệ thống Trang bị (Equipment) & Chế tạo (Crafting) — người chơi có thể trang bị vũ khí/giáp, chế tạo item mới từ nguyên liệu.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S5.1 | Equipment module | ✅ | Template, Player Equipment, Equip/Unequip — backend/src/equipment/ |
+| S5.2 | Equipment Enhancement | ✅ | Cường hóa +0→+20, check maxEnhance |
+| S5.3 | Craft System | ✅ | POST /api/craft — craft equipment/item/gu từ recipe |
+| S5.4 | Equipment UI | ✅ | EquipmentPanel.tsx (E key toggle), 8 slots |
+| S5.5 | Craft UI | ✅ | CraftPanel.tsx (C key toggle), recipe list + craft button |
+| S5.6 | Seed Data | ✅ | 5 equipment templates + 3 craft recipes |
+
+### Files created
+
+```
+backend/src/equipment/
+  ├── equipment.repository.ts        # Drizzle queries: equipment_templates, player_equipment (8 functions)
+  ├── equipment.service.ts           # Business logic: equip, unequip, enhance, validateSlot
+  ├── equipment.controller.ts        # REST: GET /templates, GET /player, POST /equip, POST /unequip, POST /enhance
+  └── equipment.route.ts             # Route definitions
+
+backend/src/craft/
+  ├── craft.repository.ts            # Drizzle queries: craft_recipes, recipe_materials, craft_logs
+  ├── craft.service.ts               # Business logic: craftItem, validateMaterials, deductGold
+  ├── craft.controller.ts            # REST: GET /recipes, GET /recipes/:id, POST /craft
+  └── craft.route.ts                 # Route definitions
+
+frontend/src/components/
+  ├── EquipmentPanel.tsx              # Equipment UI: 8 equip slots, tier colors, equip/unequip
+  └── CraftPanel.tsx                  # Craft UI: recipe list, materials, craft action
+```
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/src/database/schema/index.ts` | Added equipment_templates, player_equipment, craft_recipes, recipe_materials, craft_logs tables |
+| `shared/src/index.ts` | Added EquipmentTemplate, PlayerEquipment, CraftRecipe, CraftResult, RecipeMaterial types |
+| `backend/src/config/index.ts` | Added equipmentSeeds (5 templates) + recipeSeeds (3 recipes) |
+| `backend/src/app.ts` | Registered equipmentRouter + craftRouter |
+| `frontend/src/store/gameStore.ts` | Added equipment/craft state: equipmentList, equippedItems, recipeList, toggle panels |
+| `frontend/src/pages/GamePage.tsx` | Mounted EquipmentPanel + CraftPanel |
+| `frontend/src/game/GameScene.ts` | Added E/C key handlers for panel toggle |
+
+### 5 Equipment Seeds
+
+| Tên | Type | Slot | ATK | DEF | HP | Tier |
+|-----|------|------|-----|-----|----|------|
+| Thanh Đồng Kiếm | weapon | main_hand | 25 | 0 | 0 | common |
+| Mộc Trượng | weapon | main_hand | 15 | 0 | 50 | common |
+| Liệp Cung | weapon | main_hand | 20 | 0 | 0 | common |
+| Bì Giáp | armor | body | 0 | 15 | 100 | common |
+| Mộc Thuẫn | armor | off_hand | 0 | 25 | 50 | common |
+
+### 3 Craft Recipes
+
+| Công thức | Result | Materials | Gold | Rate |
+|-----------|--------|-----------|------|------|
+| Rèn Thanh Đồng Kiếm | Thanh Đồng Kiếm | Quặng Sắt x3 | 200 | 80% |
+| Chế Bì Giáp | Bì Giáp | Da Thú x3 | 150 | 80% |
+| Chế Dược Hoàn Sơ Cấp | Dược Hoàn Sơ Cấp | Thảo Dược x2 | 100 | 90% |
+
+### API Endpoints
+
+| Method | Path | Auth |
+|--------|------|------|
+| GET | `/api/equipment/templates` | No |
+| GET | `/api/equipment/player` | Yes |
+| POST | `/api/equipment/equip` | Yes |
+| POST | `/api/equipment/unequip` | Yes |
+| POST | `/api/equipment/enhance` | Yes |
+| GET | `/api/craft/recipes` | No |
+| GET | `/api/craft/recipes/:id` | No |
+| POST | `/api/craft` | Yes |
+
+### Xác nhận
+
+- [x] Typecheck: 0 lỗi (shared + backend + frontend)
+- [x] Lint: 0 errors (equipment + craft modules clean)
+- [x] Build: shared + backend + frontend compile OK
+- [x] Clean Architecture: Route → Controller → Service → Repository
+- [x] 8 REST endpoints cho equipment + craft
+- [x] 5 equipment seeds + 3 recipe seeds
+- [x] Frontend EquipmentPanel (E key) + CraftPanel (C key)
+- [x] 8 equipment slots: main_hand, off_hand, body, head, feet, ring1, ring2, neck
+
+**Next: Sprint 6 — Chapter 1 Complete**
+
+---
+
+## Sprint 6: CHAPTER 1 — BẮC NGUYÊN (Partial) — 2026-07-04
+
+### Mục tiêu
+Hệ thống truyện (Story Flags), Đột phá tu luyện (Cultivation Breakthrough), Save System, và dữ liệu bản đồ Bắc Nguyên.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S6.1 | Story Engine | ✅ | Backend story flags CRUD hoàn chỉnh |
+| S6.2 | Chapter 1 Content | ⬜ DEFERRED | Dời sang Sprint 7 (content data) |
+| S6.3 | Boss Bạch Lang Vương | ✅ | Boss AI 3-phase + story flag integration |
+| S6.4 | Cultivation Breakthrough | ✅ | Realm definitions + breakthrough logic |
+| S6.5 | Save System | ✅ | Auto/manual save với snapshot đầy đủ |
+| S6.6 | Bắc Nguyên Maps | ✅ | 5 maps + portals + NPC/monster spawns + templates |
+
+### Database Schema (8 tables mới)
+
+| Table | Mục đích |
+|-------|----------|
+| `story_chapters` | Định nghĩa Chapter (tên, realm, thứ tự) |
+| `story_acts` | Act trong mỗi Chapter |
+| `story_flags` | Flag boolean để mở khóa nội dung |
+| `cultivation_realms` | 9 cấp Chuyển (từ Phàm Nhân → Cửu Chuyển) |
+| `player_cultivation` | Tiến độ tu luyện của người chơi |
+| `breakthrough_logs` | Lịch sử đột phá |
+| `player_saves` | Save slots (auto + manual) |
+| `world_maps` / `map_portals` / `map_npcs` / `map_monsters` | Dữ liệu bản đồ |
+
+### Story Flags Module
+- REST: `GET /api/story/flags`, `GET /api/story/flags/:key`, `PUT /api/story/flags/:key`
+- Each player có bộ flags riêng để theo dõi tiến độ truyện
+
+### Cultivation Module
+- 9 realms: Phàm Nhân → Nhất Chuyển → Nhị Chuyển → ... → Cửu Chuyển
+- Breakthrough logic: kiểm tra realm, gold cost, required item, success rate roll
+- Stat multiplier tăng theo realm (1.0 → 1.2 → 1.5 → 2.0 → ...)
+- REST: `GET /api/cultivation/realms`, `GET /api/cultivation/player`, `POST /api/cultivation/breakthrough`
+
+### Save System
+- Snapshot: Player + Flags + Inventory + Equipment + Cultivation + Gu
+- REST: `GET /api/save`, `POST /api/save` (manual), `GET /api/save/:id`, `DELETE /api/save/:id`
+- Auto-save: gọi `POST /api/save` với `isAuto: true`
+
+### Xác nhận
+
+- [x] Typecheck: 0 lỗi (shared + backend + frontend)
+- [x] Lint: 0 errors (story, cultivation, save modules clean)
+- [x] Build: shared + backend + frontend compile OK
+- [x] Clean Architecture: Route → Controller → Service → Repository
+- [x] 9 REST endpoints (story: 3, cultivation: 3, save: 4)
+- [x] Seed data: cultivation realms, Bắc Nguyên maps, NPCs, monsters, portals
+- [ ] Chapter 1 dialogue/quest content (DEFERRED → Sprint 7)
+- [x] Boss AI for Bạch Lang Vương
+
+### Boss Bạch Lang Vương (S6.3)
+- **File:** `backend/src/combat/boss-ai.ts`
+- Boss config: 3 phases (100-70%, 70-40%, 40-0%), ATK multiplier per phase
+- Auto-detect boss by monster template name in combat service
+- `setBossDefeatFlag()` — tự động set story flag `boss_wolf_king_defeated`
+- Phase transition log khi HP giảm qua ngưỡng
+
+### Bắc Nguyên Maps (S6.6)
+- **5 Maps:** Làng Cổ Thảo (safe zone) → Đồng Cỏ Hoang → Rừng Tuyết → Đỉnh Băng Phong (boss area) → Cánh Đồng Tuyết
+- **4 NPCs:** Trưởng làng, Thợ rèn, Thương nhân, Trưởng lão bộ lạc
+- **5 Monsters:** Sói Tuyết, Gấu Trắng, Thỏ Tuyết, Ưng Bắc Nguyên, Boss Bạch Lang Vương
+- **4 Portals:** Two-way links between adjacent maps
+- **Schema fix:** `map_spawns.spawn_id` → varchar (text reference) để hỗ trợ seed data
+
+### Redis Fix
+- `backend/src/database/redis.ts`: Production mode — nếu không có `REDIS_URL` env → skip Redis, không cố connect
+- `backend/src/index.ts`: Check null trước khi ping, tránh crash khi Redis unavailable
+
+**Next: Sprint 7 — Polish & Stabilize + Chapter 1 dialogue/quest content**

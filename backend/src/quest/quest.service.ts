@@ -6,7 +6,6 @@ import type {
   QuestPrerequisite,
   PlayerQuest,
   ObjectiveProgress,
-  StoryFlag,
 } from '@co-dao/shared';
 import type { CreateQuestInput } from './quest.schema.js';
 
@@ -41,6 +40,11 @@ interface StoryFlagRow {
   flag_key: string;
   flag_value: string;
   set_at: Date;
+}
+
+interface QuestStoryFlag {
+  key: string;
+  value: string;
 }
 
 function parseJson<T>(str: string | null): T | null {
@@ -81,7 +85,7 @@ function mapPlayerQuest(row: PlayerQuestRow): PlayerQuest {
   };
 }
 
-function mapStoryFlag(row: StoryFlagRow): StoryFlag {
+function mapStoryFlag(row: StoryFlagRow): QuestStoryFlag {
   return { key: row.flag_key, value: row.flag_value };
 }
 
@@ -162,7 +166,7 @@ export const questService = {
   },
 
   // Story Flags
-  async getStoryFlags(playerId: string): Promise<StoryFlag[]> {
+  async getStoryFlags(playerId: string): Promise<QuestStoryFlag[]> {
     const rows = await questRepository.getStoryFlags(playerId);
     return rows.map((r) => mapStoryFlag(r as unknown as StoryFlagRow));
   },
@@ -171,7 +175,7 @@ export const questService = {
     playerId: string,
     key: string,
     value?: string,
-  ): Promise<StoryFlag> {
+  ): Promise<QuestStoryFlag> {
     const row = await questRepository.setStoryFlag(playerId, key, value);
     return mapStoryFlag(row as unknown as StoryFlagRow);
   },

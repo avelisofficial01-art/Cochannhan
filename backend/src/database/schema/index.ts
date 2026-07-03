@@ -5,6 +5,7 @@ import {
   integer,
   timestamp,
   text,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 
 // ============================================================
@@ -368,4 +369,167 @@ export const guSynergy = pgTable('gu_synergy', {
   bonus_atk: integer('bonus_atk').notNull().default(0),
   bonus_def: integer('bonus_def').notNull().default(0),
   created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ============================================================
+// EQUIPMENT MODULE
+// ============================================================
+
+// Equipment Templates — định nghĩa trang bị
+export const equipmentTemplates = pgTable('equipment_templates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 200 }).notNull(),
+  type: varchar('type', { length: 20 }).notNull(), // weapon, armor, accessory
+  slot: varchar('slot', { length: 30 }).notNull(), // main_hand, off_hand, head, body, feet, ring, neck
+  tier: varchar('tier', { length: 20 }).notNull().default('common'), // common, uncommon, rare, epic, legendary
+  base_hp: integer('base_hp').notNull().default(0),
+  base_atk: integer('base_atk').notNull().default(0),
+  base_def: integer('base_def').notNull().default(0),
+  base_crit: integer('base_crit').notNull().default(0),
+  required_level: integer('required_level').notNull().default(1),
+  description: text('description'),
+  icon: varchar('icon', { length: 255 }),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Player Equipment — trang bị người chơi sở hữu
+export const playerEquipment = pgTable('player_equipment', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  player_id: uuid('player_id')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  equipment_id: uuid('equipment_id')
+    .notNull()
+    .references(() => equipmentTemplates.id, { onDelete: 'cascade' }),
+  enhancement: integer('enhancement').notNull().default(0),
+  is_equipped: varchar('is_equipped', { length: 5 }).notNull().default('false'),
+  slot_index: integer('slot_index'),
+  obtained_at: timestamp('obtained_at').defaultNow().notNull(),
+});
+
+// ============================================================
+// CRAFT MODULE
+// ============================================================
+
+// Craft Recipes — công thức chế tạo
+export const craftRecipes = pgTable('craft_recipes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 200 }).notNull(),
+  result_type: varchar('result_type', { length: 20 }).notNull(), // equipment, item, gu
+  result_id: uuid('result_id').notNull(), // FK linh hoạt: equipment_templates, item_templates, gu_templates
+  result_quantity: integer('result_quantity').notNull().default(1),
+  required_gold: integer('required_gold').notNull().default(0),
+  success_rate: integer('success_rate').notNull().default(100),
+  min_realm: integer('min_realm').notNull().default(1),
+  description: text('description'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Recipe Materials — nguyên liệu cho công thức
+export const recipeMaterials = pgTable('recipe_materials', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  recipe_id: uuid('recipe_id')
+    .notNull()
+    .references(() => craftRecipes.id, { onDelete: 'cascade' }),
+  item_id: uuid('item_id')
+    .notNull()
+    .references(() => itemTemplates.id, { onDelete: 'cascade' }),
+  quantity: integer('quantity').notNull().default(1),
+});
+
+// Craft Logs — lịch sử chế tạo
+export const craftLogs = pgTable('craft_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  player_id: uuid('player_id')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  recipe_id: uuid('recipe_id')
+    .notNull()
+    .references(() => craftRecipes.id, { onDelete: 'cascade' }),
+  success: varchar('success', { length: 5 }).notNull().default('true'),
+  crafted_at: timestamp('crafted_at').defaultNow().notNull(),
+});
+
+// Cultivation Realm — định nghĩa cảnh giới tu luyện
+export const cultivationRealms = pgTable('cultivation_realms', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  level: integer('level').notNull().unique(), // 1-9 Chuyển
+  stat_multiplier: integer('stat_multiplier').notNull().default(100), // % nhân chỉ số
+  required_breakthrough: varchar('required_breakthrough', { length: 5 }).notNull().default('true'),
+  breakthrough_gold: integer('breakthrough_gold').notNull().default(0),
+  breakthrough_item_id: uuid('breakthrough_item_id'),
+  description: text('description'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Player Cultivation — tiến độ tu luyện của player
+export const playerCultivation = pgTable('player_cultivation', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  player_id: uuid('player_id')
+    .notNull()
+    .unique()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  realm_level: integer('realm_level').notNull().default(1),
+  experience: integer('experience').notNull().default(0),
+  breakthrough_count: integer('breakthrough_count').notNull().default(0),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// ============================================================
+// SAVE SYSTEM (Sprint 6)
+// ============================================================
+
+export const playerSaves = pgTable('player_saves', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  player_id: uuid('player_id')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  save_name: varchar('save_name', { length: 100 }).notNull(),
+  is_auto: varchar('is_auto', { length: 5 }).notNull().default('false'),
+  save_data: jsonb('save_data').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ============================================================
+// WORLD MAPS (Sprint 6)
+// ============================================================
+
+export const worldMaps = pgTable('world_maps', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  region: varchar('region', { length: 50 }).notNull(), // bac_nguyen, nam_cuong, etc.
+  recommended_realm: integer('recommended_realm').notNull().default(1),
+  is_safe_zone: varchar('is_safe_zone', { length: 5 }).notNull().default('false'),
+  background: varchar('background', { length: 255 }),
+  width: integer('width').notNull().default(2000),
+  height: integer('height').notNull().default(2000),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const mapPortals = pgTable('map_portals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  from_map_id: uuid('from_map_id')
+    .notNull()
+    .references(() => worldMaps.id, { onDelete: 'cascade' }),
+  to_map_id: uuid('to_map_id')
+    .notNull()
+    .references(() => worldMaps.id, { onDelete: 'cascade' }),
+  from_x: integer('from_x').notNull(),
+  from_y: integer('from_y').notNull(),
+  to_x: integer('to_x').notNull(),
+  to_y: integer('to_y').notNull(),
+  portal_name: varchar('portal_name', { length: 100 }),
+});
+
+export const mapSpawns = pgTable('map_spawns', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  map_id: uuid('map_id')
+    .notNull()
+    .references(() => worldMaps.id, { onDelete: 'cascade' }),
+  spawn_type: varchar('spawn_type', { length: 20 }).notNull(), // npc, monster, boss
+  spawn_ref: varchar('spawn_ref', { length: 100 }).notNull(), // text ref: npc name or monster name
+  x: integer('x').notNull(),
+  y: integer('y').notNull(),
+  respawn_time: integer('respawn_time').notNull().default(30), // seconds
 });

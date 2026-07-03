@@ -14,13 +14,15 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Verify Redis connection
-  try {
-    const redis = await getRedisClient();
-    await redis.ping();
-    console.log('[Server] Redis connected successfully.');
-  } catch {
-    console.warn('[Server] Redis not available — continuing without cache.');
+  // Verify Redis connection (optional — skipped if REDIS_URL not set)
+  const redis = await getRedisClient();
+  if (redis) {
+    try {
+      await redis.ping();
+      console.log('[Server] Redis connected successfully.');
+    } catch {
+      console.warn('[Server] Redis ping failed — continuing without cache.');
+    }
   }
 
   httpServer.listen(config.port, () => {

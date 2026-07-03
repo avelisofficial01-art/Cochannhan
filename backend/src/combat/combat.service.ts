@@ -7,16 +7,32 @@ import {
 import type { DamageInput, MonsterInstance, MonsterTemplate, CombatResult } from '@co-dao/shared';
 import * as combatRepo from './combat.repository.js';
 import * as playerService from '../player/player.service.js';
+import * as storyRepo from '../story/story.repository.js';
+import {
+  initBossState,
+  checkBossPhase,
+  getBossConfig,
+  getBossStoryFlagOnDefeat,
+} from './boss-ai.js';
+import type { BossInstanceState } from './boss-ai.js';
 
 // ─── In-memory monster instances ────────────────────────────
 
 const monsterInstances = new Map<string, MonsterInstance>();
+const bossStates = new Map<string, BossInstanceState>();
 
 let instanceCounter = 0;
 
 function nextInstanceId(): string {
   instanceCounter++;
   return `monster_inst_${instanceCounter}`;
+}
+
+// ─── Boss Helpers ───────────────────────────────────────────
+
+async function setBossDefeatFlag(playerId: string, flagKey: string): Promise<void> {
+  await storyRepo.setFlag(playerId, flagKey, 'true');
+  console.log(`[Boss] Story flag set: ${flagKey} = true for player ${playerId}`);
 }
 
 // ─── Spawn / Despawn ───────────────────────────────────────
@@ -34,6 +50,16 @@ export function spawnMonster(template: MonsterTemplate, x: number, y: number): M
     lastAttackTick: 0,
   };
   monsterInstances.set(instance.instanceId, instance);
+
+  // Init boss state if this is a boss template
+  const bossConfig = getBossConfig(template.name);
+  if (bossConfig) {
+    const bossState = initBossState(bossConfig.bossId, template.hp);
+    if (bossState) {
+      bossStates.set(instance.instanceId, bossState);
+    }
+  }
+
   return instance;
 }
 
@@ -50,6 +76,7 @@ export function spawnMonstersFromTemplate(
 }
 
 export function despawnMonster(instanceId: string): boolean {
+  bossStates.delete(instanceId);
   return monsterInstances.delete(instanceId);
 }
 
@@ -119,7 +146,24 @@ export async function executePlayerAttack(
   const defeated = target.currentHp <= 0;
 
   if (defeated) {
+    // Boss defeat — set story flag
+    const storyFlagKey = getBossStoryFlagOnDefeat(target.template.name);
+    if (storyFlagKey) {
+      setBossDefeatFlag(playerId, storyFlagKey).catch((err) => {
+        console.error('Failed to set boss defeat flag:', err);
+      });
+    }
+    bossStates.delete(targetInstanceId);
     despawnMonster(targetInstanceId);
+  } else {
+    // Check boss phase transition
+    const bossState = bossStates.get(targetInstanceId);
+    if (bossState) {
+      const phaseChanged = checkBossPhase(bossState, target.currentHp, target.template.hp);
+      if (phaseChanged) {
+        console.log(`[Boss] ${bossState.bossConfig.name} entered ${bossState.currentPhase.name}`);
+      }
+    }
   }
 
   // Log combat
@@ -205,6 +249,7 @@ export function tickAllMonsters(_currentTick: number): Array<{
 
     const defeated = monster.currentHp <= 0;
     if (defeated) {
+      bossStates.delete(monster.instanceId);
       despawnMonster(monster.instanceId);
       results.push({
         instanceId: monster.instanceId,

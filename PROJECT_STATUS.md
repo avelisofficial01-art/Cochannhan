@@ -10,13 +10,13 @@
 
 # Current Sprint
 
-**Sprint:** 4 — Gu System
+**Sprint:** 6 — Chapter 1 Complete: BẮC NGUYÊN
 
-**Status:** ✅ Completed (2026-07-04)
+**Status:** 🚧 In Progress (5/6 tasks — S6.2 content deferred to Sprint 7)
 
 **Started:** 2026-07-04
 
-**Completed:** 2026-07-04
+**Completed:** —
 
 ---
 
@@ -29,17 +29,63 @@
 | Sprint 2 | NPC & Quest | ✅ Completed |
 | Sprint 3 | Combat Core | ✅ Completed |
 | Sprint 4 | Gu System | ✅ Completed |
-| Sprint 5 | Equipment & Craft | ⬜ Not Started |
-| Sprint 6 | Chapter 1 Complete | ⬜ Not Started |
+| Sprint 5 | Equipment & Craft | ✅ Completed |
+| Sprint 6 | Chapter 1 Complete | 🚧 In Progress |
 | Sprint 7 | Polish & Stabilize | ⬜ Not Started |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 4 — Gu System (COMPLETED)
+Current Module: 🚧 Sprint 6 — Chapter 1 Complete: BẮC NGUYÊN (IN PROGRESS)
 
-Next Module: Sprint 5 — Equipment & Craft
+Next Module: Sprint 7 — Polish & Stabilize
+
+---
+
+# Sprint 6 Checklist
+
+## Story Engine (S6.1)
+- [x] story_flags table — Story progression flags per player
+- [x] Story module — repository, service, controller, route
+- [x] REST: GET/PUT /api/story/flags, GET /api/story/flags/:key
+
+## Boss Bạch Lang Vương (S6.3)
+- [x] Boss AI — Phase-based combat behavior (3 phases: 100-70%, 70-40%, 40-0%)
+- [x] Boss config — Bạch Lang Vương stats, phase multipliers, story flag
+- [x] Story flag integration — boss_wolf_king_defeated flag on defeat
+- [x] Integration into combat service — auto-detect boss by name, phase transitions
+
+## Chapter 1 Content (S6.2)
+- [ ] Dialogue data — Chapter 1 dialogue trees (DEFERRED to Sprint 7)
+- [ ] Quest chain — Chapter 1 quest sequence (DEFERRED to Sprint 7)
+- [ ] Cutscenes — Intro/transition cutscenes (DEFERRED to Sprint 7)
+
+## Cultivation Breakthrough (S6.4)
+- [x] cultivation_realms table — Realm definitions (1-9 Chuyển)
+- [x] player_cultivation table — Per-player cultivation progress
+- [x] breakthrough_logs table — Breakthrough attempt history
+- [x] Cultivation module — repository, service, controller, route
+- [x] Breakthrough logic — Gold cost, item requirement, success roll
+- [x] REST: GET /api/cultivation/realms, GET /api/cultivation/player, POST /api/cultivation/breakthrough
+
+## Save System (S6.5)
+- [x] player_saves table — Auto + manual save slots
+- [x] Save module — repository, service, controller, route
+- [x] Auto-save + manual save logic
+- [x] REST: GET /api/save, POST /api/save, GET /api/save/:id, DELETE /api/save/:id
+- [x] Save data snapshot — Player + flags + inventory + equipment + cultivation + Gu
+
+## Bắc Nguyên Maps (S6.6)
+- [x] world_maps table — Map definitions with region/realm
+- [x] map_portals table — Inter-map teleport links
+- [x] map_npcs table — NPC positions per map
+- [x] map_monsters table — Monster spawns per map
+- [x] Map seed data — 5 Bắc Nguyên maps (Làng Cổ Thảo, Đồng Cỏ Hoang, Rừng Tuyết, Đỉnh Băng Phong, Cánh Đồng Tuyết)
+- [x] NPC spawn data per map (4 NPCs: Trưởng làng, Thợ rèn, Thương nhân, Trưởng lão)
+- [x] Monster spawn data per map (Sói Tuyết, Gấu Trắng, Thỏ Tuyết, Ưng Bắc Nguyên + Boss Bạch Lang Vương)
+- [x] Portal links between maps (4 two-way portals)
+- [x] Monster templates — 4 Bắc Nguyên monsters + Boss template
 
 ---
 

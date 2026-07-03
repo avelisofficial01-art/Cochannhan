@@ -14,6 +14,11 @@ import inventoryRouter from './inventory/inventory.route.js';
 import monsterRouter from './monster/monster.route.js';
 import combatRouter from './combat/combat.route.js';
 import guRouter from './gu/gu.route.js';
+import equipmentRouter from './equipment/equipment.route.js';
+import craftRouter from './craft/craft.route.js';
+import storyRouter from './story/story.controller.js';
+import cultivationRouter from './cultivation/cultivation.controller.js';
+import saveRouter from './save/save.controller.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { config } from './config/index.js';
 
@@ -68,6 +73,11 @@ app.use('/api/inventory', inventoryRouter);
 app.use('/api/monster', monsterRouter);
 app.use('/api/combat', combatRouter);
 app.use('/api/gu', guRouter);
+app.use('/api/equipment', equipmentRouter);
+app.use('/api/craft', craftRouter);
+app.use('/api/story', storyRouter);
+app.use('/api/cultivation', cultivationRouter);
+app.use('/api/save', saveRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

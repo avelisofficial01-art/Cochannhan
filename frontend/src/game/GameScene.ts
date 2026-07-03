@@ -24,6 +24,8 @@ export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private spaceKey!: Phaser.Input.Keyboard.Key;
   private guKey!: Phaser.Input.Keyboard.Key;
+  private eqKey!: Phaser.Input.Keyboard.Key;
+  private craftKey!: Phaser.Input.Keyboard.Key;
   private playerX = 400;
   private playerY = 300;
   private readonly moveSpeed = 200;
@@ -108,6 +110,8 @@ export class GameScene extends Phaser.Scene {
       this.cursors = this.input.keyboard.createCursorKeys();
       this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
       this.guKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G);
+      this.eqKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+      this.craftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
     }
 
     /* ── Attack cooldown indicator (bottom center) ── */
@@ -144,6 +148,8 @@ export class GameScene extends Phaser.Scene {
     this.updatePlayerMovement(delta);
     this.updateAttackCooldown(delta);
     this.handleGuToggle();
+    this.handleEquipToggle();
+    this.handleCraftToggle();
     this.syncMonsters();
     this.updateFloatTexts(delta);
   }
@@ -234,6 +240,24 @@ export class GameScene extends Phaser.Scene {
   private handleGuToggle(): void {
     if (this.guKey && Phaser.Input.Keyboard.JustDown(this.guKey)) {
       useGameStore.getState().toggleGuPanel();
+    }
+  }
+
+  /* ───────────────────────────────────────
+   *  Equipment Panel toggle (E key)
+   * ─────────────────────────────────────── */
+  private handleEquipToggle(): void {
+    if (this.eqKey && Phaser.Input.Keyboard.JustDown(this.eqKey)) {
+      useGameStore.getState().toggleEquipmentPanel();
+    }
+  }
+
+  /* ───────────────────────────────────────
+   *  Craft Panel toggle (C key)
+   * ─────────────────────────────────────── */
+  private handleCraftToggle(): void {
+    if (this.craftKey && Phaser.Input.Keyboard.JustDown(this.craftKey)) {
+      useGameStore.getState().toggleCraftPanel();
     }
   }
 

@@ -3,6 +3,8 @@ import Phaser from 'phaser';
 import { GameScene } from '../game/GameScene.js';
 import { useSocket } from '../hooks/useSocket.js';
 import GuPanel from '../components/GuPanel.js';
+import EquipmentPanel from '../components/EquipmentPanel.js';
+import CraftPanel from '../components/CraftPanel.js';
 
 export default function GamePage(): React.ReactElement {
   const gameRef = useRef<Phaser.Game | null>(null);
@@ -70,6 +72,8 @@ export default function GamePage(): React.ReactElement {
       {/* Game area */}
       <div className="relative w-full max-w-4xl flex-1 flex items-center justify-center bg-gu-darker">
         <GuPanel />
+        <EquipmentPanel />
+        <CraftPanel />
         <div
           ref={containerRef}
           className="flex-1 h-full"
@@ -78,7 +82,7 @@ export default function GamePage(): React.ReactElement {
 
       {/* Bottom hint */}
       <footer className="w-full max-w-4xl px-6 py-2 text-xs text-gray-500 text-center border-t border-gu-border">
-        Arrow keys to move — Sprint 1: Player &amp; World
+        Arrow keys to move | G = Gu | E = Equipment | C = Craft
       </footer>
     </div>
   );
