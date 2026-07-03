@@ -1,0 +1,250 @@
+# PROJECT_STATUS.md
+
+# Gu World - Project Status
+
+**Project:** CỔ ĐẠO
+**Version:** Pre-Alpha
+**Status:** 🚧 In Development
+
+---
+
+# Current Sprint
+
+**Sprint:** 2 — NPC & QUEST
+
+**Status:** ✅ COMPLETED (2026-07-04)
+
+**Started:** 2026-07-04
+
+**Completed:** 2026-07-04
+
+---
+
+# Overall Progress
+
+| Sprint | Name | Status |
+|---------|------|--------|
+| Sprint 0 | Foundation | ✅ Completed |
+| Sprint 1 | Core Infrastructure | ✅ Completed |
+| Sprint 2 | NPC & Quest | ✅ Completed |
+| Sprint 3 | Combat Core | ⬜ Not Started |
+| Sprint 4 | Gu System | ⬜ Not Started |
+| Sprint 5 | Equipment & Craft | ⬜ Not Started |
+| Sprint 6 | Chapter 1 Complete | ⬜ Not Started |
+| Sprint 7 | Polish & Stabilize | ⬜ Not Started |
+
+---
+
+# Current Task
+
+Current Module: ✅ Sprint 2 — NPC & QUEST (completed)
+
+Next Module: Sprint 3 — Combat Core
+
+---
+
+---
+
+# Sprint 2 Checklist
+
+## Database Schema
+- [x] npc_templates — NPC definitions (name, sprite, faction, occupation, map, position, schedule)
+- [x] npc_dialogues — Dialogue trees (text, choices, story flags, affection conditions)
+- [x] quest_templates — Quest definitions (type, objectives, rewards, prerequisites, story flags)
+- [x] player_quests — Player quest progress tracking
+- [x] story_flags — Player story flags (key-value store)
+- [x] item_templates — Item definitions (name, type, stackable, price)
+- [x] player_inventory — Player inventory slots
+
+## Backend
+- [x] NPC module — repository, service, controller, routes
+- [x] Quest module — repository, service, controller, routes
+- [x] Inventory module — repository, service, controller, routes
+- [x] Auth middleware: added resolvePlayer to attach playerId
+- [x] Routes mounted: /api/npc, /api/quest, /api/inventory
+- [x] CamelCase ↔ snake_case mapping in all repositories
+
+## Shared Types
+- [x] NpcInfo, NpcDialogue, DialogueChoice, DialogueNode
+- [x] QuestInfo, QuestObjective, QuestReward, QuestPrerequisite, PlayerQuest
+- [x] ObjectiveProgress, StoryFlag
+- [x] ItemInfo, InventorySlot
+
+## Seed Data
+- [x] 4 NPCs: Trưởng làng, Thợ rèn, Thương nhân, Trưởng lão
+- [x] 2 Sample quests: main + side quest
+- [x] 4 Items: potions, materials, quest items
+
+---
+
+# Sprint 1 Checklist
+
+## Backend
+- [x] Schema mới: game_config, maps, portals
+- [x] Player module — CRUD player, stats, profile
+- [x] Player schema (Zod validation)
+- [x] Player repository (Drizzle queries)
+- [x] Player service (business logic)
+- [x] Player controller (REST endpoints)
+- [x] Player routes: GET /profile, GET /stats, POST /create
+- [x] World module — Map CRUD, Portal, Dungeon skeleton
+- [x] World repository, service, controller, routes
+- [x] Stat Calculator (shared) — Base + Equipment + Gu + Passive + Buff + Story
+- [x] Redis cache layer (cache.ts)
+- [x] Socket.IO setup — player:move, map:players
+- [x] Error handling middleware improvements
+
+## Frontend
+- [x] PhaserJS 3.80 game renderer
+- [x] Game scene: tilemap + player sprite + arrow key movement
+- [x] Socket.IO client hook (useSocket)
+- [x] Game state store (Zustand)
+- [x] GamePage component
+- [x] Auth store: added player field + setPlayer action
+- [x] API client: added player endpoints
+
+## Asset System
+- [x] ASSET_MANIFEST.md — phân loại 72 assets thành 9 category
+- [x] AssetConfig.ts — toàn bộ asset paths configurable, không hardcode
+- [x] AssetManager.ts — preload + typed lookup + placeholder fallback
+- [x] GameScene.ts — tích hợp AssetManager, thay thế hardcoded paths
+- [x] Vite config — publicDir trỏ đến assets/ workspace root
+
+---
+
+# Sprint 0 Checklist
+
+## Backend
+- [x] NodeJS + Express + TypeScript
+- [x] Socket.IO placeholder
+- [x] Modular Clean Architecture (Route → Controller → Service → Repository)
+- [x] Auth module: Register, Login, Refresh Token, Logout
+- [x] JWT + bcrypt password hash
+- [x] Zod validation
+- [x] Rate limiting (in-memory)
+- [x] Error handling middleware
+
+## Frontend
+- [x] React 19 + Vite 6
+- [x] TypeScript strict mode
+- [x] TailwindCSS 3 + custom theme (gu-* colors)
+- [x] Zustand auth store
+- [x] TanStack Query provider
+- [x] React Router (Login, Register pages)
+- [x] API client (fetch wrapper)
+
+## Database
+- [x] PostgreSQL 17 (Docker)
+- [x] Drizzle ORM schema: accounts, account_sessions, players
+- [x] drizzle.config.ts
+
+## Infrastructure
+- [x] Monorepo (npm workspaces)
+- [x] Docker Compose (PostgreSQL, Redis, Backend, Frontend)
+- [x] ESLint + Prettier config
+- [x] GitHub Actions CI (Lint + TypeCheck)
+- [x] tsconfig strict (base + per-package)
+
+## Documentation
+- [x] docs/03_DATABASE_DESIGN.md updated (Prisma → Drizzle)
+- [x] GAME_BUILD_PLAN.md updated (Sprint 0 marked complete)
+- [x] CHANGELOG.md created
+
+---
+
+# Deployment
+
+**Architecture:** Render Cloud (không cần Docker local)
+
+- **co-dao-backend** — Render Web Service: Express API + phục vụ React SPA từ `frontend/dist/`
+- **co-dao-postgres** — Render Managed PostgreSQL 17
+- **Redis** — Optional (server chạy bình thường nếu không có Redis)
+
+| Component | Status |
+|-----------|--------|
+| render.yaml | ✅ Ready |
+| .env.example | ✅ Updated (CORS_ORIGIN, Render env vars) |
+| Docker Compose | ⚠️ Legacy only (đã đánh dấu deprecated) |
+| Local Dev | ✅ `npm run dev` (không cần Docker) |
+| Production Build | ✅ `npm run build` → backend serves frontend |
+| Deploy lên Render | ⬜ Pending (push repo + connect Blueprint) |
+
+# Current Blockers
+
+- Không có. Typecheck & Lint đã được xác minh thành công (2026-07-04).
+
+---
+
+# Next Task
+
+→ **Sprint 3 — Combat Core** (theo GAME_BUILD_PLAN.md)
+
+Không được thực hiện Sprint tiếp theo nếu Sprint hiện tại chưa hoàn thành 100%.
+
+---
+
+# Last Completed Task
+
+**2026-07-03**: Sprint 0 — Foundation completed & verified.
+- Monorepo initialized (3 packages: shared, backend, frontend)
+- npm install successful (293 packages)
+- Typecheck: 0 errors across all 3 workspaces
+- Lint: 0 errors, 0 warnings
+- Docker Compose with PostgreSQL 17 + Redis
+- Database schema: accounts, account_sessions, players (Drizzle ORM)
+- Auth module: Register, Login, Refresh Token, Logout
+- Frontend: Login + Register pages with TailwindCSS
+- CI/CD: GitHub Actions (Lint + TypeCheck)
+
+---
+
+# Changelog
+
+## 2026-07-03
+
+Sprint 0 — Foundation completed. Full infrastructure ready for development.
+
+---
+
+# AI Instructions
+
+Mọi AI Agent phải đọc các file sau trước khi bắt đầu làm việc:
+
+1. AGENTS.md
+2. PROJECT_STATUS.md
+3. GAME_BUILD_PLAN.md
+
+Sau đó mới đọc các tài liệu liên quan trong:
+
+- docs/
+- content/
+
+---
+
+# Update Rules
+
+Sau mỗi lần hoàn thành một task:
+
+- Cập nhật Sprint Checklist.
+- Cập nhật Overall Progress.
+- Cập nhật Last Completed Task.
+- Cập nhật Changelog.
+- Cập nhật Next Task.
+
+Không được bỏ qua.
+
+---
+
+# Completion Rules
+
+Một Sprint chỉ được đánh dấu **Completed** khi:
+
+- Tất cả Checklist đều hoàn thành.
+- Build thành công.
+- Không có lỗi TypeScript.
+- Không có lỗi ESLint.
+- Migration chạy thành công.
+- Docker chạy thành công.
+- CHANGELOG.md đã được cập nhật.
+
+Không được chuyển sang Sprint tiếp theo nếu chưa đạt các điều kiện trên.

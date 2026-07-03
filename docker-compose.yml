@@ -1,0 +1,77 @@
+# ═══════════════════════════════════════════════════════════
+# DOCKER COMPOSE — LEGACY / OPTIONAL
+# ═══════════════════════════════════════════════════════════
+# This file requires Docker Desktop (Docker Compose V2).
+# If Docker is NOT available, use:
+#   - Local dev:  npm run dev           (needs PG + Redis installed separately)
+#   - Cloud:      render.yaml           (Render Blueprint — zero local Docker)
+#
+# This file is kept for users who prefer Docker Compose.
+# ===========================================================
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: co-dao-postgres
+    environment:
+      POSTGRES_USER: co_dao
+      POSTGRES_PASSWORD: co_dao_dev
+      POSTGRES_DB: co_dao
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U co_dao']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: co-dao-redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: co-dao-backend
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://co_dao:co_dao_dev@postgres:5432/co_dao
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_secret_change_in_production
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+      - ./shared:/app/shared
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    container_name: co-dao-frontend
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+      - ./shared:/app/shared
+
+volumes:
+  pgdata:

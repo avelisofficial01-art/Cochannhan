@@ -1,0 +1,48 @@
+# Render Blueprint — CỔ ĐẠO
+# Deploy to Render: https://dashboard.render.com/blueprints/new
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Architecture: Single Web Service (backend serves frontend in production)
+#   - co-dao-backend: Express API + serves React static files
+#   - co-dao-postgres: Managed PostgreSQL 17
+
+services:
+  # ── Backend API + Frontend (Single Web Service) ────
+  - type: web
+    name: co-dao-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: co-dao-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+
+databases:
+  # ── PostgreSQL (Managed) ───────────────────────────
+  - name: co-dao-postgres
+    plan: free
+    region: singapore
+
+  # ── Redis (Optional) ──────────────────────────────
+  # Uncomment if you need Redis cache.
+  # The backend runs without Redis — Socket.IO real-time
+  # features work; only the caching layer is skipped.
+  #
+  # - name: co-dao-redis
+  #   plan: free
+  #   region: singapore
