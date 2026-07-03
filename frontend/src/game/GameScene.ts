@@ -67,8 +67,8 @@ export class GameScene extends Phaser.Scene {
     const mapKey = getMapKey(this.mapId);
     console.log(`[GameScene] Map key: "${mapKey}", texture exists: ${this.textures.exists(mapKey)}`);
     if (this.textures.exists(mapKey)) {
-      const mapImg = this.add.image(400, 300, mapKey);
-      mapImg.setDisplaySize(800, 600);
+      const mapImg = this.add.image(512, 320, mapKey);
+      mapImg.setDisplaySize(1024, 640);
       console.log('[GameScene] ✅ Map rendered from texture');
     } else {
       console.warn('[GameScene] ⚠️ Map texture not found, using grid fallback');
@@ -80,7 +80,7 @@ export class GameScene extends Phaser.Scene {
     console.log(`[GameScene] Player key: "${playerKey}", texture exists: ${this.textures.exists(playerKey)}`);
     if (this.textures.exists(playerKey)) {
       this.playerSprite = this.add.image(this.playerX, this.playerY, playerKey);
-      this.playerSprite.setDisplaySize(32, 32);
+      this.playerSprite.setDisplaySize(24, 24);
       console.log('[GameScene] ✅ Player rendered from texture');
     } else {
       console.warn('[GameScene] ⚠️ Player texture not found, using rectangle fallback');
@@ -171,8 +171,8 @@ export class GameScene extends Phaser.Scene {
       moved = true;
     }
 
-    this.playerX = Phaser.Math.Clamp(this.playerX, 16, 784);
-    this.playerY = Phaser.Math.Clamp(this.playerY, 16, 568);
+    this.playerX = Phaser.Math.Clamp(this.playerX, 12, 1012);
+    this.playerY = Phaser.Math.Clamp(this.playerY, 12, 628);
 
     if (moved) {
       this.playerSprite.setPosition(this.playerX, this.playerY);
@@ -322,10 +322,10 @@ export class GameScene extends Phaser.Scene {
 
     if (texExists) {
       sprite = this.add.image(m.x, m.y, monsterKey);
-      sprite.setDisplaySize(28, 28);
+      sprite.setDisplaySize(24, 24);
     } else {
       console.warn(`[GameScene] ⚠️ Monster texture "${monsterKey}" not found, using rectangle fallback`);
-      const rect = this.add.rectangle(m.x, m.y, 28, 28, 0xff4444);
+      const rect = this.add.rectangle(m.x, m.y, 24, 24, 0xff4444);
       rect.setStrokeStyle(2, 0x000000);
       sprite = rect as unknown as Phaser.GameObjects.Image;
     }
