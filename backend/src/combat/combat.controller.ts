@@ -21,7 +21,7 @@ export async function attack(
 
     const currentPlayerId = playerId;
     if (!currentPlayerId) {
-      error(res, ERROR_CODES.UNAUTHORIZED, 'Player not authenticated', 401);
+      error(res, 'UNAUTHORIZED', 'Player not authenticated', 401);
       return;
     }
 

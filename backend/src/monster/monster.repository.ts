@@ -19,7 +19,23 @@ export interface MonsterRow {
   created_at: Date;
 }
 
-function toCamelCase(row: MonsterRow): Record<string, unknown> {
+interface CamelMonsterRow {
+  id: string;
+  name: string;
+  realm: number;
+  hp: number;
+  atk: number;
+  def: number;
+  speed: number;
+  element: string;
+  sprite: string;
+  dropTable: unknown;
+  mapId: string;
+  respawnTime: number;
+  createdAt: Date;
+}
+
+function toCamelCase(row: MonsterRow): CamelMonsterRow {
   return {
     id: row.id,
     name: row.name,
