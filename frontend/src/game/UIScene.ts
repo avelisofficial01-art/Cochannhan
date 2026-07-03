@@ -1,27 +1,31 @@
 import Phaser from 'phaser';
+import { VirtualJoystick, type JoystickState } from './VirtualJoystick.js';
 
 /**
- * UIScene — Overlay HUD scene that runs in parallel with GameScene.
+ * UIScene — Overlay HUD, touch controls for mobile H5.
  *
- * Responsibilities:
- *  - Display persistent HUD elements on top of gameplay.
- *  - Listen for events from GameScene to update UI state.
- *  - FUTURE: Dialogue box, notifications, minimap, player stats bar.
- *
- * This scene is launched by GameScene and remains active throughout gameplay.
+ * Desktop: skeleton only (keyboard hints in GameScene).
+ * Mobile:  virtual joystick (bottom-left) + attack button (bottom-right).
  */
 export class UIScene extends Phaser.Scene {
+  private joystick: VirtualJoystick | null = null;
+  private attackButton: Phaser.GameObjects.Arc | null = null;
+  private isAttacking = false;
+  private isMobile = false;
+
   constructor() {
     super({ key: 'UIScene' });
   }
 
   create(): void {
-    // UIScene runs as an overlay — transparent background.
-    // HUD elements (cooldown bar, hints) are rendered inside GameScene
-    // for direct access to the update loop and combat state.
-    // This scene is a skeleton for future overlay UI (dialogue, notifications).
+    this.isMobile = this.sys.game.device.input.touch;
 
-    // Listen for custom events from GameScene
+    if (this.isMobile) {
+      const { width, height } = this.cameras.main;
+      this.joystick = new VirtualJoystick(this, 100, height - 100, 40);
+      this.createAttackButton(width - 80, height - 100);
+    }
+
     const gameScene = this.scene.get('GameScene');
     if (gameScene) {
       gameScene.events.on('show-dialogue', this.showDialogue, this);
@@ -29,13 +33,38 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  private showDialogue(_data: unknown): void {
-    // FUTURE: Render dialogue box overlay using UI frame asset + text
+  /* ── Attack button (bottom-right) ── */
+
+  private createAttackButton(x: number, y: number): void {
+    this.attackButton = this.add.circle(x, y, 35, 0xff0000, 0.35);
+    this.attackButton.setStrokeStyle(2, 0xff4444, 0.7);
+    this.attackButton.setDepth(1000);
+    this.attackButton.setInteractive();
+
+    this.add.text(x, y, '⚔', { fontSize: '22px' })
+      .setOrigin(0.5)
+      .setDepth(1001);
+
+    this.attackButton.on('pointerdown', () => { this.isAttacking = true; });
+    this.attackButton.on('pointerup', () => { this.isAttacking = false; });
+    this.attackButton.on('pointerout', () => { this.isAttacking = false; });
   }
 
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  private showNotification(_message: string): void {
-    // FUTURE: Toast notification system
+  /* ── Public API (called by GameScene) ── */
+
+  getJoystickState(): JoystickState {
+    return this.joystick?.getState() ?? { direction: { x: 0, y: 0 }, isActive: false };
   }
+
+  isAttackPressed(): boolean {
+    return this.isAttacking;
+  }
+
+  /* ── FUTURE ── */
+
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  private showDialogue(_data: unknown): void { /* FUTURE: dialogue box overlay */ }
+
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  private showNotification(_message: string): void { /* FUTURE: toast notifications */ }
 }

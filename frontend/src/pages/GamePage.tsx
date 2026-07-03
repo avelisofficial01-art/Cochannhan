@@ -54,26 +54,26 @@ export default function GamePage(): React.ReactElement {
 
   return (
     <div className="min-h-screen bg-gu-darker flex flex-col items-center">
-      {/* Top bar */}
-      <header className="w-full max-w-4xl flex items-center justify-between px-6 py-3 bg-gu-dark border-b border-gu-border">
-        <h1 className="text-lg font-bold text-gu-accent">
+      {/* Top bar — compact on mobile */}
+      <header className="w-full flex items-center justify-between px-3 py-2 md:px-6 md:py-3 bg-gu-dark border-b border-gu-border">
+        <h1 className="text-base md:text-lg font-bold text-gu-accent">
           CỔ ĐẠO
         </h1>
-        <div className="flex items-center gap-4">
-          <span className={`text-sm ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-            {isConnected ? '● Connected' : '○ Disconnected'}
+        <div className="flex items-center gap-2 md:gap-4">
+          <span className={`text-xs md:text-sm ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+            {isConnected ? '●' : '○'}
           </span>
           <button
             onClick={handleLogout}
-            className="px-4 py-1.5 text-sm border border-gu-border rounded hover:bg-gu-border/30 transition-colors"
+            className="px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm border border-gu-border rounded hover:bg-gu-border/30 transition-colors"
           >
             Logout
           </button>
         </div>
       </header>
 
-      {/* Game area */}
-      <div className="relative w-full max-w-4xl flex-1 flex items-center justify-center bg-gu-darker">
+      {/* Game area — full width, no max-w clamp */}
+      <div className="relative w-full flex-1 flex items-center justify-center bg-gu-darker">
         <GuPanel />
         <EquipmentPanel />
         <CraftPanel />
@@ -83,8 +83,8 @@ export default function GamePage(): React.ReactElement {
         />
       </div>
 
-      {/* Bottom hint */}
-      <footer className="w-full max-w-4xl px-6 py-2 text-xs text-gray-500 text-center border-t border-gu-border">
+      {/* Bottom hint — hidden on mobile (touch controls in UIScene) */}
+      <footer className="w-full px-3 py-1 md:px-6 md:py-2 text-xs text-gray-500 text-center border-t border-gu-border hidden md:block">
         Arrow keys to move | G = Gu | E = Equipment | C = Craft
       </footer>
     </div>

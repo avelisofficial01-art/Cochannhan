@@ -171,6 +171,19 @@ export class GameScene extends Phaser.Scene {
       moved = true;
     }
 
+    // ── Mobile H5: virtual joystick from UIScene ──
+    const uiScene = this.scene.get('UIScene') as {
+      getJoystickState?: () => { direction: { x: number; y: number }; isActive: boolean };
+    } | null;
+    if (uiScene?.getJoystickState) {
+      const js = uiScene.getJoystickState();
+      if (js.isActive) {
+        this.playerX += js.direction.x * this.moveSpeed * dtSec;
+        this.playerY += js.direction.y * this.moveSpeed * dtSec;
+        moved = true;
+      }
+    }
+
     this.playerX = Phaser.Math.Clamp(this.playerX, 12, 1012);
     this.playerY = Phaser.Math.Clamp(this.playerY, 12, 628);
 
@@ -250,6 +263,16 @@ export class GameScene extends Phaser.Scene {
   private updateAttackCooldown(delta: number): void {
     if (this.spaceKey && Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
       this.handleAttack();
+    }
+
+    // ── Mobile H5: attack button from UIScene ──
+    const uiScene = this.scene.get('UIScene') as {
+      isAttackPressed?: () => boolean;
+    } | null;
+    if (uiScene?.isAttackPressed?.()) {
+      this.handleAttack();
+      // release immediately so it only fires once per press
+      (uiScene as Record<string, boolean>).isAttacking = false;
     }
 
     if (!this.attackReady && this.attackCooldownRemaining > 0) {
