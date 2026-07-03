@@ -60,25 +60,30 @@ export class GameScene extends Phaser.Scene {
    *  Create — build the scene from preloaded assets
    * ─────────────────────────────────────── */
   create(): void {
+    console.log('[GameScene] 🎮 Creating scene...');
     this.cameras.main.setBackgroundColor('#1a1a2e');
 
     /* ── Map background ── */
     const mapKey = getMapKey(this.mapId);
+    console.log(`[GameScene] Map key: "${mapKey}", texture exists: ${this.textures.exists(mapKey)}`);
     if (this.textures.exists(mapKey)) {
       const mapImg = this.add.image(400, 300, mapKey);
       mapImg.setDisplaySize(800, 600);
+      console.log('[GameScene] ✅ Map rendered from texture');
     } else {
-      // Last-resort fallback — only if the asset truly failed
+      console.warn('[GameScene] ⚠️ Map texture not found, using grid fallback');
       this.drawGridFallback();
     }
 
     /* ── Player sprite ── */
     const playerKey = getPlayerKey();
+    console.log(`[GameScene] Player key: "${playerKey}", texture exists: ${this.textures.exists(playerKey)}`);
     if (this.textures.exists(playerKey)) {
       this.playerSprite = this.add.image(this.playerX, this.playerY, playerKey);
       this.playerSprite.setDisplaySize(32, 32);
+      console.log('[GameScene] ✅ Player rendered from texture');
     } else {
-      // Last-resort fallback
+      console.warn('[GameScene] ⚠️ Player texture not found, using rectangle fallback');
       this.createPlayerFallback();
     }
 
@@ -313,16 +318,15 @@ export class GameScene extends Phaser.Scene {
 
     // Try to map monster templateId to a monster sprite index
     const monsterKey = getMonsterKey(this.getMonsterIndex(m.templateId));
+    const texExists = this.textures.exists(monsterKey);
 
-    if (this.textures.exists(monsterKey)) {
+    if (texExists) {
       sprite = this.add.image(m.x, m.y, monsterKey);
       sprite.setDisplaySize(28, 28);
     } else {
-      // Last-resort fallback
+      console.warn(`[GameScene] ⚠️ Monster texture "${monsterKey}" not found, using rectangle fallback`);
       const rect = this.add.rectangle(m.x, m.y, 28, 28, 0xff4444);
       rect.setStrokeStyle(2, 0x000000);
-      // Wrap rectangle as an Image-like object — we use a proxy pattern via
-      // type assertion since Phaser.Rectangle shares setPosition/setDisplaySize
       sprite = rect as unknown as Phaser.GameObjects.Image;
     }
 
@@ -428,12 +432,14 @@ export class GameScene extends Phaser.Scene {
    * ─────────────────────────────────────── */
 
   private createPlayerFallback(): void {
+    console.warn('[GameScene] ⚠️ Using player rectangle fallback (texture failed to load)');
     const rect = this.add.rectangle(this.playerX, this.playerY, 32, 32, 0x00ff88);
     rect.setStrokeStyle(2, 0xffffff);
     this.playerSprite = rect as unknown as Phaser.GameObjects.Image;
   }
 
   private drawGridFallback(): void {
+    console.warn('[GameScene] ⚠️ Using grid fallback (map texture failed to load)');
     const gfx = this.add.graphics();
     gfx.lineStyle(1, 0x333355, 0.3);
     for (let x = 0; x <= 800; x += 50) {
