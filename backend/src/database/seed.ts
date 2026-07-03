@@ -18,12 +18,19 @@ import {
 const bacNguyenMonsterSeeds = monsterSeeds;
 
 export async function seedDatabase(): Promise<void> {
-  console.log('[Seed] Checking if database requires seeding...');
+  // Check each critical table independently — allows partial re-seeding
+  // if some tables were created but others are empty (e.g. maps exist but no NPCs)
+  const [existingMaps, existingNpcs, existingMonsters] = await Promise.all([
+    db.select().from(schema.worldMaps).limit(1),
+    db.select().from(schema.npcTemplates).limit(1),
+    db.select().from(schema.monsterTemplates).limit(1),
+  ]);
 
-  // We check if maps is empty to decide whether to seed world config
-  const existingMaps = await db.select().from(schema.worldMaps).limit(1);
-  if (existingMaps.length > 0) {
-    console.log('[Seed] Database already seeded. Skipping...');
+  const needsWorldData = existingMaps.length === 0;
+  const needsNpcs = existingNpcs.length === 0;
+  const needsMonsters = existingMonsters.length === 0;
+
+  if (!needsWorldData && !needsNpcs && !needsMonsters) {
     return;
   }
 
@@ -64,46 +71,57 @@ export async function seedDatabase(): Promise<void> {
     }
   }
 
-  // 3. Seed maps
-  console.log('[Seed] Seeding maps...');
+  // 3. Seed maps (or load existing map IDs for use by NPC/monster seeding)
   const mapUuidMap = new Map<string, string>(); // ref -> UUID
   let villageMapId: string | undefined;
 
-  for (const m of worldMapSeeds) {
-    const [insertedWorldMap] = await db.insert(schema.worldMaps).values({
-      name: m.name,
-      region: m.region,
-      recommended_realm: m.recommended_realm,
-      is_safe_zone: m.is_safe_zone,
-      background: m.background,
-      width: m.width,
-      height: m.height,
-    }).returning();
+  if (needsWorldData) {
+    for (const m of worldMapSeeds) {
+      const [insertedWorldMap] = await db.insert(schema.worldMaps).values({
+        name: m.name,
+        region: m.region,
+        recommended_realm: m.recommended_realm,
+        is_safe_zone: m.is_safe_zone,
+        background: m.background,
+        width: m.width,
+        height: m.height,
+      }).returning();
 
-    // Also seed the older 'maps' table for backwards compatibility
-    await db.insert(schema.maps).values({
-      id: insertedWorldMap.id,
-      name: m.name,
-      background: m.background === 'bg_village' ? 'map_bac_nguyen' : m.background, // map standard backgrounds
-      level_min: m.recommended_realm,
-      level_max: m.recommended_realm + 5,
-    }).onConflictDoNothing();
+      await db.insert(schema.maps).values({
+        id: insertedWorldMap.id,
+        name: m.name,
+        background: m.background === 'bg_village' ? 'map_bac_nguyen' : m.background,
+        level_min: m.recommended_realm,
+        level_max: m.recommended_realm + 5,
+      }).onConflictDoNothing();
 
-    mapUuidMap.set(m.ref, insertedWorldMap.id);
-    if (m.ref === 'lang_cothao') {
-      villageMapId = insertedWorldMap.id;
+      mapUuidMap.set(m.ref, insertedWorldMap.id);
+      if (m.ref === 'lang_cothao') {
+        villageMapId = insertedWorldMap.id;
+      }
     }
-  }
 
-  // Also insert the default fallback map in case anything fails
-  if (villageMapId) {
-    await db.insert(schema.maps).values({
-      id: villageMapId,
-      name: 'bac_nguyen_village', // keep fallback name in database
-      background: 'map_bac_nguyen',
-      level_min: 1,
-      level_max: 9,
-    }).onConflictDoNothing();
+    if (villageMapId) {
+      await db.insert(schema.maps).values({
+        id: villageMapId,
+        name: 'bac_nguyen_village',
+        background: 'map_bac_nguyen',
+        level_min: 1,
+        level_max: 9,
+      }).onConflictDoNothing();
+    }
+  } else {
+    // Maps already in DB — load their IDs so NPC/monster seeding can reference them
+    const allMaps = await db.select().from(schema.worldMaps);
+    for (const m of worldMapSeeds) {
+      const found = allMaps.find((row) => row.name === m.name);
+      if (found) {
+        mapUuidMap.set(m.ref, found.id);
+        if (m.ref === 'lang_cothao') {
+          villageMapId = found.id;
+        }
+      }
+    }
   }
 
   // 4. Seed portals

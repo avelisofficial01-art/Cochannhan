@@ -90,16 +90,16 @@ export function useSocket(): { isConnected: boolean } {
     // ── Map synchronization events ───────────────────
     // Helper: emit to GameScene with retry (fixes race condition where socket
     // connects before GameScene.create() registers its event listeners)
-    const emitToGameScene = (eventName: string, payload: unknown, maxRetries = 10): void => {
+    const emitToGameScene = (eventName: string, payload: unknown, maxRetries = 30): void => {
       const tryEmit = (retriesLeft: number): void => {
         const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
         const scene = game?.scene.getScene('GameScene');
-        // Check if the scene is active and its event system is ready
+        // Check if the scene is active (i.e. create() has completed)
         if (scene && scene.sys.isActive()) {
           scene.events.emit(eventName, payload);
         } else if (retriesLeft > 0) {
-          // Retry after 200ms — scene might still be loading
-          setTimeout(() => tryEmit(retriesLeft - 1), 200);
+          // Retry every 100ms — up to 3 seconds total wait
+          setTimeout(() => tryEmit(retriesLeft - 1), 100);
         }
       };
       tryEmit(maxRetries);

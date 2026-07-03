@@ -413,11 +413,11 @@ export class GameScene extends Phaser.Scene {
 
     if (texExists) {
       sprite = this.add.image(m.x, m.y, monsterKey);
-      sprite.setDisplaySize(24, 24);
+      sprite.setDisplaySize(32, 32);
     } else {
-      console.warn(`[GameScene] ⚠️ Monster texture "${monsterKey}" not found, using rectangle fallback`);
-      const rect = this.add.rectangle(m.x, m.y, 24, 24, 0xff4444);
-      rect.setStrokeStyle(2, 0x000000);
+      // Fallback: always-visible red circle
+      const rect = this.add.circle(m.x, m.y, 16, 0xff4444, 0.9);
+      rect.setStrokeStyle(2, 0x000000, 1);
       sprite = rect as unknown as Phaser.GameObjects.Image;
     }
 
@@ -595,18 +595,33 @@ export class GameScene extends Phaser.Scene {
 
     // Create new NPC sprites
     npcs.forEach((npc) => {
-      // Map npc sprite index
-      const npcKey = getNpcKey(parseInt(npc.sprite.replace('char_', ''), 10) || 0);
-      const npcSprite = this.add.image(npc.x, npc.y, npcKey);
-      npcSprite.setDisplaySize(36, 36);
-      npcSprite.setInteractive();
+      // NPC_PLACEHOLDERS are loaded as npc_0, npc_1, ...
+      // sprite field is like 'char_2' (1-indexed). Map: char_N -> npc_(N-1)
+      const charIndex = parseInt(npc.sprite.replace('char_', ''), 10);
+      const npcIdx = isNaN(charIndex) ? 0 : Math.max(0, charIndex - 1);
+      const npcKey = getNpcKey(npcIdx);
 
-      const nameLabel = this.add.text(npc.x, npc.y - 28, npc.name, {
-        fontSize: '11px',
+      let npcSprite: Phaser.GameObjects.Image;
+      if (this.textures.exists(npcKey)) {
+        npcSprite = this.add.image(npc.x, npc.y, npcKey);
+        npcSprite.setDisplaySize(40, 40);
+      } else {
+        // Fallback: colored circle always visible
+        const circle = this.add.circle(npc.x, npc.y, 20, 0xffaa00, 0.9);
+        circle.setStrokeStyle(2, 0xffffff, 1);
+        npcSprite = circle as unknown as Phaser.GameObjects.Image;
+      }
+
+      npcSprite.setInteractive(new Phaser.Geom.Circle(0, 0, 30), Phaser.Geom.Circle.Contains);
+
+      const nameLabel = this.add.text(npc.x, npc.y - 32, npc.name, {
+        fontSize: '12px',
         color: '#ffff00',
         fontFamily: 'monospace',
         stroke: '#000000',
-        strokeThickness: 2,
+        strokeThickness: 3,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        padding: { x: 4, y: 2 },
       }).setOrigin(0.5);
 
       npcSprite.on('pointerdown', () => {

@@ -63,11 +63,18 @@ export const MAP_TAY_MAC = `${BASE}/maps/map_tay_mac.png` as const;
 export const MAP_TRUNG_CHAU = `${BASE}/maps/map_trung_chau.png` as const;
 
 export const MAPS_BY_ID: Record<string, string> = {
+  // Short codes (legacy)
   bnp: MAP_BAC_NGUYEN,
   ncp: MAP_NAM_CUONG,
   dhp: MAP_DONG_HAI,
   tmp: MAP_TAY_MAC,
   tcp: MAP_TRUNG_CHAU,
+  // Full region names (used in database seed: world_maps.region)
+  bac_nguyen: MAP_BAC_NGUYEN,
+  nam_cuong: MAP_NAM_CUONG,
+  dong_hai: MAP_DONG_HAI,
+  tay_mac: MAP_TAY_MAC,
+  trung_chau: MAP_TRUNG_CHAU,
 };
 
 /* ───── Equipment ───── */
