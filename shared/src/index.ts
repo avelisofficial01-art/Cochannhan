@@ -467,6 +467,7 @@ export interface PlayerCultivation {
   breakthroughCount: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BreakthroughRequest {
   // No extra body needed — auto-detects from player's current realm
 }
