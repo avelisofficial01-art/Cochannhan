@@ -18,23 +18,25 @@ import {
 const bacNguyenMonsterSeeds = monsterSeeds;
 
 export async function seedDatabase(): Promise<void> {
-  // Check each critical table independently — allows partial re-seeding
-  // if some tables were created but others are empty (e.g. maps exist but no NPCs)
-  const [existingMaps, existingNpcs, existingMonsters] = await Promise.all([
-    db.select().from(schema.worldMaps).limit(1),
-    db.select().from(schema.npcTemplates).limit(1),
-    db.select().from(schema.monsterTemplates).limit(1),
-  ]);
+  try {
+    // Check each critical table independently — allows partial re-seeding
+    // if some tables were created but others are empty (e.g. maps exist but no NPCs)
+    const [existingMaps, existingNpcs, existingMonsters] = await Promise.all([
+      db.select().from(schema.worldMaps).limit(1),
+      db.select().from(schema.npcTemplates).limit(1),
+      db.select().from(schema.monsterTemplates).limit(1),
+    ]);
 
-  const needsWorldData = existingMaps.length === 0;
-  const needsNpcs = existingNpcs.length === 0;
-  const needsMonsters = existingMonsters.length === 0;
+    const needsWorldData = existingMaps.length === 0;
+    const needsNpcs = existingNpcs.length === 0;
+    const needsMonsters = existingMonsters.length === 0;
 
-  if (!needsWorldData && !needsNpcs && !needsMonsters) {
-    return;
-  }
+    if (!needsWorldData && !needsNpcs && !needsMonsters) {
+      console.log('[Seed] Database already populated — skipping.');
+      return;
+    }
 
-  console.log('[Seed] Seeding database...');
+    console.log(`[Seed] Seeding database (maps:${needsWorldData} npcs:${needsNpcs} monsters:${needsMonsters})...`);
 
   // 1. Seed cultivation realms
   console.log('[Seed] Seeding cultivation realms...');
@@ -352,5 +354,9 @@ export async function seedDatabase(): Promise<void> {
     }
   }
 
-  console.log('[Seed] Database seeding completed successfully.');
+    console.log('[Seed] ✅ Database seeding completed successfully.');
+  } catch (err) {
+    console.error('[Seed] ❌ Database seeding FAILED:', err);
+    throw err;
+  }
 }

@@ -30,6 +30,7 @@ export function useSocket(): { isConnected: boolean } {
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      console.log('[Socket] ✅ Connected. Emitting map:join for "bac_nguyen_village"');
       setConnected(true);
       socket.emit('map:join', 'bac_nguyen_village');
     });
@@ -55,6 +56,7 @@ export function useSocket(): { isConnected: boolean } {
     // ── Combat events ────────────────────────────────
 
     socket.on('monster:spawn', (monsters: MonsterSprite[]) => {
+      console.log(`[Socket] 📥 Received monster:spawn — ${monsters.length} monsters`);
       setMonsters(monsters);
       // Also notify GameScene to render them (in case scene registers late)
     });
@@ -91,30 +93,38 @@ export function useSocket(): { isConnected: boolean } {
     // Helper: emit to GameScene with retry (fixes race condition where socket
     // connects before GameScene.create() registers its event listeners)
     const emitToGameScene = (eventName: string, payload: unknown, maxRetries = 30): void => {
+      let attempt = 0;
       const tryEmit = (retriesLeft: number): void => {
+        attempt++;
         const game = (window as unknown as Record<string, unknown>).__phaserGame as Phaser.Game | undefined;
         const scene = game?.scene.getScene('GameScene');
         // Check if the scene is active (i.e. create() has completed)
         if (scene && scene.sys.isActive()) {
+          if (attempt > 1) console.log(`[Socket] ✅ emitToGameScene("${eventName}") succeeded on attempt ${attempt}`);
           scene.events.emit(eventName, payload);
         } else if (retriesLeft > 0) {
           // Retry every 100ms — up to 3 seconds total wait
           setTimeout(() => tryEmit(retriesLeft - 1), 100);
+        } else {
+          console.warn(`[Socket] ⚠️ emitToGameScene("${eventName}") gave up after ${attempt} attempts — GameScene not active`);
         }
       };
       tryEmit(maxRetries);
     };
 
     socket.on('map:init', (data: { id: string; name: string; region: string; width: number; height: number; background: string }) => {
+      console.log(`[Socket] 📥 Received map:init — "${data.name}" (${data.width}x${data.height})`);
       useGameStore.getState().setMap(data.id);
       emitToGameScene('map:init', data);
     });
 
     socket.on('map:npcs', (npcs: Array<{ id: string; name: string; sprite: string; x: number; y: number; hasShop: boolean }>) => {
+      console.log(`[Socket] 📥 Received map:npcs — ${npcs.length} NPCs`);
       emitToGameScene('map:npcs', npcs);
     });
 
     socket.on('map:portals', (portals: Array<{ id: string; from_x: number; from_y: number; portal_name: string; to_map_id: string; to_map_name: string; to_x: number; to_y: number }>) => {
+      console.log(`[Socket] 📥 Received map:portals — ${portals.length} portals`);
       emitToGameScene('map:portals', portals);
     });
 

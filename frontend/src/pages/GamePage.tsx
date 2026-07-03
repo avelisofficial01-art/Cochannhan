@@ -38,6 +38,22 @@ export default function GamePage(): React.ReactElement {
             .catch(() => {});
         });
     }
+
+    // Health check: verify database has game data
+    fetch('/api/health')
+      .then((res) => res.json())
+      .then((data) => {
+        const c = data?.counts;
+        console.log(`[Health] 🏥 API status: maps=${c?.maps ?? '?'} npcs=${c?.npcs ?? '?'} monsters=${c?.monsters ?? '?'} quests=${c?.quests ?? '?'} players=${c?.players ?? '?'}`);
+        if (!c || c.maps === 0) {
+          console.error('[Health] 🔴 DATABASE EMPTY — no maps, NPCs, or monsters! Game world will be blank.');
+        } else {
+          console.log(`[Health] ✅ Database populated — ${c.maps} maps, ${c.npcs} NPCs, ${c.monsters} monsters`);
+        }
+      })
+      .catch((err) => {
+        console.error('[Health] 🔴 Health check failed:', err);
+      });
   }, [player, setPlayer]);
 
   useEffect(() => {

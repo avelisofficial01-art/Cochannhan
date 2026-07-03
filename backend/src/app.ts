@@ -230,6 +230,8 @@ io.on('connection', async (socket) => {
     const targetX = typeof input === 'string' ? undefined : input.x;
     const targetY = typeof input === 'string' ? undefined : input.y;
 
+    console.log(`[Socket] 🔍 map:join request — targetMapId="${targetMapId}", player="${playerId || accountId}"`);
+
     // Leave old map room and notify others
     if (currentMapId && currentMapId !== targetMapId) {
       socket.leave(`map:${currentMapId}`);
@@ -285,6 +287,8 @@ io.on('connection', async (socket) => {
       }
 
       if (map) {
+        console.log(`[Socket] ✅ Map found: "${map.name}" (id=${map.id}, region=${map.region})`);
+
         // Emit map metadata
         socket.emit('map:init', {
           id: map.id,
@@ -366,6 +370,18 @@ io.on('connection', async (socket) => {
           y: inst.y,
           sprite: inst.template.sprite,
         })));
+
+        console.log(`[Socket] 📤 Emitted map:init + ${npcs.length} NPCs + ${portalsWithTarget.length} portals + ${activeMonsters.length} monsters`);
+      } else {
+        console.warn(`[Socket] ⚠️ No map found for "${targetMapId}" — falling back to first map`);
+        // Try one more time with first map
+        const firstMaps = await db.select().from(worldMaps).limit(1);
+        if (firstMaps.length > 0) {
+          console.log(`[Socket] 🔄 Re-joining with first map: "${firstMaps[0].name}"`);
+          socket.emit('map:join', { mapId: firstMaps[0].name });
+        } else {
+          console.error('[Socket] ❌ No maps in database at all — game world is empty!');
+        }
       }
     } catch (err) {
       console.error('[Socket] Map join sync failed:', err);

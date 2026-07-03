@@ -84,7 +84,8 @@ export class GameScene extends Phaser.Scene {
   /* ───────────────────────────────────────
    *  Create — build the scene from preloaded assets
    * ─────────────────────────────────────── */
-  create(): void {
+   create(): void {
+    console.log('[GameScene] 🎬 create() started');
     this.cameras.main.setBackgroundColor('#1a1a2e');
 
     /* ── Bind Socket.IO Map Events ── */
@@ -160,9 +161,12 @@ export class GameScene extends Phaser.Scene {
      */
     this.time.delayedCall(300, () => {
       const mapId = useGameStore.getState().currentMapId || 'bac_nguyen_village';
+      console.log(`[GameScene] 🔄 Re-joining map: "${mapId}"`);
       const joinBridge = (window as unknown as Record<string, (input: unknown) => void>).__socketEmitMapJoin;
       if (joinBridge) {
         joinBridge({ mapId });
+      } else {
+        console.warn('[GameScene] ⚠️ __socketEmitMapJoin bridge not available — re-join skipped');
       }
     });
   }
@@ -546,6 +550,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleMapInit(data: { id: string; name: string; region: string; width: number; height: number; background: string; spawnX?: number; spawnY?: number }): void {
+    console.log(`[GameScene] 🗺️ handleMapInit — "${data.name}" (${data.width}x${data.height}, region=${data.region})`);
     this.mapId = data.id;
     this.mapWidth = data.width;
     this.mapHeight = data.height;
@@ -586,6 +591,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleMapNpcs(npcs: Array<{ id: string; name: string; sprite: string; x: number; y: number; hasShop: boolean }>): void {
+    console.log(`[GameScene] 👤 handleMapNpcs — ${npcs.length} NPCs`);
     // Clear old NPC sprites
     for (const obj of this.npcSprites.values()) {
       obj.sprite.destroy();
@@ -633,6 +639,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleMapPortals(portals: PortalData[]): void {
+    console.log(`[GameScene] 🌐 handleMapPortals — ${portals.length} portals`);
     // Clear old portal sprites
     for (const obj of this.portalSprites.values()) {
       obj.gfx.destroy();
