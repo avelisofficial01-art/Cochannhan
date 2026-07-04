@@ -118,6 +118,15 @@ export function useSocket(): { isConnected: boolean } {
       tryEmit(maxRetries);
     };
 
+    // ── Diagnostic: confirm server received our request ──
+    socket.on('map:join:ack', (data: { received: boolean; targetMapId: string }) => {
+      console.log(`[Socket] 📨 Server ACK — map:join received for "${data.targetMapId}"`);
+    });
+
+    socket.on('error', (data: { message: string }) => {
+      console.error(`[Socket] 🔴 Server error: ${data.message}`);
+    });
+
     socket.on('map:init', (data: { id: string; name: string; region: string; width: number; height: number; background: string }) => {
       console.log(`[Socket] 📥 Received map:init — "${data.name}" (${data.width}x${data.height})`);
       useGameStore.getState().setMap(data.id);

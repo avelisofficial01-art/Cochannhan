@@ -233,6 +233,9 @@ io.on('connection', async (socket) => {
 
     console.log(`[Socket] 🔍 map:join request — targetMapId="${targetMapId}", player="${playerId || accountId}"`);
 
+    // ACK ngay lập tức để client biết handler đang chạy
+    socket.emit('map:join:ack', { received: true, targetMapId });
+
     // Leave old map room and notify others
     if (currentMapId && currentMapId !== targetMapId) {
       socket.leave(`map:${currentMapId}`);
@@ -385,7 +388,9 @@ io.on('connection', async (socket) => {
         }
       }
     } catch (err) {
-      console.error('[Socket] Map join sync failed:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Socket] Map join sync failed:', msg);
+      socket.emit('error', { message: `Map join failed: ${msg}` });
     }
   });
 
