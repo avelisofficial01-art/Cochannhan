@@ -266,14 +266,16 @@ io.on('connection', async (socket) => {
 
     // Sync map metadata, npcs, portals, and monsters
     try {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isUuid = uuidRegex.test(targetMapId);
+
       let [map] = await db
         .select()
         .from(worldMaps)
         .where(
-          or(
-            eq(worldMaps.id, targetMapId),
-            eq(worldMaps.name, targetMapId)
-          )
+          isUuid
+            ? or(eq(worldMaps.id, targetMapId), eq(worldMaps.name, targetMapId))
+            : eq(worldMaps.name, targetMapId)
         )
         .limit(1);
 
