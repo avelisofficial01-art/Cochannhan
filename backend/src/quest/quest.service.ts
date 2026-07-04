@@ -127,6 +127,20 @@ export const questService = {
 
   async getPlayerQuests(playerId: string): Promise<PlayerQuest[]> {
     const rows = await questRepository.findPlayerQuests(playerId);
+    if (rows.length === 0) {
+      const [awakenQuest] = await db
+        .select()
+        .from(schema.questTemplates)
+        .where(eq(schema.questTemplates.name, 'Tỉnh Giấc Mộng'))
+        .limit(1);
+      if (awakenQuest) {
+        console.log(`[Quest] Auto-assigning first quest "Tỉnh Giấc Mộng" to player: ${playerId}`);
+        const newPq = await questRepository.acceptQuest(playerId, awakenQuest.id);
+        if (newPq) {
+          return [mapPlayerQuest(newPq as unknown as PlayerQuestRow)];
+        }
+      }
+    }
     return rows.map((r) => mapPlayerQuest(r as unknown as PlayerQuestRow));
   },
 

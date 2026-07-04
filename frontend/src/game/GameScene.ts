@@ -163,14 +163,6 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.add
-      .text(400, 582, 'Arrow Keys: Move', {
-        fontSize: '9px',
-        color: '#666666',
-        fontFamily: 'monospace',
-      })
-      .setOrigin(0.5)
-      .setAlpha(0.6);
 
     /* ── Re-request map state after scene is fully initialized ──
      * Socket may have connected and received map:init before GameScene.create()

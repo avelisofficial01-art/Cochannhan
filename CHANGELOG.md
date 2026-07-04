@@ -848,21 +848,20 @@ Khắc phục triệt để các root cause bug khiến gameplay H5 không hoạ
 | Thiếu hiển thị máu người chơi | Client không có thanh máu (HP bar) hoặc chỉ số để theo dõi sinh mệnh của chính mình | Vẽ thanh HP Bar động ngay phía trên sprite người chơi trong `GameScene`, tự động di chuyển và co giãn theo phần trăm HP còn lại |
 | Chết không hồi sinh | Người chơi hết HP vẫn đứng yên tại chỗ và không có cơ chế reset | Khi HP người chơi về 0, khôi phục HP về 100, reset vị trí về tọa độ spawn `(400,300)` tại Làng Cổ Thảo ('bac_nguyen_village') và đồng bộ lại map |
 
+
 ### Files modified
 
 | File | Change |
 |------|--------|
-| `backend/src/config/index.ts` | Cập nhật cấu hình hạt giống (seeding) cho các vật phẩm nhiệm vụ, NPCs (Bia Đá Cổ, Bạch Lang Vương), spawns và 5 nhiệm vụ cốt truyện kèm hội thoại |
-| `backend/src/database/seed.ts` | Bổ sung nạp vật phẩm nhiệm vụ mới, đồng bộ mapId cho NPCs và refresh dialogues mỗi lần seeding |
-| `backend/src/quest/quest.service.ts` | Thêm logic trao thưởng EXP/Vàng/Vật phẩm, tự cập nhật nhiệm vụ nói chuyện (talk) khi có flag, và kiểm tra tọa độ map (reach) |
-| `backend/src/app.ts` | Gọi check và cập nhật địa điểm nhiệm vụ `handleReachMap` khi player kết nối bản đồ |
-| `frontend/src/hooks/useSocket.ts` | Intercept sự kiện quái chết (`monster:dead`) để gửi tín hiệu boss Bạch Lang Vương bị tiêu diệt |
-| `frontend/src/game/GameScene.ts` | Tích hợp mở đầu cutscene, pre-fight dialogue của boss, khóa input di chuyển/tấn công/toggles UI, đột phá Nhị Chuyển kết thúc chương |
+| `backend/src/config/index.ts` | Thêm trường `flag_required` cho các nhiệm vụ trung gian để kích hoạt tự động nhận nhiệm vụ kế tiếp khi hoàn thành nhiệm vụ trước |
+| `backend/src/database/seed.ts` | Bỏ kiểm tra return sớm, cho phép self-healing chạy cập nhật `flag_required` của quest templates và làm sạch/nạp lại synergies |
+| `backend/src/quest/quest.service.ts` | Tự động giao nhiệm vụ đầu tiên "Tỉnh Giấc Mộng" khi player chưa có nhiệm vụ nào hoạt động |
+| `frontend/src/game/GameScene.ts` | Xóa dòng text hướng dẫn di chuyển bằng phím mũi tên ("Arrow Keys: Move") |
 
 ### Xác nhận
-- [x] Typecheck: 0 lỗi (shared + backend + frontend)
-- [x] Lint: 0 errors
-- [x] Build: `npm run build` thành công, kết xuất production bundle mượt mà
+- [x] Typecheck: 0 lỗi
+- [x] Lint: 0 lỗi (99 warnings cũ)
+- [x] Build: `npm run build` thành công, các chunk bundle kết xuất OK
 
 
 

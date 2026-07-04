@@ -23,35 +23,16 @@ export async function seedDatabase(): Promise<void> {
     // if some tables were created but others are empty (e.g. maps exist but no NPCs)
     const [
       existingMaps,
-      existingNpcs,
       existingMonsters,
-      existingDialogues,
-      existingQuests,
-      existingGu
     ] = await Promise.all([
       db.select().from(schema.worldMaps).limit(1),
-      db.select().from(schema.npcTemplates).limit(1),
       db.select().from(schema.monsterTemplates).limit(1),
-      db.select().from(schema.npcDialogues).limit(1),
-      db.select().from(schema.questTemplates).limit(1),
-      db.select().from(schema.guTemplates).limit(1),
     ]);
 
     const needsWorldData = existingMaps.length === 0;
-    const needsNpcs = existingNpcs.length === 0;
     const needsMonsters = existingMonsters.length === 0;
-    const needsDialogues = existingDialogues.length === 0;
-    const needsQuests = existingQuests.length === 0;
-    const needsGu = existingGu.length === 0;
 
-    if (!needsWorldData && !needsNpcs && !needsMonsters && !needsDialogues && !needsQuests && !needsGu) {
-      console.log('[Seed] Database already fully populated — refreshing map config...');
-      await refreshMapConfig();
-      console.log('[Seed] ✅ Map config refresh completed.');
-      return;
-    }
-
-    console.log(`[Seed] Seeding database (maps:${needsWorldData} npcs:${needsNpcs} monsters:${needsMonsters} dialogues:${needsDialogues} quests:${needsQuests} gu:${needsGu})...`);
+    console.log(`[Seed] Running self-healing database seed updates...`);
 
     // 1. Seed cultivation realms
     console.log('[Seed] Seeding cultivation realms...');
@@ -372,13 +353,29 @@ export async function seedDatabase(): Promise<void> {
       }
     }
 
-    // 9. Seed Quest Templates (safely checking for missing templates)
+    // 9. Seed Quest Templates (safely checking for missing/updated templates)
     console.log('[Seed] Checking and seeding quest templates...');
     const existingQuestsList = await db.select().from(schema.questTemplates);
     for (const q of chapter1QuestSeeds) {
-      if (!existingQuestsList.some(eq => eq.name === q.name)) {
+      const npcGiverId = q.npc_giver_ref ? npcGiverIdMap.get(q.npc_giver_ref) : null;
+      const found = existingQuestsList.find(eq => eq.name === q.name);
+
+      if (found) {
+        await db.update(schema.questTemplates)
+          .set({
+            type: q.type,
+            description: q.description,
+            npc_giver_id: npcGiverId ?? null,
+            prerequisites: q.prerequisites ?? null,
+            objectives: q.objectives,
+            rewards: q.rewards ?? null,
+            flag_required: q.flag_required ?? null,
+            flag_complete: q.flag_complete ?? null,
+            min_realm: q.min_realm ?? 1,
+          })
+          .where(eq(schema.questTemplates.id, found.id));
+      } else {
         console.log(`[Seed] Quest template "${q.name}" is missing. Seeding...`);
-        const npcGiverId = q.npc_giver_ref ? npcGiverIdMap.get(q.npc_giver_ref) : null;
         await db.insert(schema.questTemplates).values({
           name: q.name,
           type: q.type,
@@ -396,9 +393,12 @@ export async function seedDatabase(): Promise<void> {
     }
 
     // 10. Seed Gu templates, stats, skills, and synergies
-    if (needsGu) {
-      console.log('[Seed] Seeding Gu templates...');
-      for (const gu of guSeeds) {
+    console.log('[Seed] Checking and seeding Gu templates...');
+    const existingGuList = await db.select().from(schema.guTemplates);
+    for (const gu of guSeeds) {
+      const foundGu = existingGuList.find(g => g.name === gu.template.name);
+      if (!foundGu) {
+        console.log(`[Seed] Gu template "${gu.template.name}" is missing. Seeding...`);
         const [insertedGu] = await db.insert(schema.guTemplates).values({
           name: gu.template.name,
           rank: gu.template.rank,
@@ -443,30 +443,34 @@ export async function seedDatabase(): Promise<void> {
           }
         }
       }
+    }
 
-      // Seed default synergies
-      console.log('[Seed] Seeding Gu synergies...');
-      const synergies = [
-        { result_name: 'Hỏa Phong Bạo', gu_a_name: 'Hỏa Cổ', gu_b_name: 'Phong Cổ', bonus_atk: 10, bonus_def: 0, bonus_hp: 0, result_description: 'Kết hợp Hỏa và Phong, tăng sức mạnh tấn công.' },
-        { result_name: 'Huyết Thạch Giáp', gu_a_name: 'Thạch Cổ', gu_b_name: 'Huyết Cổ', bonus_atk: 0, bonus_def: 15, bonus_hp: 0, result_description: 'Kết hợp Thổ và Huyết, tăng sức mạnh phòng ngự.' },
-        { result_name: 'Hỏa Độc Vụ', gu_a_name: 'Độc Cổ', gu_b_name: 'Hỏa Cổ', bonus_atk: 5, bonus_def: 5, bonus_hp: 0, result_description: 'Kết hợp Độc và Hỏa, tăng đều công thủ.' },
-      ];
-      for (const syn of synergies) {
-        const [guATemplate] = await db.select().from(schema.guTemplates).where(eq(schema.guTemplates.name, syn.gu_a_name)).limit(1);
-        const [guBTemplate] = await db.select().from(schema.guTemplates).where(eq(schema.guTemplates.name, syn.gu_b_name)).limit(1);
-        if (guATemplate && guBTemplate) {
-          await db.insert(schema.guSynergy).values({
-            gu_a: guATemplate.id,
-            gu_b: guBTemplate.id,
-            result_name: syn.result_name,
-            result_description: syn.result_description,
-            bonus_atk: syn.bonus_atk,
-            bonus_def: syn.bonus_def,
-            bonus_hp: syn.bonus_hp,
-          });
-        }
+    // Seed default synergies
+    console.log('[Seed] Refreshing Gu synergies...');
+    await db.delete(schema.guSynergy);
+    const synergies = [
+      { result_name: 'Hỏa Phong Bạo', gu_a_name: 'Hỏa Cổ', gu_b_name: 'Phong Cổ', bonus_atk: 10, bonus_def: 0, bonus_hp: 0, result_description: 'Kết hợp Hỏa và Phong, tăng sức mạnh tấn công.' },
+      { result_name: 'Huyết Thạch Giáp', gu_a_name: 'Thạch Cổ', gu_b_name: 'Huyết Cổ', bonus_atk: 0, bonus_def: 15, bonus_hp: 0, result_description: 'Kết hợp Thổ và Huyết, tăng sức mạnh phòng ngự.' },
+      { result_name: 'Hỏa Độc Vụ', gu_a_name: 'Độc Cổ', gu_b_name: 'Hỏa Cổ', bonus_atk: 5, bonus_def: 5, bonus_hp: 0, result_description: 'Kết hợp Độc và Hỏa, tăng đều công thủ.' },
+    ];
+    for (const syn of synergies) {
+      const [guATemplate] = await db.select().from(schema.guTemplates).where(eq(schema.guTemplates.name, syn.gu_a_name)).limit(1);
+      const [guBTemplate] = await db.select().from(schema.guTemplates).where(eq(schema.guTemplates.name, syn.gu_b_name)).limit(1);
+      if (guATemplate && guBTemplate) {
+        await db.insert(schema.guSynergy).values({
+          gu_a: guATemplate.id,
+          gu_b: guBTemplate.id,
+          result_name: syn.result_name,
+          result_description: syn.result_description,
+          bonus_atk: syn.bonus_atk,
+          bonus_def: syn.bonus_def,
+          bonus_hp: syn.bonus_hp,
+        });
       }
     }
+
+    // Refresh map config spawns and portals
+    await refreshMapConfig();
 
     console.log('[Seed] ✅ Database seeding completed successfully.');
   } catch (err) {

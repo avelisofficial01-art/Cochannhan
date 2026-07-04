@@ -325,24 +325,19 @@ Current Module: ✅ Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation
 
 - Không có. Typecheck & Lint đã được xác minh thành công (2026-07-04).
 
----
-
 # Next Task
 
-→ **Sprint 4 — Gu System** (Gu template, equip/unequip, enhancement, synergy, skills, crafting)
+→ **Sprint 9 — Chapter 2: Nam Cương** (Map mới, NPC mới, Boss Vạn Độc Cổ Vương, 3 Chuyển, luyện chế Cổ nâng cao)
 
 ---
 
 # Last Completed Task
 
-**2026-07-04**: Sprint 3 — Combat Core completed & verified.
-- Shared Combat Engine: Damage Calculator (SYSTEM_BIBLE formula), Status Effects (10 types)
-- Backend: Monster CRUD + Combat Engine (in-memory) + Socket.IO real-time combat
-- Database: monster_templates + combat_logs tables
-- Frontend: Monster sprites, HP bars, damage numbers (floating text), attack cooldown (spacebar)
-- Seed data: 3 monsters for Bắc Nguyên (Quái Thú Hoang Dã, Sói Bắc Nguyên, Hỏa Hồ Yêu)
-- Typecheck: 0 errors (shared + backend + frontend)
-- Lint: 0 errors, 52 warnings (pre-existing)
+**2026-07-04**: Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation completed & verified.
+- Fixes: Delta-time movement scaling, socket listener race conditions, player center spawn, multiplayer state updates, 401 token redirect loops, quest wildcards route conflicts, missing resolvePlayer middlewares, dialogue click hit areas, talk distance checks.
+- Features: Real-time server loop (20Hz), monster AI chase & aggro mechanics, monster respawns, player damage/death/teleport-respawning, client HUD HP bars.
+- Story: Cinematic opening cutscene, multi-choice lore-rich dialogues, 5-quest sequence chain (Chapter 1), reward claims (gold, exp, items), boss pre-fight proximity dialogues, breakthrough Nhị Chuyển ending cutscene, local save snapshots.
+- Seeding: Self-healing database seeds for all maps, portals, NPCs, dialogues, and items.
 
 ---
 
