@@ -134,6 +134,9 @@ export async function executePlayerAttack(
   const target = monsterInstances.get(targetInstanceId);
   if (!target) return null;
 
+  // Set target to attacking player
+  target.targetId = playerId;
+
   // Get player stats
   const playerStatRow = await playerService.getPlayerStats(playerId);
   if (!playerStatRow) return null;

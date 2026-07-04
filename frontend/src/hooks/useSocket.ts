@@ -68,7 +68,14 @@ export function useSocket(): { isConnected: boolean } {
     });
 
     socket.on('monster:dead', (data: { instanceId: string }) => {
-      setMonsters(useGameStore.getState().monsters.filter(
+      const currentMonsters = useGameStore.getState().monsters;
+      const deadMonster = currentMonsters.find((m) => m.instanceId === data.instanceId);
+      if (deadMonster && deadMonster.name === 'Bạch Lang Vương') {
+        console.log('[Socket] 📥 Bạch Lang Vương defeated! Triggering ending cutscene.');
+        emitToGameScene('monster:dead', { instanceId: data.instanceId, name: 'Bạch Lang Vương' });
+      }
+
+      setMonsters(currentMonsters.filter(
         (m) => m.instanceId !== data.instanceId,
       ));
     });
@@ -83,12 +90,34 @@ export function useSocket(): { isConnected: boolean } {
       }
     });
 
-    socket.on('combat:result', (data: { damage: number; isCritical: boolean }) => {
+    socket.on('monster:move', (data: { instanceId: string; x: number; y: number }) => {
+      const current = useGameStore.getState().monsters;
+      const idx = current.findIndex((m) => m.instanceId === data.instanceId);
+      if (idx >= 0) {
+        const updated = [...current];
+        updated[idx] = { ...updated[idx], x: data.x, y: data.y };
+        setMonsters(updated);
+      }
+    });
+
+    socket.on('player:damaged', (data: { damage: number; currentHp: number; maxHp: number }) => {
+      console.log(`[Socket] 📥 Received player:damaged event: -${data.damage} hp`);
+      emitToGameScene('player:damaged', data);
+    });
+
+    socket.on('player:respawn', (data: { mapId: string; x: number; y: number }) => {
+      console.log(`[Socket] 📥 Player died! Respawning at map: ${data.mapId}`);
+      useGameStore.getState().setMap(data.mapId);
+      useGameStore.getState().setPosition(data.x, data.y);
+      emitToGameScene('player:respawn', data);
+    });
+
+    socket.on('combat:result', (data: { damage: number; isCritical: boolean; targetX?: number; targetY?: number }) => {
       const result: CombatResult = {
         damage: data.damage,
         isCritical: data.isCritical,
-        targetX: 0,
-        targetY: 0,
+        targetX: data.targetX ?? 0,
+        targetY: data.targetY ?? 0,
       };
       setCombatResult(result);
       // Auto-clear after 1.2s (animation duration)

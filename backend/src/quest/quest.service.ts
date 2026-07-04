@@ -1,5 +1,10 @@
 import { questRepository } from './quest.repository.js';
 import { eventBus } from '../utils/event-bus.js';
+import { db } from '../database/connection.js';
+import * as schema from '../database/schema/index.js';
+import { playerRepository } from '../player/player.repository.js';
+import { inventoryService } from '../inventory/inventory.service.js';
+import { eq } from 'drizzle-orm';
 import type {
   QuestInfo,
   QuestObjective,
@@ -156,6 +161,48 @@ export const questService = {
         (obj, i) => progress[i] && progress[i].current >= obj.count,
       );
       if (allDone) {
+        // Grant rewards
+        if (quest.rewards) {
+          const rewards = parseJson<QuestReward[]>(quest.rewards) ?? [];
+          const player = await playerRepository.findById(playerId);
+          if (player) {
+            let goldReward = 0;
+            let spiritStoneReward = 0;
+            let expReward = 0;
+
+            for (const r of rewards) {
+              if (r.type === 'gold') {
+                goldReward += r.amount;
+              } else if (r.type === 'spirit_stone') {
+                spiritStoneReward += r.amount;
+              } else if (r.type === 'exp') {
+                expReward += r.amount;
+              } else if (r.type === 'item') {
+                 const itemRef = (r as { item_ref?: string }).item_ref || r.itemId;
+                if (itemRef) {
+                  const items = await db.select().from(schema.itemTemplates).where(eq(schema.itemTemplates.name, itemRef)).limit(1);
+                  if (items.length > 0) {
+                    try {
+                      await inventoryService.addItem(playerId, {
+                        itemId: items[0].id,
+                        quantity: r.amount,
+                      });
+                    } catch (itemErr) {
+                      console.error('[Quest Reward] Failed to add item reward:', itemErr);
+                    }
+                  }
+                }
+              }
+            }
+
+            await playerRepository.update(playerId, {
+              gold: player.gold + goldReward,
+              spirit_stone: player.spirit_stone + spiritStoneReward,
+              exp: player.exp + expReward,
+            });
+          }
+        }
+
         const completed = await questRepository.completeQuest(pq.id);
         // Set story flag if defined
         if (quest.flag_complete) {
@@ -211,7 +258,74 @@ export const questService = {
     value?: string,
   ): Promise<QuestStoryFlag> {
     const row = await questRepository.setStoryFlag(playerId, key, value);
+
+    // --- Auto-advance talk objectives when flag is set ---
+    try {
+      const activeQuests = await questService.getPlayerQuests(playerId);
+      for (const pq of activeQuests) {
+        if (pq.status !== 'active') continue;
+        const quest = await questService.getQuest(pq.questId);
+        if (!quest) continue;
+
+        const objectives = quest.objectives;
+        for (let i = 0; i < objectives.length; i++) {
+          const obj = objectives[i];
+          if (obj.type === 'talk') {
+            const targetName = obj.target;
+            let shouldComplete = false;
+
+            if (targetName === 'Trưởng làng' && (key === 'ch1_intro_done' || key === 'ch1_sent_to_elder')) {
+              shouldComplete = true;
+            } else if (targetName === 'Trưởng lão' && (key === 'ch1_sent_to_forest' || key === 'ch1_prophecy_heard')) {
+              shouldComplete = true;
+            } else if (targetName === 'Thợ rèn' && (key === 'ch1_sent_to_blacksmith' || key === 'ch1_got_weapon')) {
+              shouldComplete = true;
+            } else if (targetName === 'Bia Đá Cổ' && key === 'ch1_stele_read') {
+              shouldComplete = true;
+            } else if (targetName === 'Bạch Lang Vương' && key === 'ch1_complete') {
+              shouldComplete = true;
+            }
+
+            if (shouldComplete) {
+              const progress = pq.objectivesProgress?.[i] || { current: 0 };
+              if (progress.current < obj.count) {
+                console.log(`[Quest] Auto-completing talk objective to ${targetName} for quest ${quest.name}`);
+                await questService.updateQuestProgress(playerId, pq.questId, i, 1);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[Quest Story Flag] Failed to auto-advance talk objective:', err);
+    }
+
     return mapStoryFlag(row as unknown as StoryFlagRow);
+  },
+
+  async handleReachMap(playerId: string, mapId: string, mapName: string): Promise<void> {
+    try {
+      const activeQuests = await questService.getPlayerQuests(playerId);
+      for (const pq of activeQuests) {
+        if (pq.status !== 'active') continue;
+        const quest = await questService.getQuest(pq.questId);
+        if (!quest) continue;
+
+        const objectives = quest.objectives;
+        for (let i = 0; i < objectives.length; i++) {
+          const obj = objectives[i];
+          if (obj.type === 'reach' && (obj.target === mapId || obj.target === mapName || obj.target === 'dinh_bangphong')) {
+            const progress = pq.objectivesProgress?.[i] || { current: 0 };
+            if (progress.current < obj.count) {
+              console.log(`[Quest] Updating reach progress for player ${playerId}, quest ${quest.name}, target ${obj.target}`);
+              await questService.updateQuestProgress(playerId, pq.questId, i, 1);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[Quest Reach Map] Failed to auto-advance reach objective:', err);
+    }
   },
 
   async checkStoryFlag(

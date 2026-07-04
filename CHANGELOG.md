@@ -843,24 +843,26 @@ Khắc phục triệt để các root cause bug khiến gameplay H5 không hoạ
 | Bản đồ reset quái vô tội vạ | Mỗi khi map trống và có người chơi join, toàn bộ quái lại bị spawn lại từ đầu | Thêm `initializedMaps` cache trạng thái nạp bản đồ, chỉ nạp cấu hình quái một lần duy nhất khi khởi động |
 | Tiến độ nhiệm vụ không tự cập nhật khi diệt quái | Đánh bại Sói Tuyết nhưng mục tiêu nhiệm vụ không ghi nhận tiến trình | Kết nối `handleMonsterKill` của `questService` trực tiếp vào hàm xử lý sát thương chết của quái vật |
 | Lãng phí băng thông và CPU do polling | QuestTracker liên tục gọi API GET `/api/quest/player/active` mỗi 4 giây và server liên tục loopback di chuyển cho chính người gửi | Thêm EventBus và socket room `player:${playerId}` để push tiến độ nhiệm vụ thời gian thực khi có thay đổi (giảm polling về 30s), lược bỏ gói tin loopback khi player di chuyển |
+| Thiếu Server Game Loop & Monster AI | Server không có game loop chạy định kỳ (20Hz) khiến quái đứng yên, không đuổi theo, không tự đánh trả và status không tự tick | Thiết lập `setInterval` game loop 20 ticks/sec trên backend, bổ sung AI tìm mục tiêu gần nhất, chase đuổi theo và tự động gọi `executeMonsterAttack` |
+| Người chơi không thể nhận sát thương | Quái vật tấn công nhưng HP của người chơi không thay đổi trên DB và không có hiển thị UI | Đồng bộ trừ HP người chơi trong database khi quái đánh trúng, emit sự kiện `player:damaged` để hiển thị chữ sát thương đỏ trên client |
+| Thiếu hiển thị máu người chơi | Client không có thanh máu (HP bar) hoặc chỉ số để theo dõi sinh mệnh của chính mình | Vẽ thanh HP Bar động ngay phía trên sprite người chơi trong `GameScene`, tự động di chuyển và co giãn theo phần trăm HP còn lại |
+| Chết không hồi sinh | Người chơi hết HP vẫn đứng yên tại chỗ và không có cơ chế reset | Khi HP người chơi về 0, khôi phục HP về 100, reset vị trí về tọa độ spawn `(400,300)` tại Làng Cổ Thảo ('bac_nguyen_village') và đồng bộ lại map |
 
 ### Files modified
 
 | File | Change |
 |------|--------|
-| `shared/src/combat/types.ts` | Thêm optional `spawnX`/`spawnY` vào `MonsterInstance` để phục vụ hồi sinh |
-| `backend/src/utils/event-bus.ts` | **Created** — Event bus trung gian hỗ trợ giao tiếp bất đồng bộ giữa các service trên server |
-| `backend/src/combat/combat.service.ts` | Tích hợp hồi sinh quái vật, đăng ký callback báo socket sync, kết nối sự kiện diệt quái với quest service |
-| `backend/src/quest/quest.service.ts` | Viết quest handler `handleMonsterKill` và emit sự kiện cập nhật nhiệm vụ qua event bus |
-| `backend/src/database/seed.ts` | Nâng cấp kiểm tra self-healing seeding tự động bổ khuyết các bảng trống (dialogues, quests, gu) |
-| `backend/src/app.ts` | Cache nạp map, bắt sự kiện monster respawn & quest update để push qua Socket.IO, tối ưu hóa gói tin di chuyển |
-| `frontend/src/game/GameScene.ts` | Fix NPC click bounds, thêm khoảng cách giới hạn 120px và hàm vẽ chữ thông báo nổi (floating text) |
-| `frontend/src/hooks/useSocket.ts` | Nhận và xử lý sự kiện `quest:updated` đẩy từ server để cập nhật store React |
-| `frontend/src/components/QuestTracker.tsx` | Nới lỏng chu kỳ backup polling từ 4 giây lên 30 giây giúp tiết kiệm CPU và tài nguyên mạng |
+| `backend/src/config/index.ts` | Cập nhật cấu hình hạt giống (seeding) cho các vật phẩm nhiệm vụ, NPCs (Bia Đá Cổ, Bạch Lang Vương), spawns và 5 nhiệm vụ cốt truyện kèm hội thoại |
+| `backend/src/database/seed.ts` | Bổ sung nạp vật phẩm nhiệm vụ mới, đồng bộ mapId cho NPCs và refresh dialogues mỗi lần seeding |
+| `backend/src/quest/quest.service.ts` | Thêm logic trao thưởng EXP/Vàng/Vật phẩm, tự cập nhật nhiệm vụ nói chuyện (talk) khi có flag, và kiểm tra tọa độ map (reach) |
+| `backend/src/app.ts` | Gọi check và cập nhật địa điểm nhiệm vụ `handleReachMap` khi player kết nối bản đồ |
+| `frontend/src/hooks/useSocket.ts` | Intercept sự kiện quái chết (`monster:dead`) để gửi tín hiệu boss Bạch Lang Vương bị tiêu diệt |
+| `frontend/src/game/GameScene.ts` | Tích hợp mở đầu cutscene, pre-fight dialogue của boss, khóa input di chuyển/tấn công/toggles UI, đột phá Nhị Chuyển kết thúc chương |
 
 ### Xác nhận
 - [x] Typecheck: 0 lỗi (shared + backend + frontend)
 - [x] Lint: 0 errors
 - [x] Build: `npm run build` thành công, kết xuất production bundle mượt mà
+
 
 

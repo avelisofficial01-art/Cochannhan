@@ -77,6 +77,15 @@ export class GameScene extends Phaser.Scene {
   private attackCooldownMs = 1000;
   private attackCooldownRemaining = 0;
 
+  /** Player HP Bar & Stats */
+  private playerHpBar: Phaser.GameObjects.Graphics | null = null;
+  private playerCurrentHp = 100;
+  private playerMaxHp = 100;
+
+  private playerControlsEnabled = true;
+  private introCutscenePlayed = false;
+  private bossDialogueTriggered = false;
+
   constructor() {
     super({ key: 'GameScene' });
   }
@@ -116,6 +125,15 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setName('playerLabel');
+
+    /* ── Player HP Bar ── */
+    this.playerHpBar = this.add.graphics();
+    this.drawHpBar(this.playerHpBar, this.playerX, this.playerY - 20, this.playerCurrentHp, this.playerMaxHp);
+
+    /* ── Bind Damaged/Respawn Events ── */
+    this.events.on('player:damaged', this.handlePlayerDamaged, this);
+    this.events.on('player:respawn', this.handlePlayerRespawn, this);
+    this.events.on('monster:dead', this.handleMonsterDead, this);
 
     /* ── Input ── */
     if (this.input.keyboard) {
@@ -184,12 +202,16 @@ export class GameScene extends Phaser.Scene {
     this.handleCraftToggle();
     this.syncMonsters();
     this.updateFloatTexts(delta);
+    this.checkBossProximity();
   }
 
   /* ───────────────────────────────────────
    *  Player Movement
    * ─────────────────────────────────────── */
   private updatePlayerMovement(dtSec: number): void {
+    if (!this.playerControlsEnabled) {
+      return;
+    }
     let moved = false;
 
     if (this.cursors.left.isDown) {
@@ -231,6 +253,10 @@ export class GameScene extends Phaser.Scene {
       const label = this.children.getByName('playerLabel') as Phaser.GameObjects.Text;
       if (label) {
         label.setPosition(this.playerX, this.playerY - 28);
+      }
+
+      if (this.playerHpBar) {
+        this.drawHpBar(this.playerHpBar, this.playerX, this.playerY - 20, this.playerCurrentHp, this.playerMaxHp);
       }
 
       // Throttle movement updates to 50ms (20Hz)
@@ -312,18 +338,21 @@ export class GameScene extends Phaser.Scene {
    *  Panel toggles
    * ─────────────────────────────────────── */
   private handleGuToggle(): void {
+    if (!this.playerControlsEnabled) return;
     if (this.guKey && Phaser.Input.Keyboard.JustDown(this.guKey)) {
       useGameStore.getState().toggleGuPanel();
     }
   }
 
   private handleEquipToggle(): void {
+    if (!this.playerControlsEnabled) return;
     if (this.eqKey && Phaser.Input.Keyboard.JustDown(this.eqKey)) {
       useGameStore.getState().toggleEquipmentPanel();
     }
   }
 
   private handleCraftToggle(): void {
+    if (!this.playerControlsEnabled) return;
     if (this.craftKey && Phaser.Input.Keyboard.JustDown(this.craftKey)) {
       useGameStore.getState().toggleCraftPanel();
     }
@@ -333,6 +362,9 @@ export class GameScene extends Phaser.Scene {
    *  Attack cooldown visual
    * ─────────────────────────────────────── */
   private updateAttackCooldown(delta: number): void {
+    if (!this.playerControlsEnabled) {
+      return;
+    }
     if (this.spaceKey && Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
       this.handleAttack();
     }
@@ -589,6 +621,14 @@ export class GameScene extends Phaser.Scene {
       this.playerSprite.setPosition(spawnX, spawnY);
     }
 
+    if (this.playerHpBar) {
+      this.drawHpBar(this.playerHpBar, spawnX, spawnY - 20, this.playerCurrentHp, this.playerMaxHp);
+    }
+
+    this.time.delayedCall(500, () => {
+      this.checkAndPlayOpeningCutscene();
+    });
+
     // Re-attach camera follow on new map
     this.cameras.main.startFollow(this.playerSprite, true, 0.1, 0.1);
 
@@ -692,6 +732,215 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       this.portalSprites.set(p.id, { gfx, nameLabel, data: p });
+    });
+  }
+
+  private handlePlayerDamaged(data: { damage: number; currentHp: number; maxHp: number }): void {
+    this.playerCurrentHp = data.currentHp;
+    this.playerMaxHp = data.maxHp;
+
+    // Show floating red text over player
+    this.showFloatingText(this.playerX, this.playerY, `-${data.damage}`, '#ff0000');
+
+    // Redraw player HP bar
+    if (this.playerHpBar) {
+      this.drawHpBar(this.playerHpBar, this.playerX, this.playerY - 20, this.playerCurrentHp, this.playerMaxHp);
+    }
+  }
+
+  private handlePlayerRespawn(data: { mapId: string; x: number; y: number }): void {
+    console.log(`[GameScene] Player respawning at map: ${data.mapId}`);
+    this.playerCurrentHp = 100;
+    this.playerMaxHp = 100;
+
+    this.playerX = data.x;
+    this.playerY = data.y;
+
+    if (this.playerSprite) {
+      this.playerSprite.setPosition(data.x, data.y);
+    }
+
+    if (this.playerHpBar) {
+      this.drawHpBar(this.playerHpBar, data.x, data.y - 20, this.playerCurrentHp, this.playerMaxHp);
+    }
+
+    const label = this.children.getByName('playerLabel') as Phaser.GameObjects.Text;
+    if (label) {
+      label.setPosition(data.x, data.y - 28);
+    }
+
+    // Join the map
+    const joinBridge = (window as unknown as Record<string, (input: unknown) => void>).__socketEmitMapJoin;
+    if (joinBridge) {
+      joinBridge({ mapId: data.mapId, x: data.x, y: data.y });
+    }
+  }
+
+  private handleMonsterDead(data: { instanceId: string; name: string }): void {
+    if (data.name === 'Bạch Lang Vương') {
+      this.playEndingCutscene();
+    }
+  }
+
+  private checkBossProximity(): void {
+    if (this.bossDialogueTriggered) return;
+
+    // Find boss monster
+    const monsters = useGameStore.getState().monsters;
+    const boss = monsters.find(m => m.name === 'Bạch Lang Vương');
+    if (boss) {
+      const dx = this.playerX - boss.x;
+      const dy = this.playerY - boss.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 200) {
+        this.bossDialogueTriggered = true;
+        this.playerControlsEnabled = false;
+
+        console.log('[GameScene] 🐺 Near Bạch Lang Vương. Triggering pre-fight dialogue.');
+
+        // Find Bạch Lang Vương NPC template to start conversation
+        const token = localStorage.getItem('token');
+        fetch('/api/npc', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            const bossNpc = json.data.find((n: { name: string }) => n.name === 'Bạch Lang Vương');
+            if (bossNpc) {
+              useGameStore.getState().openDialogue({
+                id: bossNpc.id,
+                name: bossNpc.name,
+                sprite: bossNpc.sprite,
+                hasShop: false
+              });
+            }
+          }
+        })
+        .catch(() => {});
+
+        // Wait until dialogue is closed, then re-enable controls
+        const checkClosed = setInterval(() => {
+          if (!useGameStore.getState().isDialogueOpen) {
+            clearInterval(checkClosed);
+            this.playerControlsEnabled = true;
+          }
+        }, 200);
+      }
+    }
+  }
+
+  private checkAndPlayOpeningCutscene(): void {
+    const activeQuests = useGameStore.getState().activeQuests as Array<{ name: string }>;
+    const isAwakenActive = activeQuests.some(q => q.name === 'Tỉnh Giấc Mộng') || activeQuests.length === 0;
+
+    if (isAwakenActive && (this.mapId === 'lang_cothao' || this.mapId === 'bac_nguyen_village') && !this.introCutscenePlayed) {
+      this.introCutscenePlayed = true;
+      this.playOpeningCutscene();
+    }
+  }
+
+  private playOpeningCutscene(): void {
+    this.playerControlsEnabled = false;
+
+    // Draw solid black overlay
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.95);
+    overlay.fillRect(0, 0, this.mapWidth, this.mapHeight);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(2000);
+
+    // Opening title
+    const titleText = this.add.text(400, 180, "CỔ ĐẠO — CHƯƠNG I: BẮC NGUYÊN BĂNG DÃ", {
+      fontFamily: 'Georgia, serif',
+      fontSize: '20px',
+      color: '#ffcc00',
+      align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+    // Dramatic scrolling text
+    const text = this.add.text(400, 320,
+      "Đại lục hoang vu, Thiên Đạo chí cao khống chế vạn vật...\n" +
+      "Mười vạn năm trước, Cổ Đạo quật khởi nghịch thiên cải mệnh,\n" +
+      "nhưng cuối cùng bị chôn vùi dưới dòng sông lịch sử.\n\n" +
+      "Hôm nay, tại Làng Cổ Thảo xa xôi phía Bắc,\n" +
+      "ngươi tỉnh lại giữa bão tuyết cuồng nộ...\n" +
+      "Khi cầm trên tay khối Cổ Thạch kỳ dị rỉ máu,\n" +
+      "Sinh Cổ đệ nhất tinh hoa liền thức tỉnh!\n\n" +
+      "[ Nhấp chuột bất kỳ để Bắt Đầu Hành Trình ]",
+      {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '13px',
+        color: '#ffffff',
+        align: 'center',
+        lineSpacing: 8
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+    this.input.once('pointerdown', () => {
+      this.cameras.main.flash(800, 255, 255, 255);
+      titleText.destroy();
+      text.destroy();
+      overlay.destroy();
+      this.playerControlsEnabled = true;
+    });
+  }
+
+  private playEndingCutscene(): void {
+    this.playerControlsEnabled = false;
+
+    // Draw full black overlay
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.95);
+    overlay.fillRect(0, 0, this.mapWidth, this.mapHeight);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(2000);
+
+    // Defeated title
+    const titleText = this.add.text(400, 180, "BẠCH LANG VƯƠNG PHONG ẤN THẤT BẠI", {
+      fontFamily: 'Georgia, serif',
+      fontSize: '22px',
+      color: '#ff3333',
+      align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+    // Breakthrough text
+    const text = this.add.text(400, 330,
+      "Bạch Lang Vương tru lên một tiếng thê lương rồi ngã gục.\n" +
+      "Luồng Tinh Hoa Băng cực hàn thoát ra, phong ấn hoàn toàn vỡ nát!\n\n" +
+      "Bất ngờ, Sinh Cổ trong Không Khiếu tự động kích hoạt,\n" +
+      "điên cuồng thôn phệ hàn khí chuyển hóa thành sinh cơ vô tận...\n" +
+      "Không Khiếu rung chuyển dữ dội, xiềng xích phàm nhân đứt gãy!\n\n" +
+      "Chúc mừng ngươi phá cảnh thành công:\n" +
+      "--- ĐỘT PHÁ LÊN NHỊ CHUYỂN CẢNH GIỚI! ---\n\n" +
+      "[ Nhấp chuột để tiếp tục sang Chương II: Nam Cương Trùng Độc ]",
+      {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '13px',
+        color: '#ffcc00',
+        align: 'center',
+        lineSpacing: 8
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+    this.input.once('pointerdown', () => {
+      titleText.destroy();
+      text.destroy();
+      overlay.destroy();
+      this.playerControlsEnabled = true;
+
+      // Set story flag ch1_complete on server
+      const token = localStorage.getItem('token');
+      fetch('/api/quest/flags/set', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ flagKey: 'ch1_complete', flagValue: 'true' }),
+      }).then(() => {
+        window.location.reload();
+      }).catch(() => {});
     });
   }
 }

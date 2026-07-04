@@ -61,6 +61,21 @@ Current Module: ✅ Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation
 - [x] Implement **monster kill quest progress sync** — server now updates quest objectives automatically on combat defeats
 - [x] Optimize **quest progression push** — added a backend event bus and player rooms to push quest updates in real-time, allowing QuestTracker to reduce API polling from 4s to 30s
 - [x] Optimize **player movement bandwidth** — removed redundant loopback position update packets back to the client
+- [x] Implement **server game loop** — introduced a 20 ticks/sec (50ms interval) main loop to process combat ticks and monster status effects
+- [x] Implement **monster AI chase and target tracking** — monsters now automatically select players within a 200px aggro range, move towards them, and attack once they are within a 50px range
+- [x] Implement **player damage and death mechanics** — monsters inflict damage on the player, updating health in the database and showing floating damage numbers
+- [x] Implement **teleport respawning** — when a player's health drops to 0, they are automatically teleported back to Làng Cổ Thảo ('bac_nguyen_village') with their HP restored
+- [x] Implement **client HUD HP bar** — the player's current health ratio is rendered dynamically as an HP bar directly above their sprite
+
+## H5 RPG Story Implementation (S8.2)
+- [x] Implement **cinematic opening cutscene** — black canvas overlay with atmospheric scrolling lore and text prompt to start journey upon spawning in Làng Cổ Thảo
+- [x] Expand **lore-rich dialogue trees** — replaced placeholder lines with sequential choice-driven conversations for Trưởng làng, Trưởng lão, Thợ rèn, Bia Đá Cổ, and Bạch Lang Vương NPCs
+- [x] Configure **5-quest sequence chain** — implemented "Tỉnh Giấc Mộng" -> "Mối Đe Dọa Sói Tuyết" -> "Lời Tiên Tri Cổ" -> "Vượt Qua Rừng Tuyết" -> "Bạch Lang Vương"
+- [x] Implement **quest reward resolution** — player exp, gold, and items are now correctly awarded to db stats and inventory on quest completion
+- [x] Support **exploration map reach checking** — entering Rừng Tuyết and Đỉnh Băng Phong triggers real-time quest checks for target location arrival
+- [x] Support **cutscene input locking** — freezes movement controls and action buttons during story conversations and dramatic sequences
+- [x] Integrate **pre-fight boss proximity trigger** — approaching Bạch Lang Vương triggers a dialogue sequence, locking controls before the fight starts
+- [x] Implement **Chapter 1 breakthrough ending cutscene** — boss death opens a dramatic screen describing Nhị Chuyển breakthrough and resets state to ready chapter 2 portal
 
 ---
 

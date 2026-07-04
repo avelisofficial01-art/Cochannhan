@@ -10,9 +10,11 @@ import { worldMaps, mapPortals, mapSpawns, monsterTemplates, npcTemplates, quest
 import { eq, or } from 'drizzle-orm';
 import authRouter from './auth/auth.route.js';
 import playerRouter from './player/player.route.js';
+import { playerRepository } from './player/player.repository.js';
 import worldRouter from './world/world.route.js';
 import npcRouter from './npc/npc.route.js';
 import questRouter from './quest/quest.route.js';
+import { questService } from './quest/quest.service.js';
 import inventoryRouter from './inventory/inventory.route.js';
 import monsterRouter from './monster/monster.route.js';
 import combatRouter from './combat/combat.route.js';
@@ -331,6 +333,11 @@ io.on('connection', async (socket) => {
           background: map.background,
         });
 
+        // Trigger reach map objectives update
+        if (playerId) {
+          void questService.handleReachMap(playerId, map.id, map.name);
+        }
+
         // Fetch NPCs
         const npcs = await db.select().from(npcTemplates).where(eq(npcTemplates.map_id, map.id));
         socket.emit('map:npcs', npcs.map(n => ({
@@ -465,5 +472,168 @@ io.on('connection', async (socket) => {
     }
   });
 });
+
+// ── Server Game Loop (20 ticks/sec) ──────────────────────────
+let currentTick = 0;
+
+setInterval(async () => {
+  currentTick++;
+
+  // 1. Tick status effects on all monsters
+  try {
+    const tickResults = combatService.tickAllMonsters(currentTick);
+    for (const result of tickResults) {
+      const monster = combatService.getMonsterInstance(result.instanceId);
+      if (!monster) continue;
+
+      const mapId = monster.template.mapId;
+      if (result.defeated) {
+        io.to(`map:${mapId}`).emit('monster:dead', {
+          instanceId: result.instanceId,
+        });
+      } else if (result.damageTaken > 0) {
+        io.to(`map:${mapId}`).emit('monster:update', {
+          instanceId: result.instanceId,
+          currentHp: monster.currentHp,
+          maxHp: monster.template.hp,
+        });
+      }
+    }
+  } catch (err) {
+    console.error('[Game Loop] Error ticking monsters:', err);
+  }
+
+  // 2. Monster AI (Targeting, Chasing, Attacks)
+  try {
+    // Group active players by map
+    const playersByMap = new Map<string, Array<{ playerId: string; x: number; y: number; accountId: string }>>();
+    playerPositions.forEach((pos) => {
+      if (!pos.mapId) return;
+      let mapPlayers = playersByMap.get(pos.mapId);
+      if (!mapPlayers) {
+        mapPlayers = [];
+        playersByMap.set(pos.mapId, mapPlayers);
+      }
+      mapPlayers.push({
+        playerId: pos.playerId,
+        x: pos.x,
+        y: pos.y,
+        accountId: pos.accountId,
+      });
+    });
+
+    // Run AI update for each map with players
+    for (const [mapId, playersOnMap] of playersByMap.entries()) {
+      const monsters = combatService.getMonstersOnMap(mapId);
+      if (monsters.length === 0) continue;
+
+      for (const monster of monsters) {
+        if (monster.currentHp <= 0) continue;
+
+        let targetPlayer = monster.targetId ? playersOnMap.find((p) => p.playerId === monster.targetId) : null;
+
+        // If target is invalid (disconnected, left map, or too far), reset target
+        if (targetPlayer) {
+          const dx = targetPlayer.x - monster.x;
+          const dy = targetPlayer.y - monster.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > 400) {
+            monster.targetId = null;
+            targetPlayer = null;
+          }
+        }
+
+        // If no target, scan for nearest player within aggro range (200px)
+        if (!targetPlayer) {
+          let closestPlayer = null;
+          let minDist = Infinity;
+          for (const p of playersOnMap) {
+            const dx = p.x - monster.x;
+            const dy = p.y - monster.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < minDist) {
+              minDist = dist;
+              closestPlayer = p;
+            }
+          }
+          if (closestPlayer && minDist <= 200) {
+            monster.targetId = closestPlayer.playerId;
+            targetPlayer = closestPlayer;
+          }
+        }
+
+        // If monster has a target player
+        if (targetPlayer) {
+          const dx = targetPlayer.x - monster.x;
+          const dy = targetPlayer.y - monster.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          // Attack range is 50px
+          if (dist <= 50) {
+            const result = combatService.executeMonsterAttack(monster.instanceId, targetPlayer.playerId, currentTick);
+            if (result) {
+              // Deduct player HP
+              const playerRow = await playerRepository.findById(targetPlayer.playerId);
+              if (playerRow) {
+                const newHp = Math.max(0, playerRow.hp - result.damage);
+                await playerRepository.update(targetPlayer.playerId, { hp: newHp });
+
+                // Sync damage to player
+                io.to(`player:${targetPlayer.playerId}`).emit('player:damaged', {
+                  damage: result.damage,
+                  currentHp: newHp,
+                  maxHp: 100, // standard baseline max HP
+                });
+
+                // Emit damage floating indicators to all players on the map
+                io.to(`map:${mapId}`).emit('combat:result', {
+                  damage: result.damage,
+                  isCritical: result.isCritical,
+                  targetX: targetPlayer.x,
+                  targetY: targetPlayer.y,
+                  isPlayerTarget: true, // indicates target is player, not monster
+                });
+
+                // Handle Player Death
+                if (newHp <= 0) {
+                  console.log(`[Game Loop] Player ${playerRow.name} died! Respawning at Làng Cổ Thảo.`);
+                  await playerRepository.update(targetPlayer.playerId, {
+                    hp: 100,
+                    current_map: 'bac_nguyen_village',
+                    current_x: 400,
+                    current_y: 300,
+                  });
+
+                  // Trigger respawn teleport on client
+                  io.to(`player:${targetPlayer.playerId}`).emit('player:respawn', {
+                    mapId: 'bac_nguyen_village',
+                    x: 400,
+                    y: 300,
+                  });
+                }
+              }
+            }
+          } else {
+            // Chase target player
+            const monsterSpeed = monster.template.speed ?? 100;
+            const moveStep = monsterSpeed / 20; // units to move in 50ms tick
+            const angle = Math.atan2(dy, dx);
+            monster.x += Math.cos(angle) * moveStep;
+            monster.y += Math.sin(angle) * moveStep;
+
+            // Broadcast monster movement update to all players on map
+            io.to(`map:${mapId}`).emit('monster:move', {
+              instanceId: monster.instanceId,
+              x: monster.x,
+              y: monster.y,
+            });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Game Loop] Error updating AI:', err);
+  }
+}, 50);
 
 export { app, config, httpServer, io };

@@ -178,19 +178,64 @@ export async function seedDatabase(): Promise<void> {
       }
     }
 
+    // 4.5 Seed Item Templates
+    const dbItems = await db.select().from(schema.itemTemplates).limit(1);
+    const needsItems = dbItems.length === 0;
+    if (needsItems) {
+      console.log('[Seed] Seeding item templates...');
+      for (const item of itemSeeds) {
+        await db.insert(schema.itemTemplates).values({
+          name: item.name,
+          type: item.type,
+          description: item.description,
+          stackable: item.stackable ?? 'false',
+          max_stack: item.maxStack ?? 1,
+          sell_price: item.sellPrice ?? 0,
+          sprite: item.sprite ?? null,
+        });
+      }
+    } else {
+      // Check and add any missing item templates
+      const allItems = await db.select().from(schema.itemTemplates);
+      for (const item of itemSeeds) {
+        if (!allItems.some(i => i.name === item.name)) {
+          console.log(`[Seed] Item template "${item.name}" is missing. Seeding...`);
+          await db.insert(schema.itemTemplates).values({
+            name: item.name,
+            type: item.type,
+            description: item.description,
+            stackable: item.stackable ?? 'false',
+            max_stack: item.maxStack ?? 1,
+            sell_price: item.sellPrice ?? 0,
+            sprite: item.sprite ?? null,
+          });
+        }
+      }
+    }
+
     // 5. Seed NPCs
     const npcMap = new Map<string, string>(); // name -> UUID
     const npcGiverIdMap = new Map<string, string>(); // ref name -> UUID
-    if (needsNpcs) {
-      console.log('[Seed] Seeding NPCs...');
-      for (const npc of npcSeeds) {
+    
+    // Always fetch existing NPCs to see what is already there
+    const dbNpcs = await db.select().from(schema.npcTemplates);
+    for (const n of dbNpcs) {
+      npcMap.set(n.name, n.id);
+      npcGiverIdMap.set(n.name, n.id);
+    }
+
+    // Now seed any NPCs that are missing in the DB
+    for (const npc of npcSeeds) {
+      if (!npcMap.has(npc.name)) {
+        console.log(`[Seed] NPC "${npc.name}" is missing. Seeding...`);
         const defaultMapId = mapUuidMap.get('lang_cothao') || villageMapId || '';
+        const npcMapId = npc.mapId ? (mapUuidMap.get(npc.mapId) || npc.mapId) : defaultMapId;
         const [inserted] = await db.insert(schema.npcTemplates).values({
           name: npc.name,
           sprite: npc.sprite,
           faction: npc.faction,
           occupation: npc.occupation,
-          map_id: defaultMapId,
+          map_id: npcMapId,
           x: npc.x,
           y: npc.y,
           has_shop: npc.hasShop ?? 'false',
@@ -200,55 +245,47 @@ export async function seedDatabase(): Promise<void> {
           npcGiverIdMap.set(npc.name, inserted.id);
         }
       }
-    } else {
-      const allNpcs = await db.select().from(schema.npcTemplates);
-      for (const n of allNpcs) {
-        npcMap.set(n.name, n.id);
-        npcGiverIdMap.set(n.name, n.id);
+    }
+
+    // 6. Seed NPC Dialogues (delete all and re-seed to apply config changes instantly)
+    console.log('[Seed] Refreshing NPC dialogues...');
+    await db.delete(schema.npcDialogues);
+    const dialogueUuidMap = new Map<string, string>(); // ref -> UUID
+    for (const d of dialogueSeeds) {
+      const npcId = npcMap.get(d.npc_ref);
+      if (npcId) {
+        const [inserted] = await db.insert(schema.npcDialogues).values({
+          npc_id: npcId,
+          order_index: d.order_index,
+          text: d.text,
+          speaker: d.speaker,
+          choices: d.choices ?? null,
+          condition_flag: d.condition_flag ?? '',
+          set_flag: d.set_flag ?? '',
+        }).returning();
+        if (inserted) {
+          dialogueUuidMap.set(d.ref, inserted.id);
+        }
       }
     }
 
-    // 6. Seed NPC Dialogues
-    if (needsDialogues) {
-      console.log('[Seed] Seeding NPC dialogues...');
-      const dialogueUuidMap = new Map<string, string>(); // ref -> UUID
-      // First insert all dialogues without next_dialogue_id links to avoid foreign key issues
-      for (const d of dialogueSeeds) {
-        const npcId = npcMap.get(d.npc_ref);
-        if (npcId) {
-          const [inserted] = await db.insert(schema.npcDialogues).values({
-            npc_id: npcId,
-            order_index: d.order_index,
-            text: d.text,
-            speaker: d.speaker,
-            choices: d.choices ?? null,
-            condition_flag: d.condition_flag ?? '',
-            set_flag: d.set_flag ?? '',
-          }).returning();
-          if (inserted) {
-            dialogueUuidMap.set(d.ref, inserted.id);
+    // Now update next_dialogue_id links
+    for (const d of dialogueSeeds) {
+      const dId = dialogueUuidMap.get(d.ref);
+      if (dId && d.choices) {
+        const parsedChoices = JSON.parse(d.choices) as Array<{ text: string; next_dialogue_ref: string; next_dialogue_id?: string }>;
+        let updated = false;
+        for (const choice of parsedChoices) {
+          const nextId = dialogueUuidMap.get(choice.next_dialogue_ref);
+          if (nextId) {
+            choice.next_dialogue_id = nextId;
+            updated = true;
           }
         }
-      }
-
-      // Now update next_dialogue_id links
-      for (const d of dialogueSeeds) {
-        const dId = dialogueUuidMap.get(d.ref);
-        if (dId && d.choices) {
-          const parsedChoices = JSON.parse(d.choices) as Array<{ text: string; next_dialogue_ref: string; next_dialogue_id?: string }>;
-          let updated = false;
-          for (const choice of parsedChoices) {
-            const nextId = dialogueUuidMap.get(choice.next_dialogue_ref);
-            if (nextId) {
-              choice.next_dialogue_id = nextId;
-              updated = true;
-            }
-          }
-          if (updated) {
-            await db.update(schema.npcDialogues)
-              .set({ choices: JSON.stringify(parsedChoices) })
-              .where(eq(schema.npcDialogues.id, dId));
-          }
+        if (updated) {
+          await db.update(schema.npcDialogues)
+            .set({ choices: JSON.stringify(parsedChoices) })
+            .where(eq(schema.npcDialogues.id, dId));
         }
       }
     }
@@ -259,7 +296,6 @@ export async function seedDatabase(): Promise<void> {
       console.log('[Seed] Seeding monsters...');
       const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId || '';
       
-      // Combine bacNguyenMonsterSeeds and bossSeeds
       const allMonsterSeeds = [
         ...bacNguyenMonsterSeeds.map(m => ({ ...m, isBoss: false })),
         ...bossSeeds.map(b => ({ ...b, isBoss: true })),
@@ -272,11 +308,11 @@ export async function seedDatabase(): Promise<void> {
           hp: m.hp,
           atk: m.atk,
           def: m.def,
-          speed: m.speed * 40, // convert speed to standard range if needed
+          speed: m.speed * 40,
           element: m.element,
           sprite: m.sprite,
           drop_table: m.drop_table,
-          map_id: defaultRegionMapId, // associate with default map region for back-compat
+          map_id: defaultRegionMapId,
           respawn_time: m.respawn_time,
         }).returning();
         if (inserted) {
@@ -287,6 +323,34 @@ export async function seedDatabase(): Promise<void> {
       const allMonsters = await db.select().from(schema.monsterTemplates);
       for (const m of allMonsters) {
         monsterTemplateMap.set(m.name, m.id);
+      }
+      
+      // Also add Thiết Bì Cự Hùng if missing
+      const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId || '';
+      const allMonsterSeeds = [
+        ...bacNguyenMonsterSeeds.map(m => ({ ...m, isBoss: false })),
+        ...bossSeeds.map(b => ({ ...b, isBoss: true })),
+      ];
+      for (const m of allMonsterSeeds) {
+        if (!monsterTemplateMap.has(m.name)) {
+          console.log(`[Seed] Monster template "${m.name}" is missing. Seeding...`);
+          const [inserted] = await db.insert(schema.monsterTemplates).values({
+            name: m.name,
+            realm: m.realm === 'luyen_khi' ? 2 : 1,
+            hp: m.hp,
+            atk: m.atk,
+            def: m.def,
+            speed: m.speed * 40,
+            element: m.element,
+            sprite: m.sprite,
+            drop_table: m.drop_table,
+            map_id: defaultRegionMapId,
+            respawn_time: m.respawn_time,
+          }).returning();
+          if (inserted) {
+            monsterTemplateMap.set(inserted.name, inserted.id);
+          }
+        }
       }
     }
 
@@ -308,10 +372,12 @@ export async function seedDatabase(): Promise<void> {
       }
     }
 
-    // 9. Seed Quest Templates
-    if (needsQuests) {
-      console.log('[Seed] Seeding quests...');
-      for (const q of chapter1QuestSeeds) {
+    // 9. Seed Quest Templates (safely checking for missing templates)
+    console.log('[Seed] Checking and seeding quest templates...');
+    const existingQuestsList = await db.select().from(schema.questTemplates);
+    for (const q of chapter1QuestSeeds) {
+      if (!existingQuestsList.some(eq => eq.name === q.name)) {
+        console.log(`[Seed] Quest template "${q.name}" is missing. Seeding...`);
         const npcGiverId = q.npc_giver_ref ? npcGiverIdMap.get(q.npc_giver_ref) : null;
         await db.insert(schema.questTemplates).values({
           name: q.name,
