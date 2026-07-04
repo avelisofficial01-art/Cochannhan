@@ -836,24 +836,31 @@ Khắc phục triệt để các root cause bug khiến gameplay H5 không hoạ
 | Thiếu Player Character | Tài khoản mới đăng ký/chưa tạo nhân vật kết nối socket với `playerId = ""` khiến socket logic của server trả về early | Thêm logic tự động tạo nhân vật mặc định (theo username của account) trên cả login HTTP API, Socket connection, và GamePage frontend mount |
 | Lỗi 401 gu/player và equipment/player | Thiếu middleware `resolvePlayer` tại các file route tương ứng dẫn đến `req.playerId` bị undefined | Bổ sung `resolvePlayer` sau `authenticate` cho tất cả các route của Gu và Trang Bị |
 | Thiếu DB diagnostics trong prod | Khó kiểm chứng DB seeding thành công hay thất bại trên môi trường Render | Nâng cấp API `/api/health` truy vấn trực tiếp và trả về số lượng bản ghi của Maps, NPCs, Monsters, Quests |
+| Lỗi NPC fallback greeting | Dialogues và Quests không nạp lại khi Maps/NPCs đã nạp từ trước, khiến người chơi chỉ thấy lời chào mặc định | Cải tiến `seedDatabase` tự phát hiện và bù đắp (self-healing) các bảng rỗng bằng cách nạp danh mục và tham chiếu ID động từ DB |
+| NPC khó click tương tác | Vùng click (hitArea) của NPC bị lệch do định nghĩa Geom.Circle tọa độ (0,0) lệch góc trên bên trái | Sửa thành `setInteractive({ useHandCursor: true })` giúp tự động canh giữa theo kích thước thực của sprite và thêm con trỏ bàn tay |
+| Không có giới hạn khoảng cách trò chuyện | Người chơi đứng bất kỳ đâu trên bản đồ cũng có thể nhấp chuột nói chuyện với NPC từ xa | Thêm proximity check tối đa 120px và hiển thị dòng chữ cảnh báo màu vàng nếu đứng quá xa |
+| Quái vật chết không hồi sinh | Bầy quái vật bị tiêu diệt hoàn toàn biến mất, không có cơ chế hồi sinh tự động trên server | Triển khai `scheduleRespawn` với `setTimeout` dựa trên `respawn_time` của quái, tự động tạo mới instance và đồng bộ lại map |
+| Bản đồ reset quái vô tội vạ | Mỗi khi map trống và có người chơi join, toàn bộ quái lại bị spawn lại từ đầu | Thêm `initializedMaps` cache trạng thái nạp bản đồ, chỉ nạp cấu hình quái một lần duy nhất khi khởi động |
+| Tiến độ nhiệm vụ không tự cập nhật khi diệt quái | Đánh bại Sói Tuyết nhưng mục tiêu nhiệm vụ không ghi nhận tiến trình | Kết nối `handleMonsterKill` của `questService` trực tiếp vào hàm xử lý sát thương chết của quái vật |
+| Lãng phí băng thông và CPU do polling | QuestTracker liên tục gọi API GET `/api/quest/player/active` mỗi 4 giây và server liên tục loopback di chuyển cho chính người gửi | Thêm EventBus và socket room `player:${playerId}` để push tiến độ nhiệm vụ thời gian thực khi có thay đổi (giảm polling về 30s), lược bỏ gói tin loopback khi player di chuyển |
 
 ### Files modified
 
 | File | Change |
 |------|--------|
-| `frontend/src/game/GameScene.ts` | Fix delta/1000 bug, player spawn reset, re-join map on create(), camera reattach |
-| `frontend/src/hooks/useSocket.ts` | `emitToGameScene()` retry helper thay thế direct scene.events.emit |
-| `frontend/src/store/gameStore.ts` | Fix `setPlayers` Zustand action (return → set) |
-| `frontend/src/api/client.ts` | Global 401 handler: clear token + redirect to /login |
-| `backend/src/app.ts` | Map lookup fallback chain, async socket connection, DB resolution of playerId/playerName, auto-create player on socket conn, health stats database count query |
-| `backend/src/auth/auth.service.ts` | Auto-create player on successful login if character not found |
-| `backend/src/quest/quest.route.ts` | Reorder Express endpoints, placing specific player/flags routes before wildcard |
-| `backend/src/gu/gu.route.ts` | Add `resolvePlayer` middleware to player routes |
-| `backend/src/equipment/equipment.route.ts` | Add `resolvePlayer` middleware to player routes |
-| `frontend/src/pages/GamePage.tsx` | Fetch profile on mount and auto-create character if profile returns 404 |
+| `shared/src/combat/types.ts` | Thêm optional `spawnX`/`spawnY` vào `MonsterInstance` để phục vụ hồi sinh |
+| `backend/src/utils/event-bus.ts` | **Created** — Event bus trung gian hỗ trợ giao tiếp bất đồng bộ giữa các service trên server |
+| `backend/src/combat/combat.service.ts` | Tích hợp hồi sinh quái vật, đăng ký callback báo socket sync, kết nối sự kiện diệt quái với quest service |
+| `backend/src/quest/quest.service.ts` | Viết quest handler `handleMonsterKill` và emit sự kiện cập nhật nhiệm vụ qua event bus |
+| `backend/src/database/seed.ts` | Nâng cấp kiểm tra self-healing seeding tự động bổ khuyết các bảng trống (dialogues, quests, gu) |
+| `backend/src/app.ts` | Cache nạp map, bắt sự kiện monster respawn & quest update để push qua Socket.IO, tối ưu hóa gói tin di chuyển |
+| `frontend/src/game/GameScene.ts` | Fix NPC click bounds, thêm khoảng cách giới hạn 120px và hàm vẽ chữ thông báo nổi (floating text) |
+| `frontend/src/hooks/useSocket.ts` | Nhận và xử lý sự kiện `quest:updated` đẩy từ server để cập nhật store React |
+| `frontend/src/components/QuestTracker.tsx` | Nới lỏng chu kỳ backup polling từ 4 giây lên 30 giây giúp tiết kiệm CPU và tài nguyên mạng |
 
 ### Xác nhận
 - [x] Typecheck: 0 lỗi (shared + backend + frontend)
 - [x] Lint: 0 errors
-- [x] Build: `npm run build` thành công
+- [x] Build: `npm run build` thành công, kết xuất production bundle mượt mà
+
 

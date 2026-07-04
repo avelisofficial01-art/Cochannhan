@@ -67,9 +67,10 @@ export const QuestTracker: React.FC = () => {
     void fetchActiveQuests();
     void fetchQuestTemplates();
 
+    // Sockets update active quests in real-time. Use a slow fallback poll (30s) to minimize traffic.
     const interval = setInterval(() => {
       void fetchActiveQuests();
-    }, 4000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [setActiveQuests]);
 

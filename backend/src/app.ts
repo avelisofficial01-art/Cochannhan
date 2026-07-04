@@ -26,6 +26,7 @@ import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { config } from './config/index.js';
 import jwt from 'jsonwebtoken';
 import * as combatService from './combat/combat.service.js';
+import { eventBus } from './utils/event-bus.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -153,6 +154,27 @@ interface PlayerPosition {
 }
 
 const playerPositions = new Map<string, PlayerPosition>();
+const initializedMaps = new Set<string>();
+
+// Register monster change callback to broadcast updated monsters to map room on respawn
+combatService.registerMonsterChangeCallback((mapId) => {
+  const activeMonsters = combatService.getMonstersOnMap(mapId);
+  io.to(`map:${mapId}`).emit('monster:spawn', activeMonsters.map(inst => ({
+    instanceId: inst.instanceId,
+    templateId: inst.templateId,
+    name: inst.template.name,
+    currentHp: inst.currentHp,
+    maxHp: inst.template.hp,
+    x: inst.x,
+    y: inst.y,
+    sprite: inst.template.sprite,
+  })));
+});
+
+// Listen to quest:updated event and broadcast to player socket room
+eventBus.on('quest:updated', ({ playerId, activeQuests }) => {
+  io.to(`player:${playerId}`).emit('quest:updated', activeQuests);
+});
 
 io.on('connection', async (socket) => {
   // Authentication: verify JWT token from handshake auth
@@ -201,6 +223,11 @@ io.on('connection', async (socket) => {
     console.error('[Socket] Failed to resolve/create player from DB:', err);
   }
 
+  // Join player-specific room for real-time updates (e.g. quests)
+  if (playerId) {
+    socket.join(`player:${playerId}`);
+  }
+
   let currentMapId = 'bac_nguyen_village';
 
   socket.join(`account:${accountId}`);
@@ -222,7 +249,6 @@ io.on('connection', async (socket) => {
 
     // Broadcast to all players in the same map
     socket.to(`map:${data.mapId}`).emit('player:update', pos);
-    socket.emit('player:update', pos);
   });
 
   // Join map room
@@ -336,9 +362,8 @@ io.on('connection', async (socket) => {
         }
         socket.emit('map:portals', portalsWithTarget);
 
-        // Fetch / Spawn Monsters
-        let activeMonsters = combatService.getMonstersOnMap(map.id);
-        if (activeMonsters.length === 0) {
+        // Initialize map monsters once if not done yet
+        if (!initializedMaps.has(map.id)) {
           const spawns = await db.select().from(mapSpawns).where(eq(mapSpawns.map_id, map.id));
           for (const spawn of spawns) {
             if (spawn.spawn_type === 'monster' || spawn.spawn_type === 'boss') {
@@ -362,8 +387,10 @@ io.on('connection', async (socket) => {
               }
             }
           }
-          activeMonsters = combatService.getMonstersOnMap(map.id);
+          initializedMaps.add(map.id);
         }
+
+        const activeMonsters = combatService.getMonstersOnMap(map.id);
 
         // Emit monsters list to joiner
         socket.emit('monster:spawn', activeMonsters.map(inst => ({

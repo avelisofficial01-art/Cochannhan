@@ -8,6 +8,7 @@ import type { DamageInput, MonsterInstance, MonsterTemplate, CombatResult } from
 import * as combatRepo from './combat.repository.js';
 import * as playerService from '../player/player.service.js';
 import * as storyRepo from '../story/story.repository.js';
+import { questService } from '../quest/quest.service.js';
 import {
   initBossState,
   checkBossPhase,
@@ -26,6 +27,29 @@ let instanceCounter = 0;
 function nextInstanceId(): string {
   instanceCounter++;
   return `monster_inst_${instanceCounter}`;
+}
+
+type MonsterChangeCallback = (mapId: string) => void;
+let monsterChangeCallback: MonsterChangeCallback | null = null;
+
+export function registerMonsterChangeCallback(cb: MonsterChangeCallback): void {
+  monsterChangeCallback = cb;
+}
+
+export function scheduleRespawn(template: MonsterTemplate, x: number, y: number): void {
+  const respawnMs = (template.respawnTime || 30) * 1000;
+  console.log(`[Combat] Scheduling respawn for ${template.name} in ${template.respawnTime || 30}s at (${x}, ${y})`);
+  setTimeout(() => {
+    try {
+      const instance = spawnMonster(template, x, y);
+      console.log(`[Combat] Respawned ${template.name} (instanceId: ${instance.instanceId})`);
+      if (monsterChangeCallback) {
+        monsterChangeCallback(template.mapId);
+      }
+    } catch (err) {
+      console.error('[Combat] Respawn failed:', err);
+    }
+  }, respawnMs);
 }
 
 // ─── Boss Helpers ───────────────────────────────────────────
@@ -48,6 +72,8 @@ export function spawnMonster(template: MonsterTemplate, x: number, y: number): M
     statusEffects: [],
     targetId: null,
     lastAttackTick: 0,
+    spawnX: x,
+    spawnY: y,
   };
   monsterInstances.set(instance.instanceId, instance);
 
@@ -155,6 +181,14 @@ export async function executePlayerAttack(
     }
     bossStates.delete(targetInstanceId);
     despawnMonster(targetInstanceId);
+
+    // Schedule respawn
+    scheduleRespawn(target.template, target.spawnX ?? target.x, target.spawnY ?? target.y);
+
+    // Update quest progress for monster kill
+    questService.handleMonsterKill(playerId, target.template.name).catch((err) => {
+      console.error('Failed to handle quest kill progress:', err);
+    });
   } else {
     // Check boss phase transition
     const bossState = bossStates.get(targetInstanceId);
@@ -251,6 +285,7 @@ export function tickAllMonsters(_currentTick: number): Array<{
     if (defeated) {
       bossStates.delete(monster.instanceId);
       despawnMonster(monster.instanceId);
+      scheduleRespawn(monster.template, monster.spawnX ?? monster.x, monster.spawnY ?? monster.y);
       results.push({
         instanceId: monster.instanceId,
         damageTaken: damageDealt,

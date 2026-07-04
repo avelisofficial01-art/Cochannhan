@@ -95,6 +95,11 @@ export function useSocket(): { isConnected: boolean } {
       setTimeout(() => setCombatResult(null), 1200);
     });
 
+    socket.on('quest:updated', (activeQuests: unknown[]) => {
+      console.log('[Socket] 📥 Received quest:updated event');
+      useGameStore.getState().setActiveQuests(activeQuests);
+    });
+
     // ── Map synchronization events ───────────────────
     // Helper: emit to GameScene with retry (fixes race condition where socket
     // connects before GameScene.create() registers its event listeners)

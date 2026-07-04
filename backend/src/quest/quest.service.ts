@@ -1,4 +1,5 @@
 import { questRepository } from './quest.repository.js';
+import { eventBus } from '../utils/event-bus.js';
 import type {
   QuestInfo,
   QuestObjective,
@@ -114,7 +115,9 @@ export const questService = {
       throw new Error('Quest already accepted');
     }
     const row = await questRepository.acceptQuest(playerId, questId);
-    return mapPlayerQuest(row as unknown as PlayerQuestRow);
+    const result = mapPlayerQuest(row as unknown as PlayerQuestRow);
+    void questService.emitQuestUpdate(playerId);
+    return result;
   },
 
   async getPlayerQuests(playerId: string): Promise<PlayerQuest[]> {
@@ -162,7 +165,38 @@ export const questService = {
       }
     }
 
-    return mapPlayerQuest(row as unknown as PlayerQuestRow);
+    const result = mapPlayerQuest(row as unknown as PlayerQuestRow);
+    void questService.emitQuestUpdate(playerId);
+    return result;
+  },
+
+  async emitQuestUpdate(playerId: string): Promise<void> {
+    try {
+      const activeQuests = await questService.getPlayerQuests(playerId);
+      eventBus.emit('quest:updated', { playerId, activeQuests });
+    } catch (err) {
+      console.error('[Quest] Failed to emit quest update:', err);
+    }
+  },
+
+  async handleMonsterKill(playerId: string, monsterName: string): Promise<void> {
+    const activeQuests = await questService.getPlayerQuests(playerId);
+    for (const pq of activeQuests) {
+      if (pq.status !== 'active') continue;
+      const quest = await questService.getQuest(pq.questId);
+      if (!quest) continue;
+      const objectives = quest.objectives;
+      for (let i = 0; i < objectives.length; i++) {
+        const obj = objectives[i];
+        if (obj.type === 'kill' && obj.target === monsterName) {
+          const progress = pq.objectivesProgress?.[i] || { current: 0 };
+          if (progress.current < obj.count) {
+            console.log(`[Quest] Updating kill progress for player ${playerId}, quest ${quest.name}, target ${monsterName}`);
+            await questService.updateQuestProgress(playerId, pq.questId, i, 1);
+          }
+        }
+      }
+    }
   },
 
   // Story Flags

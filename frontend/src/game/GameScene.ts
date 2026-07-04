@@ -503,6 +503,27 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private showFloatingText(x: number, y: number, text: string, color = '#ff3333'): void {
+    const txt = this.add
+      .text(x, y - 20, text, {
+        fontSize: '11px',
+        color: color,
+        fontFamily: 'monospace',
+        stroke: '#000000',
+        strokeThickness: 2,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        padding: { x: 4, y: 2 },
+      })
+      .setOrigin(0.5);
+
+    this.floatTexts.push({
+      text: txt,
+      startY: y - 20,
+      elapsed: 0,
+      duration: 1200,
+    });
+  }
+
   /* ───────────────────────────────────────
    *  Update floating texts (fade + float up)
    * ─────────────────────────────────────── */
@@ -618,7 +639,7 @@ export class GameScene extends Phaser.Scene {
         npcSprite = circle as unknown as Phaser.GameObjects.Image;
       }
 
-      npcSprite.setInteractive(new Phaser.Geom.Circle(0, 0, 30), Phaser.Geom.Circle.Contains);
+      npcSprite.setInteractive({ useHandCursor: true });
 
       const nameLabel = this.add.text(npc.x, npc.y - 32, npc.name, {
         fontSize: '12px',
@@ -631,7 +652,14 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       npcSprite.on('pointerdown', () => {
-        useGameStore.getState().openDialogue(npc);
+        const dx = this.playerX - npc.x;
+        const dy = this.playerY - npc.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= 120) {
+          useGameStore.getState().openDialogue(npc);
+        } else {
+          this.showFloatingText(npc.x, npc.y, 'Hãy đến gần hơn để trò chuyện', '#ffff00');
+        }
       });
 
       this.npcSprites.set(npc.id, { sprite: npcSprite, nameLabel });

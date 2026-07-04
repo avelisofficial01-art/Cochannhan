@@ -117,6 +117,8 @@ export interface MonsterInstance {
   statusEffects: ActiveStatusEffect[];
   targetId: string | null;
   lastAttackTick: number;
+  spawnX?: number;
+  spawnY?: number;
 }
 
 // Combat Log

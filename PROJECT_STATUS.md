@@ -53,7 +53,14 @@ Current Module: ✅ Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation
 - [x] Fix **missing player auto-creation** — Auto-create character for accounts without a player record on login, socket connection, and frontend mount
 - [x] Fix **Express routing 404** — Reordered routes in `quest.route.ts` so specific `/player/active` and `/flags` endpoints are registered before wildcard `/:id` route
 - [x] Fix **missing resolvePlayer 401s** — Added `resolvePlayer` middleware to `gu.route.ts` and `equipment.route.ts` to correctly populate `req.playerId`
-- [x] Enhance **database diagnostics** — Extended `/api/health` to return table counts, allowing immediate verification of seeding status in production
+- [x] Fix **database diagnostics** — Extended `/api/health` to return table counts, allowing immediate verification of seeding status in production
+- [x] Fix **NPC interaction click bounds** — replaced custom offset Geom.Circle hit area with standard centered hit area using `{ useHandCursor: true }`
+- [x] Add **NPC proximity checks** — player must be within 120px to talk, displaying floating warning text if too far
+- [x] Implement **monster respawn system** — server automatically schedules a respawn timer using template `respawn_time` when defeated, broadcasting updated list
+- [x] Implement **in-memory map initialization cache** — prevents reloading and duplicate monster spawning from seeds on every player join
+- [x] Implement **monster kill quest progress sync** — server now updates quest objectives automatically on combat defeats
+- [x] Optimize **quest progression push** — added a backend event bus and player rooms to push quest updates in real-time, allowing QuestTracker to reduce API polling from 4s to 30s
+- [x] Optimize **player movement bandwidth** — removed redundant loopback position update packets back to the client
 
 ---
 
