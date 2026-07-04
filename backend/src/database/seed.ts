@@ -1,6 +1,6 @@
 import { db } from './connection.js';
 import * as schema from './schema/index.js';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import {
   npcSeeds,
   itemSeeds,
@@ -32,7 +32,9 @@ export async function seedDatabase(): Promise<void> {
     const needsMonsters = existingMonsters.length === 0;
 
     if (!needsWorldData && !needsNpcs && !needsMonsters) {
-      console.log('[Seed] Database already populated — skipping.');
+      console.log('[Seed] Database already populated — refreshing map config...');
+      await refreshMapConfig();
+      console.log('[Seed] ✅ Map config refresh completed.');
       return;
     }
 
@@ -359,4 +361,73 @@ export async function seedDatabase(): Promise<void> {
     console.error('[Seed] ❌ Database seeding FAILED:', err);
     throw err;
   }
+}
+
+/**
+ * Always refresh map spawns and portals (config data that may change between deploys).
+ * Delete + re-insert pattern ensures idempotency without needing unique constraints.
+ */
+async function refreshMapConfig(): Promise<void> {
+  const allMaps = await db.select().from(schema.worldMaps);
+  if (allMaps.length === 0) return; // Maps haven't been seeded yet
+
+  const mapUuidMap = new Map<string, string>();
+  for (const m of allMaps) {
+    mapUuidMap.set(m.name, m.id);
+  }
+
+  const mapIds = Array.from(mapUuidMap.values());
+
+  // Delete old spawns + portals for known maps
+  if (mapIds.length > 0) {
+    await db.delete(schema.mapSpawns).where(inArray(schema.mapSpawns.map_id, mapIds));
+    await db.delete(schema.mapPortals).where(inArray(schema.mapPortals.from_map_id, mapIds));
+  }
+
+  // Insert map spawns
+  let spawnCount = 0;
+  for (const s of mapSpawnSeeds) {
+    const mapId = mapUuidMap.get(s.map_ref);
+    if (mapId) {
+      await db.insert(schema.mapSpawns).values({
+        map_id: mapId,
+        spawn_type: s.spawn_type,
+        spawn_ref: s.spawn_ref,
+        x: s.x,
+        y: s.y,
+        respawn_time: s.respawn_time,
+      });
+      spawnCount++;
+    }
+  }
+
+  // Insert map portals
+  let portalCount = 0;
+  for (const p of mapPortalSeeds) {
+    const fromMapId = mapUuidMap.get(p.from_map_ref);
+    const toMapId = mapUuidMap.get(p.to_map_ref);
+    if (fromMapId && toMapId) {
+      await db.insert(schema.mapPortals).values({
+        from_map_id: fromMapId,
+        to_map_id: toMapId,
+        from_x: p.from_x,
+        from_y: p.from_y,
+        to_x: p.to_x,
+        to_y: p.to_y,
+        portal_name: p.portal_name,
+      });
+
+      // Also seed older portals table
+      await db.insert(schema.portals).values({
+        from_map: fromMapId,
+        to_map: toMapId,
+        x: p.from_x,
+        y: p.from_y,
+        condition: null,
+      });
+      portalCount++;
+    }
+  }
+
+  console.log(`[Seed] Map config refreshed: ${spawnCount} spawns, ${portalCount} portals across ${mapIds.length} maps`);
 }

@@ -532,14 +532,20 @@ export const worldMapSeeds = [
 ];
 
 export const mapPortalSeeds = [
-  { from_map_ref: 'lang_cothao', to_map_ref: 'dongco_hoang', from_x: 1400, from_y: 750, to_x: 100, to_y: 1000, portal_name: 'Cổng Làng' },
-  { from_map_ref: 'dongco_hoang', to_map_ref: 'rung_tuyet', from_x: 2400, from_y: 1000, to_x: 100, to_y: 1250, portal_name: 'Đường Rừng' },
+  { from_map_ref: 'lang_cothao', to_map_ref: 'dongco_hoang', from_x: 1400, from_y: 750, to_x: 100, to_y: 1000, portal_name: 'Cổng Làng → Đồng Cỏ' },
+  { from_map_ref: 'dongco_hoang', to_map_ref: 'lang_cothao', from_x: 80, from_y: 1000, to_x: 1350, to_y: 750, portal_name: 'Quay về Làng' },
+  { from_map_ref: 'dongco_hoang', to_map_ref: 'rung_tuyet', from_x: 2400, from_y: 1000, to_x: 100, to_y: 1250, portal_name: 'Đường Rừng → Núi' },
+  { from_map_ref: 'rung_tuyet', to_map_ref: 'dongco_hoang', from_x: 80, from_y: 1250, to_x: 2350, to_y: 1000, portal_name: 'Quay về Đồng Cỏ' },
   { from_map_ref: 'rung_tuyet', to_map_ref: 'dinh_bangphong', from_x: 1500, from_y: 50, to_x: 1000, to_y: 1900, portal_name: 'Dốc Băng' },
-  { from_map_ref: 'dinh_bangphong', to_map_ref: 'canhdong_tuyet', from_x: 100, from_y: 1000, to_x: 2400, to_y: 1000, portal_name: 'Triền Núi' },
+  { from_map_ref: 'dinh_bangphong', to_map_ref: 'rung_tuyet', from_x: 1000, from_y: 1950, to_x: 1450, to_y: 100, portal_name: 'Xuống Rừng' },
+  { from_map_ref: 'dinh_bangphong', to_map_ref: 'canhdong_tuyet', from_x: 100, from_y: 1000, to_x: 2400, to_y: 1000, portal_name: 'Triền Núi → Đồng' },
+  { from_map_ref: 'canhdong_tuyet', to_map_ref: 'dinh_bangphong', from_x: 2450, from_y: 1000, to_x: 150, to_y: 1000, portal_name: 'Lên Núi' },
 ];
 
 export const mapSpawnSeeds = [
-  // Làng Cổ Thảo
+  // Làng Cổ Thảo (safe zone with 2 weak practice monsters near outskirts)
+  { map_ref: 'lang_cothao', spawn_type: 'monster', spawn_ref: 'Thỏ Tuyết', x: 1600, y: 600, respawn_time: 15 },
+  { map_ref: 'lang_cothao', spawn_type: 'monster', spawn_ref: 'Thỏ Tuyết', x: 200, y: 1600, respawn_time: 15 },
   { map_ref: 'lang_cothao', spawn_type: 'npc', spawn_ref: 'Trưởng làng', x: 500, y: 400, respawn_time: 30 },
   { map_ref: 'lang_cothao', spawn_type: 'npc', spawn_ref: 'Thợ rèn', x: 600, y: 300, respawn_time: 30 },
   { map_ref: 'lang_cothao', spawn_type: 'npc', spawn_ref: 'Thương nhân', x: 400, y: 500, respawn_time: 30 },

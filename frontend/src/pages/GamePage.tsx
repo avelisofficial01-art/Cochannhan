@@ -98,27 +98,25 @@ export default function GamePage(): React.ReactElement {
   };
 
   return (
-    <div className="min-h-screen bg-gu-darker flex flex-col items-center">
-      {/* Top bar — compact on mobile */}
-      <header className="w-full flex items-center justify-between px-3 py-2 md:px-6 md:py-3 bg-gu-dark border-b border-gu-border">
-        <h1 className="text-base md:text-lg font-bold text-gu-accent">
-          CỔ ĐẠO
-        </h1>
-        <div className="flex items-center gap-2 md:gap-4">
-          <span className={`text-xs md:text-sm ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+    <div className="h-dvh bg-gu-darker flex flex-col overflow-hidden" style={{ touchAction: 'manipulation' }}>
+      {/* Top bar — super compact on mobile */}
+      <header className="w-full flex items-center justify-between px-2 py-1 bg-gu-dark border-b border-gu-border shrink-0">
+        <h1 className="text-sm font-bold text-gu-accent">CỔ ĐẠO</h1>
+        <div className="flex items-center gap-1">
+          <span className={`text-[10px] ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
             {isConnected ? '●' : '○'}
           </span>
           <button
             onClick={handleLogout}
-            className="px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm border border-gu-border rounded hover:bg-gu-border/30 transition-colors"
+            className="px-2 py-0.5 text-[10px] border border-gu-border rounded hover:bg-gu-border/30"
           >
             Logout
           </button>
         </div>
       </header>
 
-      {/* Game area — full width, no max-w clamp */}
-      <div className="relative w-full flex-1 flex items-center justify-center bg-gu-darker">
+      {/* Game area — fills remaining viewport */}
+      <div className="relative w-full flex-1 bg-gu-darker overflow-hidden">
         <GuPanel />
         <EquipmentPanel />
         <CraftPanel />
@@ -126,7 +124,7 @@ export default function GamePage(): React.ReactElement {
         <QuestTracker />
         <div
           ref={containerRef}
-          className="flex-1 h-full"
+          className="w-full h-full"
         />
       </div>
 
