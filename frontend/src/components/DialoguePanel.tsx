@@ -54,8 +54,8 @@ export const DialoguePanel: React.FC = () => {
             choices: null,
           });
         }
-      } catch {
-        // Silent error handler
+      } catch (err) {
+        console.error('[Dialogue] fetchDialogues ERROR:', err);
       } finally {
         setLoading(false);
       }
@@ -92,25 +92,32 @@ export const DialoguePanel: React.FC = () => {
   const setStoryFlagAndCheckQuests = async (flagKey: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch('/api/quest/flags/set', {
+      console.log('[Dialogue] 🔑 setStoryFlag:', flagKey);
+      const flagRes = await fetch('/api/quest/flags/set', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ flagKey, flagValue: 'true' }),
+        body: JSON.stringify({ key: flagKey, value: true }),
       });
+      const flagJson = await flagRes.json();
+      console.log('[Dialogue] Flag set result:', flagJson);
 
       const qTemplatesRes = await fetch('/api/quest', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const qTemplatesJson = await qTemplatesRes.json();
+      console.log('[Dialogue] Quest templates fetched, count:', qTemplatesJson.data?.length);
 
       if (qTemplatesJson.success && qTemplatesJson.data) {
         const templates = qTemplatesJson.data as Array<{ id: string; flagRequired: string }>;
+        console.log('[Dialogue] Templates with flagRequired:', templates.map(t => `${t.flagRequired || 'NONE'}`).join(', '));
         const unlockedQuests = templates.filter((q) => q.flagRequired === flagKey);
+        console.log('[Dialogue] Unlocked for flag', flagKey, ':', unlockedQuests.length, 'quests');
         
         for (const quest of unlockedQuests) {
+          console.log('[Dialogue] Accepting quest:', quest.id);
           await fetch('/api/quest/accept', {
             method: 'POST',
             headers: {
@@ -126,11 +133,13 @@ export const DialoguePanel: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const activeQuestsJson = await activeQuestsRes.json();
+      console.log('[Dialogue] Active quests:', activeQuestsJson);
       if (activeQuestsJson.success && activeQuestsJson.data) {
+        console.log('[Dialogue] ✅ Setting', activeQuestsJson.data.length, 'active quests');
         setActiveQuests(activeQuestsJson.data as unknown[]);
       }
-    } catch {
-      // Silent error handler
+    } catch (err) {
+      console.error('[Dialogue] setStoryFlagAndCheckQuests ERROR:', err);
     }
   };
 

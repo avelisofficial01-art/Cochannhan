@@ -843,6 +843,7 @@ export const chapter1QuestSeeds = [
       { type: 'exp', amount: 20 },
     ]),
     flag_complete: 'ch1_awakened',
+    flag_required: 'ch1_intro_done',
     min_realm: 1,
   },
   {

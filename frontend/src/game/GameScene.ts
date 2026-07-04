@@ -660,7 +660,7 @@ export class GameScene extends Phaser.Scene {
       const npcIdx = isNaN(charIndex) ? 0 : Math.max(0, charIndex - 1);
       const npcKey = getNpcKey(npcIdx);
 
-      let npcSprite: Phaser.GameObjects.Image;
+      let npcSprite: Phaser.GameObjects.Image | Phaser.GameObjects.Arc;
       if (this.textures.exists(npcKey)) {
         npcSprite = this.add.image(npc.x, npc.y, npcKey);
         npcSprite.setDisplaySize(40, 40);
@@ -668,10 +668,11 @@ export class GameScene extends Phaser.Scene {
         // Fallback: colored circle always visible
         const circle = this.add.circle(npc.x, npc.y, 20, 0xffaa00, 0.9);
         circle.setStrokeStyle(2, 0xffffff, 1);
-        npcSprite = circle as unknown as Phaser.GameObjects.Image;
+        npcSprite = circle;
       }
 
-      npcSprite.setInteractive({ useHandCursor: true });
+      npcSprite.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Circle(20, 20, 30), hitAreaCallback: Phaser.Geom.Circle.Contains, draggable: false });
+      npcSprite.setDepth(50);
 
       const nameLabel = this.add.text(npc.x, npc.y - 32, npc.name, {
         fontSize: '12px',
@@ -694,7 +695,7 @@ export class GameScene extends Phaser.Scene {
         }
       });
 
-      this.npcSprites.set(npc.id, { sprite: npcSprite, nameLabel });
+      this.npcSprites.set(npc.id, { sprite: npcSprite as Phaser.GameObjects.Image, nameLabel });
     });
   }
 
@@ -707,21 +708,33 @@ export class GameScene extends Phaser.Scene {
     }
     this.portalSprites.clear();
 
-    // Create new portal graphics
+    // Create new portal graphics with depth + pulse animation
     portals.forEach((p) => {
       const gfx = this.add.graphics();
-      gfx.lineStyle(2, 0x00ffff, 0.8);
-      gfx.fillStyle(0x00ffff, 0.2);
-      gfx.strokeCircle(p.from_x, p.from_y, 24);
-      gfx.fillCircle(p.from_x, p.from_y, 24);
+      gfx.lineStyle(3, 0x00ffff, 0.9);
+      gfx.fillStyle(0x00ffff, 0.25);
+      gfx.strokeCircle(p.from_x, p.from_y, 32);
+      gfx.fillCircle(p.from_x, p.from_y, 32);
+      gfx.setDepth(100);
 
-      const nameLabel = this.add.text(p.from_x, p.from_y - 32, p.portal_name || 'Portal', {
-        fontSize: '10px',
+      // Pulse animation
+      this.tweens.add({
+        targets: gfx,
+        alpha: { from: 1, to: 0.4 },
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+      });
+
+      const nameLabel = this.add.text(p.from_x, p.from_y - 40, p.portal_name || '🔄 Portal', {
+        fontSize: '11px',
         color: '#00ffff',
         fontFamily: 'monospace',
         stroke: '#000000',
-        strokeThickness: 2,
-      }).setOrigin(0.5);
+        strokeThickness: 3,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        padding: { x: 4, y: 2 },
+      }).setOrigin(0.5).setDepth(101);
 
       this.portalSprites.set(p.id, { gfx, nameLabel, data: p });
     });
