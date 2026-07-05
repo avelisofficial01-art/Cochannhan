@@ -175,6 +175,8 @@ export default function CharacterPanel(): React.ReactElement | null {
     equipmentList,
     setEquipmentList,
     setEquippedItems,
+    inventorySlots,
+    setInventorySlots,
     profile,
     stats,
     characterPanelTab,
@@ -319,6 +321,16 @@ export default function CharacterPanel(): React.ReactElement | null {
       .then((d: { success: boolean; data: unknown[] }) => {
         if (d.success && Array.isArray(d.data)) {
           setQuestTemplates(d.data as QuestTemplate[]);
+        }
+      })
+      .catch(() => {});
+
+    // Inventory
+    fetchWithAuth('/api/inventory/')
+      .then((res) => res.json())
+      .then((d: { success: boolean; data: Array<{ id: string; itemId: string; itemName: string; quantity: number; slot: number; itemType: string }> }) => {
+        if (d.success && Array.isArray(d.data)) {
+          setInventorySlots(d.data);
         }
       })
       .catch(() => {});
@@ -606,6 +618,18 @@ export default function CharacterPanel(): React.ReactElement | null {
           }`}
         >
           📜 Nhiệm Vụ
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('inventory');
+            setSelectedGu(null);
+            setSelectedEquip(null);
+          }}
+          className={`flex-1 py-2 text-xs font-semibold border-b-2 transition-colors ${
+            activeTab === 'inventory' ? 'border-gu-accent text-gu-accent bg-gu-border/10' : 'border-transparent text-gray-400 hover:text-white'
+          }`}
+        >
+          🎒 Túi Đồ
         </button>
       </div>
 
@@ -1001,6 +1025,34 @@ export default function CharacterPanel(): React.ReactElement | null {
             </div>
           );
         })()}
+
+        {/* ================= INVENTORY TAB ================= */}
+        {activeTab === 'inventory' && (
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Túi Đồ ({inventorySlots.length} món)</h3>
+            {inventorySlots.length === 0 ? (
+              <p className="text-xs text-gray-600 italic py-6 text-center">Túi đồ trống. Giết quái để nhận đồ!</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {inventorySlots.map((slot) => (
+                  <div
+                    key={slot.id}
+                    className="rounded-lg border border-gray-700 bg-gu-darker/40 p-2.5 text-xs"
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-medium text-gray-200 truncate">{slot.itemName}</span>
+                      <span className="text-[10px] text-yellow-400 font-mono">x{slot.quantity}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-gray-500 capitalize">{slot.itemType}</span>
+                      <span className="text-gray-600">Slot #{slot.slot}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer hint */}

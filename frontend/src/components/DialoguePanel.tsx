@@ -164,13 +164,13 @@ export const DialoguePanel: React.FC = () => {
   const setStoryFlagAndCheckQuests = async (flagKey: string) => {
     try {
       const token = localStorage.getItem('token');
-      const flagRes = await fetch('/api/quest/flags/set', {
+      const flagRes = await fetch('/api/story/flags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ key: flagKey, value: true }),
+        body: JSON.stringify({ flagKey: flagKey, flagValue: 'true' }),
       });
       await flagRes.json(); // confirm flag was set
       const qTemplatesRes = await fetch('/api/quest', {

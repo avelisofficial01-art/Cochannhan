@@ -19,6 +19,35 @@ export default function CraftPanel(): React.ReactElement | null {
     setRecipeList,
   } = useGameStore();
 
+  const [craftMessage, setCraftMessage] = React.useState<string | null>(null);
+  const [craftingId, setCraftingId] = React.useState<string | null>(null);
+
+  const handleCraft = async (recipeId: string, recipeName: string) => {
+    setCraftingId(recipeId);
+    setCraftMessage(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/api/craft`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recipeId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setCraftMessage(`✅ Chế tạo ${recipeName} thành công!`);
+      } else {
+        setCraftMessage(`❌ ${json.message || 'Chế tạo thất bại'}`);
+      }
+    } catch {
+      setCraftMessage('❌ Lỗi kết nối');
+    } finally {
+      setCraftingId(null);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -94,10 +123,12 @@ export default function CraftPanel(): React.ReactElement | null {
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-yellow-500">💰 {recipe.requiredGold} gold</span>
                   <button
-                    className="px-2 py-1 rounded border border-orange-500/50 text-orange-400 hover:bg-orange-500/20 transition-colors"
+                    onClick={() => handleCraft(recipe.id, recipe.resultName)}
+                    disabled={craftingId === recipe.id}
+                    className={`px-2 py-1 rounded border border-orange-500/50 text-orange-400 hover:bg-orange-500/20 transition-colors ${craftingId === recipe.id ? 'opacity-50 cursor-wait' : ''}`}
                     title="Craft this item"
                   >
-                    Chế tạo
+                    {craftingId === recipe.id ? '⏳' : 'Chế tạo'}
                   </button>
                 </div>
               </div>
@@ -105,6 +136,15 @@ export default function CraftPanel(): React.ReactElement | null {
           </div>
         )}
       </div>
+
+      {/* Craft Message */}
+      {craftMessage && (
+        <div className={`px-3 py-2 text-xs text-center border-t border-gu-border ${
+          craftMessage.startsWith('✅') ? 'text-green-400 bg-green-950/20' : 'text-red-400 bg-red-950/20'
+        }`}>
+          {craftMessage}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="px-3 py-2 text-[10px] text-gray-600 border-t border-gu-border">

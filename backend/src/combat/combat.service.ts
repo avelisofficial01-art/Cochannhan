@@ -13,6 +13,7 @@ import { db } from '../database/connection.js';
 import * as schema from '../database/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { inventoryService } from '../inventory/inventory.service.js';
+import { playerRepository } from '../player/player.repository.js';
 import {
   initBossState,
   checkBossPhase,
@@ -210,6 +211,7 @@ export async function executePlayerAttack(
   target.currentHp -= result.finalDamage;
   const defeated = target.currentHp <= 0;
   const grantedDrops: Array<{ itemName: string; quantity: number }> = [];
+  let goldReward = 0;
 
   if (defeated) {
     // Boss defeat — set story flag
@@ -264,6 +266,19 @@ export async function executePlayerAttack(
       }
     }
 
+    // Gold reward
+    try {
+      const goldEarned = Math.floor((target.template.hp / 10) + (target.template.atk / 2) + Math.random() * 10);
+      const currentPlayer = await playerRepository.findById(playerId);
+      if (currentPlayer) {
+        const newGold = (currentPlayer.gold ?? 0) + goldEarned;
+        await playerRepository.update(playerId, { gold: newGold });
+        goldReward = goldEarned;
+      }
+    } catch (err) {
+      console.error(`[Combat] Failed to award gold to player ${playerId}:`, err);
+    }
+
     despawnMonster(targetInstanceId);
 
     // Schedule respawn
@@ -305,6 +320,7 @@ export async function executePlayerAttack(
     targetDefeated: defeated,
     statusApplied: result.statusApplied,
     drops: grantedDrops,
+    goldReward,
   };
 }
 

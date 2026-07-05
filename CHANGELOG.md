@@ -1141,7 +1141,34 @@ Khắc phục 2 lỗi production blocker: frontend không render map/NPC/quái d
 - [x] Build: `npm run build` thành công, Vite bundle OK
 
 
+---
 
+## Sprint 16: GAMEPLAY INTEGRATION — 2026-07-06
 
+### Mục tiêu
+Tích hợp các hệ thống gameplay còn thiếu: hiển thị inventory (túi đồ), thưởng vàng từ quái, kích hoạt nút chế tạo, sửa flow nhận quest.
 
+### Hoàn thành
 
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S16.1 | Sửa endpoint quest flag | ✅ | DialoguePanel gọi sai endpoint `/api/quest/flags/set` → sửa thành `POST /api/story/flags` với params `{ flagKey, flagValue }` |
+| S16.2 | Thêm Inventory Tab | ✅ | Thêm tab 🎒 Túi Đồ vào CharacterPanel, fetch `GET /api/inventory/`, hiển thị danh sách vật phẩm với số lượng |
+| S16.3 | Thêm gold reward combat | ✅ | Tính gold thưởng dựa trên HP/ATK quái, update `player.gold` qua `playerRepository`, thêm `goldReward` vào `CombatResult` |
+| S16.4 | Wire nút Chế tạo | ✅ | Thêm handler gọi `POST /api/craft` với `recipeId`, hiển thị thông báo thành công/thất bại |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `frontend/src/components/DialoguePanel.tsx` | Sửa endpoint quest flag |
+| `frontend/src/store/gameStore.ts` | Thêm `inventorySlots` state + setter |
+| `frontend/src/components/CharacterPanel.tsx` | Thêm inventory tab + fetch API |
+| `backend/src/combat/combat.service.ts` | Thêm gold reward logic |
+| `shared/src/combat/types.ts` | Thêm `goldReward?: number` vào `CombatResult` |
+| `frontend/src/components/CraftPanel.tsx` | Wire nút Chế tạo gọi API |
+
+### Xác nhận
+- [x] Typecheck: 0 errors (shared + backend + frontend)
+- [x] Lint: 0 errors (warnings unchanged)
+- [x] Build: `npm run build` thành công

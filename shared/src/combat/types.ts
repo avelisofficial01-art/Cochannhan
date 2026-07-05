@@ -83,6 +83,7 @@ export interface CombatResult {
   targetDefeated: boolean;
   statusApplied: ActiveStatusEffect[];
   drops?: Array<{ itemName: string; quantity: number }>;
+  goldReward?: number;
 }
 
 // Monster

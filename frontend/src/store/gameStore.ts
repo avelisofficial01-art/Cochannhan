@@ -98,9 +98,10 @@ interface GameState {
   activeDialogue: { id: string; text: string; speaker: string; choices: Array<{ text: string; next_dialogue_ref: string; next_dialogue_id?: string }> | null; set_flag?: string } | null;
   isDialogueOpen: boolean;
   activeQuests: unknown[];
+  inventorySlots: Array<{ id: string; itemId: string; itemName: string; quantity: number; slot: number; itemType: string }>;
   profile: ProfileState | null;
   stats: StatsState | null;
-  characterPanelTab: 'stats' | 'gu' | 'equip' | 'quest';
+  characterPanelTab: 'stats' | 'gu' | 'equip' | 'quest' | 'inventory';
 
   setEquipmentList: (list: GameState['equipmentList']) => void;
   setEquippedItems: (items: Record<string, string | null>) => void;
@@ -127,7 +128,8 @@ interface GameState {
   setActiveQuests: (quests: unknown[]) => void;
   setProfile: (profile: ProfileState | null) => void;
   setStats: (stats: StatsState | null) => void;
-  setCharacterPanelTab: (tab: 'stats' | 'gu' | 'equip' | 'quest') => void;
+  setInventorySlots: (slots: Array<{ id: string; itemId: string; itemName: string; quantity: number; slot: number; itemType: string }>) => void;
+  setCharacterPanelTab: (tab: 'stats' | 'gu' | 'equip' | 'quest' | 'inventory') => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -152,6 +154,7 @@ export const useGameStore = create<GameState>((set) => ({
   activeDialogue: null,
   isDialogueOpen: false,
   activeQuests: [],
+  inventorySlots: [],
   profile: null,
   stats: null,
   characterPanelTab: 'stats',
@@ -188,6 +191,7 @@ export const useGameStore = create<GameState>((set) => ({
   closeDialogue: (): void => set({ activeNpc: null, isDialogueOpen: false, activeDialogue: null }),
   setActiveDialogue: (dialogue): void => set({ activeDialogue: dialogue }),
   setActiveQuests: (quests): void => set({ activeQuests: quests }),
+  setInventorySlots: (slots): void => set({ inventorySlots: slots }),
   setProfile: (profile): void => set({ profile }),
   setStats: (stats): void => set({ stats }),
   setCharacterPanelTab: (tab): void => set({ characterPanelTab: tab }),
