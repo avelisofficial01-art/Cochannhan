@@ -335,21 +335,20 @@ export async function seedDatabase(): Promise<void> {
       }
     }
 
-    // 8. Seed Map Spawns
-    if (needsWorldData) {
-      console.log('[Seed] Seeding map spawns...');
-      for (const s of mapSpawnSeeds) {
-        const mapId = mapUuidMap.get(s.map_ref);
-        if (mapId) {
-          await db.insert(schema.mapSpawns).values({
-            map_id: mapId,
-            spawn_type: s.spawn_type,
-            spawn_ref: s.spawn_ref,
-            x: s.x,
-            y: s.y,
-            respawn_time: s.respawn_time,
-          });
-        }
+    // 8. Seed Map Spawns (delete all and re-seed to apply config changes instantly)
+    console.log('[Seed] Refreshing map spawns...');
+    await db.delete(schema.mapSpawns);
+    for (const s of mapSpawnSeeds) {
+      const mapId = mapUuidMap.get(s.map_ref);
+      if (mapId) {
+        await db.insert(schema.mapSpawns).values({
+          map_id: mapId,
+          spawn_type: s.spawn_type,
+          spawn_ref: s.spawn_ref,
+          x: s.x,
+          y: s.y,
+          respawn_time: s.respawn_time,
+        });
       }
     }
 

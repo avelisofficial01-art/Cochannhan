@@ -57,6 +57,7 @@ export class GameScene extends Phaser.Scene {
   /** NPCs and Portals on map */
   private npcSprites: Map<string, { sprite: Phaser.GameObjects.Image; nameLabel: Phaser.GameObjects.Text }> = new Map();
   private portalSprites: Map<string, { gfx: Phaser.GameObjects.Graphics; nameLabel: Phaser.GameObjects.Text; data: PortalData }> = new Map();
+  private portalPointersGfx: Phaser.GameObjects.Graphics | null = null;
 
   /** Throttle socket emits */
   private lastMoveEmitTime = 0;
@@ -195,6 +196,7 @@ export class GameScene extends Phaser.Scene {
     this.syncMonsters();
     this.updateFloatTexts(delta);
     this.checkBossProximity();
+    this.drawPortalPointers();
   }
 
   /* ───────────────────────────────────────
@@ -525,6 +527,81 @@ export class GameScene extends Phaser.Scene {
       elapsed: 0,
       duration: 1000,
     });
+
+    this.playAttackSlashEffect(result.targetX, result.targetY);
+  }
+
+  private playAttackSlashEffect(x: number, y: number): void {
+    const slash = this.add.graphics();
+    slash.lineStyle(3, 0x00ffff, 0.95);
+    
+    // Draw a neat curved arc representing a sword slash
+    slash.beginPath();
+    slash.arc(x, y, 20, Phaser.Math.DegToRad(-60), Phaser.Math.DegToRad(60));
+    slash.strokePath();
+
+    this.tweens.add({
+      targets: slash,
+      alpha: 0,
+      scaleX: 1.5,
+      scaleY: 1.5,
+      duration: 180,
+      onComplete: () => {
+        slash.destroy();
+      }
+    });
+  }
+
+  private drawPortalPointers(): void {
+    if (!this.portalPointersGfx) {
+      this.portalPointersGfx = this.add.graphics().setScrollFactor(0).setDepth(1500);
+    }
+    const gfx = this.portalPointersGfx;
+    gfx.clear();
+
+    const cam = this.cameras.main;
+    const px = this.playerX;
+    const py = this.playerY;
+
+    for (const p of this.portalSprites.values()) {
+      const tx = p.data.from_x;
+      const ty = p.data.from_y;
+
+      // Check if off-screen
+      if (tx < cam.scrollX || tx > cam.scrollX + cam.width || ty < cam.scrollY || ty > cam.scrollY + cam.height) {
+        // Calculate angle from screen center (player) to target portal
+        const angle = Phaser.Math.Angle.Between(px, py, tx, ty);
+        
+        // Position pointer at screen edge
+        const edgeOffset = 24;
+        const centerX = cam.width / 2;
+        const centerY = cam.height / 2;
+        
+        // Calculate screen edge position
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        
+        let screenX = centerX + cos * (centerX - edgeOffset);
+        let screenY = centerY + sin * (centerY - edgeOffset);
+        
+        // Clamp to screen bounds
+        screenX = Phaser.Math.Clamp(screenX, edgeOffset, cam.width - edgeOffset);
+        screenY = Phaser.Math.Clamp(screenY, edgeOffset, cam.height - edgeOffset);
+        
+        // Draw a neat arrow pointing to the portal
+        gfx.fillStyle(0x00ffff, 0.85);
+        gfx.lineStyle(1, 0xffffff, 0.9);
+        
+        gfx.beginPath();
+        gfx.moveTo(screenX, screenY);
+        gfx.lineTo(screenX - cos * 14 + sin * 7, screenY - sin * 14 - cos * 7);
+        gfx.lineTo(screenX - cos * 10, screenY - sin * 10);
+        gfx.lineTo(screenX - cos * 14 - sin * 7, screenY - sin * 14 + cos * 7);
+        gfx.closePath();
+        gfx.fillPath();
+        gfx.strokePath();
+      }
+    }
   }
 
   private showFloatingText(x: number, y: number, text: string, color = '#ff3333'): void {

@@ -334,10 +334,11 @@ Current Module: ✅ Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation
 
 ---
 
-# Last Completed Task
-
-**2026-07-05**: NPC Interaction & Quest Progression Hotfixes.
-- Fixes: Phaser texture-space hit-area bounds for NPCs, dialogue starting-node selection based on active story flags, backend setStoryFlag body parser formatting mismatch, and persistent localStorage cutscene played state to prevent opening cutscene from looping.
+**2026-07-05**: NPC Interaction, Quest Progression, Map Navigation & Combat Visual Hotfixes.
+- Fixes: Phaser texture-space hit-area bounds for NPCs, dialogue starting-node selection based on active story flags, backend setStoryFlag body parser formatting mismatch, and persistent localStorage cutscene played state.
+- Map & Spawns: Relocated Làng Cổ Thảo rabbit coordinates inside the 1500x1500px map boundaries (from 1600 to 1200) and configured the database seeding process to automatically refresh spawns on server start.
+- Navigation: Implemented off-screen portal directional pointers (dynamic rotating HUD arrows) to guide players to maps/portals.
+- Visuals: Implemented real-time sword arc slash animation effects at target coordinates when the player executes attacks.
 
 **2026-07-04**: Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation completed & verified.
 - Fixes: Delta-time movement scaling, socket listener race conditions, player center spawn, multiplayer state updates, 401 token redirect loops, quest wildcards route conflicts, missing resolvePlayer middlewares, dialogue click hit areas, talk distance checks.

@@ -583,8 +583,8 @@ export const mapPortalSeeds = [
 
 export const mapSpawnSeeds = [
   // Làng Cổ Thảo (safe zone with 2 weak practice monsters near outskirts)
-  { map_ref: 'lang_cothao', spawn_type: 'monster', spawn_ref: 'Thỏ Tuyết', x: 1600, y: 600, respawn_time: 15 },
-  { map_ref: 'lang_cothao', spawn_type: 'monster', spawn_ref: 'Thỏ Tuyết', x: 200, y: 1600, respawn_time: 15 },
+  { map_ref: 'lang_cothao', spawn_type: 'monster', spawn_ref: 'Thỏ Tuyết', x: 1200, y: 600, respawn_time: 15 },
+  { map_ref: 'lang_cothao', spawn_type: 'monster', spawn_ref: 'Thỏ Tuyết', x: 300, y: 1200, respawn_time: 15 },
   { map_ref: 'lang_cothao', spawn_type: 'npc', spawn_ref: 'Trưởng làng', x: 500, y: 400, respawn_time: 30 },
   { map_ref: 'lang_cothao', spawn_type: 'npc', spawn_ref: 'Thợ rèn', x: 600, y: 300, respawn_time: 30 },
   { map_ref: 'lang_cothao', spawn_type: 'npc', spawn_ref: 'Thương nhân', x: 400, y: 500, respawn_time: 30 },
