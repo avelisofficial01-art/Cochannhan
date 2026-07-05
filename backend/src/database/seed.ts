@@ -207,8 +207,16 @@ export async function seedDatabase(): Promise<void> {
     for (const npc of npcSeeds) {
       if (!npcMap.has(npc.name)) {
         console.log(`[Seed] NPC "${npc.name}" is missing. Seeding...`);
-        const defaultMapId = mapUuidMap.get('lang_cothao') || villageMapId || '';
+        const defaultMapId = mapUuidMap.get('lang_cothao') || villageMapId;
+        if (!defaultMapId) {
+          console.warn(`[Seed] ⚠️ Cannot seed NPC "${npc.name}" — no valid map UUID found.`);
+          continue;
+        }
         const npcMapId = npc.mapId ? (mapUuidMap.get(npc.mapId) || npc.mapId) : defaultMapId;
+        if (!npcMapId || npcMapId === '') {
+          console.warn(`[Seed] ⚠️ Cannot seed NPC "${npc.name}" — map_id is empty.`);
+          continue;
+        }
         const [inserted] = await db.insert(schema.npcTemplates).values({
           name: npc.name,
           sprite: npc.sprite,
@@ -273,7 +281,10 @@ export async function seedDatabase(): Promise<void> {
     const monsterTemplateMap = new Map<string, string>(); // name -> UUID
     if (needsMonsters) {
       console.log('[Seed] Seeding monsters...');
-      const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId || '';
+      const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId;
+      if (!defaultRegionMapId) {
+        console.warn('[Seed] ⚠️ Cannot seed monsters — no valid map UUID found. Skipping monster seeding.');
+      } else {
       
       // Combine both monster sets (original + Sprint 6 bac_nguyen monsters)
       const allMonsterSeeds = [
@@ -300,6 +311,7 @@ export async function seedDatabase(): Promise<void> {
           monsterTemplateMap.set(inserted.name, inserted.id);
         }
       }
+      }
     } else {
       const allMonsters = await db.select().from(schema.monsterTemplates);
       for (const m of allMonsters) {
@@ -307,7 +319,10 @@ export async function seedDatabase(): Promise<void> {
       }
       
       // Check for any missing templates from both sets
-      const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId || '';
+      const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId;
+      if (!defaultRegionMapId) {
+        console.warn('[Seed] ⚠️ Cannot seed missing monsters — no valid map UUID found.');
+      } else {
       const allMonsterSeeds = [
         ...monsterSeeds.map(m => ({ ...m, isBoss: false })),
         ...bacNguyenMonsterSeeds.map(m => ({ ...m, isBoss: false })),
@@ -333,6 +348,7 @@ export async function seedDatabase(): Promise<void> {
             monsterTemplateMap.set(inserted.name, inserted.id);
           }
         }
+      }
       }
     }
 
