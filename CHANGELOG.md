@@ -1237,3 +1237,32 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 ### Xác nhận
 - [x] Typecheck: 0 errors (shared + backend + frontend)
 - [x] Build: `npm run build` thành công
+
+---
+
+## Sprint 19: HOTFIX DIALOGUE ACTIVE FLAGS MISMATCH & COOLDOWN POSITION — 2026-07-06
+
+### Mục tiêu
+1. Fix lỗi player không nhận được quest tiếp theo do mismatch key/value trong story flags tại DialoguePanel
+2. Fix vị trí của cooldown indicator bar ở màn hình game (centering at bottom)
+3. Fix authentication error khi load QuestTracker bằng cách đổi sang fetchWithAuth
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S19.1 | Fix active flags key mismatch | ✅ | Đổi endpoint load flags sang `/api/story/flags` để khớp với types `{ flagKey, flagValue }` |
+| S19.2 | Centering cooldown bar | ✅ | Dùng `this.cameras.main.width` và `height` để vẽ cooldown bar ở giữa bên dưới màn hình |
+| S19.3 | QuestTracker auth migration | ✅ | Đổi sang sử dụng `fetchWithAuth` để thống nhất cơ chế refresh token |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `frontend/src/components/DialoguePanel.tsx` | Đổi sang fetch `/api/story/flags` |
+| `frontend/src/components/QuestTracker.tsx` | Đổi sang `fetchWithAuth` |
+| `frontend/src/game/GameScene.ts` | Sử dụng viewport dimensions để vẽ cooldown bar |
+| `frontend/src/api/client.ts` | Tự động redirect về `/login` khi token refresh thất bại (401) |
+
+### Ghi chú
+- Sprint 19 hoàn thành xuất sắc, giúp sửa toàn bộ game blockers liên quan đến nhận nhiệm vụ, hiển thị thanh cooldown và lỗi auth.

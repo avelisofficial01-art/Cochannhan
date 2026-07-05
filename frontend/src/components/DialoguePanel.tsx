@@ -35,13 +35,13 @@ export const DialoguePanel: React.FC = () => {
       setLoading(true);
       try {
         // 1. Fetch active story flags
-        const flagsRes = await fetchWithAuth('/api/quest/flags/list');
+        const flagsRes = await fetchWithAuth('/api/story/flags');
         const flagsJson = await flagsRes.json();
         const activeFlags = new Set<string>();
         if (flagsJson.success && flagsJson.data) {
-          flagsJson.data.forEach((f: { key: string; value: string }) => {
-            if (f.value === 'true') {
-              activeFlags.add(f.key);
+          flagsJson.data.forEach((f: { flagKey: string; flagValue: string }) => {
+            if (f.flagValue === 'true') {
+              activeFlags.add(f.flagKey);
             }
           });
         }
@@ -117,8 +117,8 @@ export const DialoguePanel: React.FC = () => {
             choices: null,
           });
         }
-      } catch {
-        // Ignore
+      } catch (err) {
+        console.error('[DialoguePanel] Failed to load dialogues:', err);
       } finally {
         setLoading(false);
       }
@@ -180,8 +180,8 @@ export const DialoguePanel: React.FC = () => {
       if (activeQuestsJson.success && activeQuestsJson.data) {
         setActiveQuests(activeQuestsJson.data as unknown[]);
       }
-    } catch {
-      // Ignore
+    } catch (err) {
+      console.error('[DialoguePanel] setStoryFlagAndCheckQuests failed:', err);
     }
   };
 
