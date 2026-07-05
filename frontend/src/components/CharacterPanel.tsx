@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useGameStore, type PlayerGuState } from '../store/gameStore.js';
+import { useGameStore, type PlayerGuState, type ProfileState, type StatsState } from '../store/gameStore.js';
 
 const ELEMENT_COLORS: Record<string, string> = {
   'Hỏa': 'text-red-400 border-red-700 bg-red-900/20',
@@ -50,24 +50,7 @@ const REALM_NAMES: Record<number, string> = {
   9: 'Cửu Chuyển (Tôn)',
 };
 
-interface ProfileState {
-  id: string;
-  name: string;
-  realm: number;
-  daoId: string | null;
-}
-
-interface StatsState {
-  hp: number;
-  mana: number;
-  atk: number;
-  def: number;
-  crit: number;
-  critDamage: number;
-  moveSpeed: number;
-  realm: number;
-  daoId: string | null;
-}
+// ProfileState and StatsState are imported from gameStore.ts
 
 interface EquipmentTemplate {
   id: string;
@@ -191,11 +174,16 @@ export default function CharacterPanel(): React.ReactElement | null {
     equipmentList,
     setEquipmentList,
     setEquippedItems,
+    profile,
+    stats,
+    characterPanelTab,
+    setProfile,
+    setStats,
+    setCharacterPanelTab,
   } = useGameStore();
 
-  const [activeTab, setActiveTab] = useState<'stats' | 'gu' | 'equip' | 'quest'>('stats');
-  const [profile, setProfile] = useState<ProfileState | null>(null);
-  const [stats, setStats] = useState<StatsState | null>(null);
+  const activeTab = characterPanelTab;
+  const setActiveTab = setCharacterPanelTab;
   const [playerEquipInstances, setPlayerEquipInstances] = useState<EquipmentInstance[]>([]);
   const [selectedGu, setSelectedGu] = useState<PlayerGuState | null>(null);
   const [selectedEquip, setSelectedEquip] = useState<EquipmentInstance | null>(null);

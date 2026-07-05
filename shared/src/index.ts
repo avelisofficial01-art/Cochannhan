@@ -50,6 +50,9 @@ export interface PlayerProfile {
   name: string;
   realm: number;
   daoId: string | null;
+  gold?: number;
+  spiritStone?: number;
+  exp?: number;
 }
 
 // Player Stats (computed final values)

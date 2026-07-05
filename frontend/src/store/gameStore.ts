@@ -53,6 +53,28 @@ export interface PlayerGuState {
   }>;
 }
 
+export interface ProfileState {
+  id: string;
+  name: string;
+  realm: number;
+  daoId: string | null;
+  gold?: number;
+  spiritStone?: number;
+  exp?: number;
+}
+
+export interface StatsState {
+  hp: number;
+  mana: number;
+  atk: number;
+  def: number;
+  crit: number;
+  critDamage: number;
+  moveSpeed: number;
+  realm: number;
+  daoId: string | null;
+}
+
 interface GameState {
   currentMapId: string;
   playerX: number;
@@ -76,6 +98,9 @@ interface GameState {
   activeDialogue: { id: string; text: string; speaker: string; choices: Array<{ text: string; next_dialogue_ref: string; next_dialogue_id?: string }> | null; set_flag?: string } | null;
   isDialogueOpen: boolean;
   activeQuests: unknown[];
+  profile: ProfileState | null;
+  stats: StatsState | null;
+  characterPanelTab: 'stats' | 'gu' | 'equip' | 'quest';
 
   setEquipmentList: (list: GameState['equipmentList']) => void;
   setEquippedItems: (items: Record<string, string | null>) => void;
@@ -100,6 +125,9 @@ interface GameState {
   closeDialogue: () => void;
   setActiveDialogue: (dialogue: { id: string; text: string; speaker: string; choices: Array<{ text: string; next_dialogue_ref: string; next_dialogue_id?: string }> | null; set_flag?: string }) => void;
   setActiveQuests: (quests: unknown[]) => void;
+  setProfile: (profile: ProfileState | null) => void;
+  setStats: (stats: StatsState | null) => void;
+  setCharacterPanelTab: (tab: 'stats' | 'gu' | 'equip' | 'quest') => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -124,6 +152,9 @@ export const useGameStore = create<GameState>((set) => ({
   activeDialogue: null,
   isDialogueOpen: false,
   activeQuests: [],
+  profile: null,
+  stats: null,
+  characterPanelTab: 'stats',
 
   setPosition: (x, y): void => set({ playerX: x, playerY: y }),
   setMap: (mapId): void => set({ currentMapId: mapId }),
@@ -157,4 +188,7 @@ export const useGameStore = create<GameState>((set) => ({
   closeDialogue: (): void => set({ activeNpc: null, isDialogueOpen: false, activeDialogue: null }),
   setActiveDialogue: (dialogue): void => set({ activeDialogue: dialogue }),
   setActiveQuests: (quests): void => set({ activeQuests: quests }),
+  setProfile: (profile): void => set({ profile }),
+  setStats: (stats): void => set({ stats }),
+  setCharacterPanelTab: (tab): void => set({ characterPanelTab: tab }),
 }));

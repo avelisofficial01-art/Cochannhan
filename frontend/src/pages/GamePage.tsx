@@ -4,7 +4,6 @@ import { BootScene } from '../game/BootScene.js';
 import { PreloadScene } from '../game/PreloadScene.js';
 import { GameScene } from '../game/GameScene.js';
 import { UIScene } from '../game/UIScene.js';
-import { useSocket } from '../hooks/useSocket.js';
 import { useAuthStore } from '../store/auth.js';
 import { api } from '../api/client.js';
 import CharacterPanel from '../components/CharacterPanel.js';
@@ -16,7 +15,6 @@ import { QuestTracker } from '../components/QuestTracker.js';
 export default function GamePage(): React.ReactElement {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isConnected } = useSocket();
   const { player, setPlayer } = useAuthStore();
 
   useEffect(() => {
@@ -75,32 +73,11 @@ export default function GamePage(): React.ReactElement {
     };
   }, []);
 
-  const handleLogout = (): void => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    window.location.href = '/login';
-  };
 
   return (
-    <div className="h-dvh bg-gu-darker flex flex-col overflow-hidden" style={{ touchAction: 'manipulation' }}>
-      {/* Top bar — super compact on mobile */}
-      <header className="w-full flex items-center justify-between px-2 py-1 bg-gu-dark border-b border-gu-border shrink-0">
-        <h1 className="text-sm font-bold text-gu-accent">CỔ ĐẠO</h1>
-        <div className="flex items-center gap-1">
-          <span className={`text-[10px] ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-            {isConnected ? '●' : '○'}
-          </span>
-          <button
-            onClick={handleLogout}
-            className="px-2 py-0.5 text-[10px] border border-gu-border rounded hover:bg-gu-border/30"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Game area — fills remaining viewport */}
-      <div className="relative w-full flex-1 bg-gu-darker overflow-hidden">
+    <div className="h-dvh bg-gu-darker relative overflow-hidden" style={{ touchAction: 'manipulation' }}>
+      {/* Game area — fills entire viewport */}
+      <div className="absolute inset-0 bg-gu-darker overflow-hidden">
         <CharacterPanel />
         <GameHUD />
         <CraftPanel />
@@ -111,11 +88,6 @@ export default function GamePage(): React.ReactElement {
           className="w-full h-full"
         />
       </div>
-
-      {/* Bottom hint — hidden on mobile */}
-      <footer className="w-full px-3 py-1 md:px-6 md:py-2 text-xs text-gray-500 text-center border-t border-gu-border hidden md:block">
-        Phím mũi tên để di chuyển | C: Nhân Vật | V: Chế Tạo | 1, 2, 3: Sử dụng kỹ năng Cổ Trùng
-      </footer>
     </div>
   );
 }

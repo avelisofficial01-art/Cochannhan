@@ -10,12 +10,18 @@ function toProfile(row: {
   name: string;
   realm: number;
   dao_id: string | null;
+  gold?: number;
+  spirit_stone?: number;
+  exp?: number;
 }): PlayerProfile {
   return {
     id: row.id,
     name: row.name,
     realm: row.realm,
     daoId: row.dao_id,
+    gold: row.gold ?? 0,
+    spiritStone: row.spirit_stone ?? 0,
+    exp: row.exp ?? 0,
   };
 }
 

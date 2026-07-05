@@ -1086,6 +1086,31 @@ Sửa lỗi xung đột cảm ứng trên mobile không bấm tiếp tục đố
 - [x] Build: `npm run build` thành công, các chunk bundle kết xuất OK
 
 
+---
+
+## Sprint 14: INTEGRATED H5 HUD OVERLAY & VIEWPORT CONSOLIDATION — 2026-07-05
+
+### Mục tiêu
+Tối ưu hóa giao diện thành 1 màn hình game H5 hoàn chỉnh. Loại bỏ header và footer ngoài game, lồng ghép toàn bộ các nút điều khiển, thông tin nhân vật, tiền tệ, trạng thái ping, và nút đăng xuất vào các thanh HUD overlay đặt trực tiếp trên Phaser canvas.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S14.1 | Loại bỏ layout ngoài | ✅ | Xóa bỏ `<header>` và `<footer>` trong `GamePage.tsx`, cho phép viewport game phủ đầy 100% chiều cao màn hình (`absolute inset-0`) |
+| S14.2 | Quản lý state tập trung | ✅ | Di chuyển các kiểu dữ liệu `ProfileState`, `StatsState` và trạng thái tab hoạt động từ local component lên Zustand store để chia sẻ chung |
+| S14.3 | Liên kết CharacterPanel | ✅ | Loại bỏ các React state hook của `activeTab`, `profile`, `stats` trong `CharacterPanel.tsx`, chuyển qua bind trực tiếp với Zustand store |
+| S14.4 | HUD đồng bộ tự động | ✅ | Bổ sung hàm fetch định kỳ 5s bên trong `GameHUD.tsx` để liên tục làm tươi số dư tiền tệ, tu vi và chỉ số cơ bản của nhân vật |
+| S14.5 | Thanh Top HUD lồng ghép | ✅ | Thiết kế thanh bar trên cùng tích hợp: Tên nhân vật, Cảnh giới hiển thị bằng tiếng Việt, Ô vàng (`🪙`), Ô linh thạch (`💎`), Trạng thái Ping và nút Đăng Xuất lồng thẳng vào canvas |
+| S14.6 | Thanh dock menu mở rộng | ✅ | Mở rộng thanh dock dưới cùng thành các nút mở trực tiếp từng tab chức năng: Nhân Vật, Cổ Trùng, Trang Bị, Nhiệm Vụ, Chế Tạo |
+
+### Xác nhận
+- [x] Typecheck: 0 errors
+- [x] Lint: 0 errors (warnings unchanged)
+- [x] Build: `npm run build` thành công, các chunk bundle kết xuất OK
+
+
+
 
 
 
