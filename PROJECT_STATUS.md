@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 11 — Quest System Improvement
+**Sprint:** 12 — Quest Flow Manual Turn-In & Visual Polish
 
 **Status:** ✅ Completed
 
@@ -33,12 +33,30 @@
 | Sprint 8 | Critical Bug Fixes | ✅ Completed |
 | Sprint 9 | H5 UI & Active Skills | ✅ Completed |
 | Sprint 10 | Maintenance & Combat Balance | ✅ Completed |
+| Sprint 11 | Quest System Improvement | ✅ Completed |
+| Sprint 12 | Quest Flow Manual Turn-In & Visual Polish | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 11 — Quest System Improvement
+Current Module: ✅ Sprint 12 — Quest Flow Manual Turn-In & Visual Polish
+
+# Sprint 12 Checklist
+
+## Quest Flow Manual Turn-In & Visual Polish (S12.1)
+- [x] Disable automatic quest completion in `updateQuestProgress`
+- [x] Add manual quest complete endpoint `/api/quest/complete` on the backend
+- [x] Create `Nhiệm Vụ` (Quest) tab in `CharacterPanel.tsx` with quest list and "Claim Reward" buttons
+- [x] Remove duplicate floating `Chế tạo` button from `CraftPanel.tsx`
+- [x] Always render 3 skill hotkey slots on GameHUD (with locks/placeholders for empty ones)
+- [x] Remove instruction guide text from center bottom of the Phaser scene
+- [x] Add Phaser monster disintegration death animation (spin, shrink, and fade)
+- [x] Fix server-side monster drop roll bugs (matching item names to templates) and display floating green drop details
+- [x] Polish hit effects: hit flashes red, camera shakes, X-slash on critical hits, and particle sparks
+- [x] Slower monster attacks (2.5s cooldown) and slower chasing speed (scaled down 50%)
+- [x] Implement collision separation steering forces on the server to prevent monsters from overlapping with players and each other
+- [x] Typecheck + build + lint all pass
 
 ---
 

@@ -67,7 +67,7 @@ export class GameScene extends Phaser.Scene {
   /** Monsters rendered on screen */
   private monsterSprites: Map<
     string,
-    { sprite: Phaser.GameObjects.Image; hpBar: Phaser.GameObjects.Graphics; nameLabel: Phaser.GameObjects.Text }
+    { sprite: Phaser.GameObjects.Image; hpBar: Phaser.GameObjects.Graphics; nameLabel: Phaser.GameObjects.Text; isDying?: boolean }
   > = new Map();
 
   /** Floating damage texts */
@@ -168,14 +168,7 @@ export class GameScene extends Phaser.Scene {
     this.cooldownBar = this.add.graphics();
     this.drawCooldownReady();
 
-    /* ── Hint ── */
-    this.add
-      .text(400, 572, 'SPACE: Attack  |  G: Gu  |  E: Equipment  |  C: Craft', {
-        fontSize: '10px',
-        color: '#888888',
-        fontFamily: 'monospace',
-      })
-      .setOrigin(0.5);
+    /* ── Cooldown bar ready ── */
 
 
     /* ── Re-request map state after scene is fully initialized ──
@@ -415,11 +408,25 @@ export class GameScene extends Phaser.Scene {
 
     // Remove dead / despawned monsters
     for (const [id, obj] of this.monsterSprites) {
+      if (obj.isDying) continue; // Skip if already playing death animation
       if (!storeIds.has(id)) {
-        obj.sprite.destroy();
-        obj.hpBar.destroy();
-        obj.nameLabel.destroy();
-        this.monsterSprites.delete(id);
+        obj.isDying = true;
+        obj.hpBar.clear();
+        if (obj.nameLabel) obj.nameLabel.destroy();
+        
+        this.tweens.add({
+          targets: obj.sprite,
+          alpha: 0,
+          scaleX: 0.1,
+          scaleY: 0.1,
+          angle: 180,
+          duration: 400,
+          onComplete: () => {
+            obj.sprite.destroy();
+            obj.hpBar.destroy();
+            this.monsterSprites.delete(id);
+          }
+        });
       }
     }
 
@@ -427,6 +434,7 @@ export class GameScene extends Phaser.Scene {
     for (const m of storeMonsters) {
       const existing = this.monsterSprites.get(m.instanceId);
       if (existing) {
+        if (existing.isDying) continue; // Skip if dying
         existing.sprite.setPosition(m.x, m.y);
         existing.nameLabel.setPosition(m.x, m.y - 22);
         this.drawHpBar(existing.hpBar, m.x, m.y - 14, m.currentHp, m.maxHp);
@@ -449,24 +457,39 @@ export class GameScene extends Phaser.Scene {
   private spawnMonsterSprite(m: MonsterSprite): void {
     let sprite: Phaser.GameObjects.Image;
 
-    // Try to map monster templateId to a monster sprite index
-    const monsterKey = getMonsterKey(this.getMonsterIndex(m.templateId));
-    const texExists = this.textures.exists(monsterKey);
-
-    if (texExists) {
-      sprite = this.add.image(m.x, m.y, monsterKey);
-      sprite.setDisplaySize(32, 32);
+    const spriteStr = m.sprite || '';
+    const match = spriteStr.match(/\d+/);
+    const spriteIdx = match ? parseInt(match[0], 10) : this.getMonsterIndex(m.templateId);
+    const textureKey = getMonsterKey(spriteIdx);
+    if (this.textures.exists(textureKey)) {
+      sprite = this.add.image(m.x, m.y, textureKey).setDisplaySize(32, 32);
     } else {
-      // Fallback: always-visible red circle
-      const rect = this.add.circle(m.x, m.y, 16, 0xff4444, 0.9);
-      rect.setStrokeStyle(2, 0x000000, 1);
-      sprite = rect as unknown as Phaser.GameObjects.Image;
+      const fallbackIndex = this.getMonsterIndex(m.templateId);
+      const fallbackKey = `monster_${fallbackIndex}`;
+      if (this.textures.exists(fallbackKey)) {
+        sprite = this.add.image(m.x, m.y, fallbackKey).setDisplaySize(32, 32);
+      } else {
+        // Ultimate fallback
+        sprite = this.add.image(m.x, m.y, 'player_down').setDisplaySize(32, 32);
+      }
     }
+
+    sprite.setOrigin(0.5);
+    sprite.setInteractive({ useHandCursor: true });
+    sprite.on('pointerdown', () => {
+      const emitAttack = (window as unknown as Record<string, (instanceId: string) => void>)
+        .__socketEmitAttack;
+      if (emitAttack && this.attackReady && this.playerControlsEnabled) {
+        emitAttack(m.instanceId);
+        this.attackReady = false;
+        this.attackCooldownRemaining = this.attackCooldownMs;
+      }
+    });
 
     const nameLabel = this.add
       .text(m.x, m.y - 22, m.name, {
-        fontSize: '10px',
-        color: '#ffaaaa',
+        fontSize: '8px',
+        color: '#ffffff',
         fontFamily: 'monospace',
       })
       .setOrigin(0.5);
@@ -517,13 +540,16 @@ export class GameScene extends Phaser.Scene {
   /* ───────────────────────────────────────
    *  Damage numbers (floating text)
    * ─────────────────────────────────────── */
-  private showDamageNumber(result: { damage: number; isCritical: boolean; targetX: number; targetY: number; damageType?: string }): void {
-    const color = result.isCritical ? '#ffaa00' : '#ffffff';
-    const size = result.isCritical ? '16px' : '13px';
-    const prefix = result.isCritical ? 'CRIT! ' : '';
-
+  private showFloatingText(
+    x: number,
+    y: number,
+    text: string,
+    color: string,
+    size: string = '12px',
+    duration: number = 1000,
+  ): void {
     const txt = this.add
-      .text(result.targetX, result.targetY - 20, `${prefix}${result.damage}`, {
+      .text(x, y, text, {
         fontSize: size,
         color: color,
         fontFamily: 'monospace',
@@ -535,15 +561,53 @@ export class GameScene extends Phaser.Scene {
 
     this.floatTexts.push({
       text: txt,
-      startY: result.targetY - 20,
+      startY: y,
       elapsed: 0,
-      duration: 1000,
+      duration: duration,
     });
-
-    this.playAttackSlashEffect(result.targetX, result.targetY, result.damageType);
   }
 
-  private playAttackSlashEffect(x: number, y: number, damageType?: string): void {
+  private showDamageNumber(result: { damage: number; isCritical: boolean; targetX: number; targetY: number; damageType?: string; targetDefeated?: boolean; drops?: Array<{ itemName: string; quantity: number }> }): void {
+    const color = result.isCritical ? '#ffaa00' : '#ffffff';
+    const size = result.isCritical ? '16px' : '13px';
+    const prefix = result.isCritical ? 'CRIT! ' : '';
+
+    // Play camera shake
+    if (result.isCritical) {
+      this.cameras.main.shake(150, 0.015);
+    } else {
+      this.cameras.main.shake(80, 0.005);
+    }
+
+    this.showFloatingText(result.targetX, result.targetY - 20, `${prefix}${result.damage}`, color, size);
+
+    this.playAttackSlashEffect(result.targetX, result.targetY, result.damageType, result.isCritical);
+
+    // Apply hit flash to the monster sprite if found
+    for (const [, obj] of this.monsterSprites) {
+      const dist = Phaser.Math.Distance.Between(obj.sprite.x, obj.sprite.y, result.targetX, result.targetY);
+      if (dist < 40 && !obj.isDying) {
+        obj.sprite.setTint(0xff8888);
+        this.time.delayedCall(120, () => {
+          if (obj.sprite && obj.sprite.active) {
+            obj.sprite.clearTint();
+          }
+        });
+        break;
+      }
+    }
+
+    // Display drops floating text sequentially
+    if (result.targetDefeated && result.drops && result.drops.length > 0) {
+      result.drops.forEach((d, idx) => {
+        this.time.delayedCall((idx + 1) * 300, () => {
+          this.showFloatingText(result.targetX, result.targetY - 35, `📦 +${d.quantity} ${d.itemName}`, '#00ff88', '11px', 1500);
+        });
+      });
+    }
+  }
+
+  private playAttackSlashEffect(x: number, y: number, damageType?: string, isCritical?: boolean): void {
     const slash = this.add.graphics();
     
     // Choose color based on element!
@@ -561,6 +625,13 @@ export class GameScene extends Phaser.Scene {
     slash.arc(x, y, 20, Phaser.Math.DegToRad(-60), Phaser.Math.DegToRad(60));
     slash.strokePath();
 
+    if (isCritical) {
+      // Draw intersecting second slash for X-shape
+      slash.beginPath();
+      slash.arc(x, y, 20, Phaser.Math.DegToRad(120), Phaser.Math.DegToRad(240));
+      slash.strokePath();
+    }
+
     this.tweens.add({
       targets: slash,
       alpha: 0,
@@ -571,6 +642,30 @@ export class GameScene extends Phaser.Scene {
         slash.destroy();
       }
     });
+
+    // Create expanding spark particles
+    const sparkCount = isCritical ? 10 : 6;
+    for (let i = 0; i < sparkCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 40 + Math.random() * 60;
+      const spark = this.add.graphics();
+      spark.fillStyle(color, 0.95);
+      spark.fillCircle(0, 0, isCritical ? 2.5 : 1.5);
+      spark.setPosition(x, y);
+
+      this.tweens.add({
+        targets: spark,
+        x: x + Math.cos(angle) * (speed * 0.25),
+        y: y + Math.sin(angle) * (speed * 0.25),
+        alpha: 0,
+        scaleX: 0.1,
+        scaleY: 0.1,
+        duration: 250,
+        onComplete: () => {
+          spark.destroy();
+        }
+      });
+    }
   }
 
   private drawPortalPointers(): void {
@@ -625,26 +720,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private showFloatingText(x: number, y: number, text: string, color = '#ff3333'): void {
-    const txt = this.add
-      .text(x, y - 20, text, {
-        fontSize: '11px',
-        color: color,
-        fontFamily: 'monospace',
-        stroke: '#000000',
-        strokeThickness: 2,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        padding: { x: 4, y: 2 },
-      })
-      .setOrigin(0.5);
 
-    this.floatTexts.push({
-      text: txt,
-      startY: y - 20,
-      elapsed: 0,
-      duration: 1200,
-    });
-  }
 
   /* ───────────────────────────────────────
    *  Update floating texts (fade + float up)

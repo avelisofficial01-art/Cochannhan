@@ -104,13 +104,15 @@ export function useSocket(): { isConnected: boolean } {
       emitToGameScene('player:respawn', data);
     });
 
-    socket.on('combat:result', (data: { damage: number; isCritical: boolean; targetX?: number; targetY?: number; damageType?: string }) => {
+    socket.on('combat:result', (data: { damage: number; isCritical: boolean; targetX?: number; targetY?: number; damageType?: string; targetDefeated?: boolean; drops?: Array<{ itemName: string; quantity: number }> }) => {
       const result: CombatResult = {
         damage: data.damage,
         isCritical: data.isCritical,
         targetX: data.targetX ?? 0,
         targetY: data.targetY ?? 0,
         damageType: data.damageType,
+        targetDefeated: data.targetDefeated,
+        drops: data.drops,
       };
       setCombatResult(result);
       setTimeout(() => setCombatResult(null), 1200);

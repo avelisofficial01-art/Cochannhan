@@ -177,9 +177,10 @@ export default function GameHUD(): React.ReactElement {
         </div>
 
         {/* Skill Buttons Bar */}
-        {activeSkills.length > 0 && (
-          <div className="flex gap-3 items-center bg-gu-dark/60 backdrop-blur-sm border border-gu-border/40 rounded-2xl p-2.5 shadow-xl">
-            {activeSkills.map((s, idx) => {
+        <div className="flex gap-3 items-center bg-gu-dark/60 backdrop-blur-sm border border-gu-border/40 rounded-2xl p-2.5 shadow-xl">
+          {[0, 1, 2].map((idx) => {
+            const s = activeSkills[idx];
+            if (s) {
               const cd = cooldowns[s.skillId] || { total: 0, remaining: 0 };
               const percent = cd.remaining > 0 ? (cd.remaining / cd.total) * 100 : 0;
               const emoji = ELEMENT_EMOJIS[s.element] || '🪲';
@@ -214,9 +215,25 @@ export default function GameHUD(): React.ReactElement {
                   </div>
                 </button>
               );
-            })}
-          </div>
-        )}
+            } else {
+              // Locked / Empty slot placeholder
+              return (
+                <div
+                  key={`empty-${idx}`}
+                  className="relative w-12 h-12 rounded-xl border border-dashed border-gray-700 bg-black/40 flex flex-col items-center justify-center text-gray-600 select-none"
+                >
+                  <span className="text-sm">🔒</span>
+                  <span className="text-[7px] font-bold opacity-60 uppercase">Trống</span>
+                  
+                  {/* Hotkey tag */}
+                  <div className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-gu-darker border border-gu-border text-[8px] font-bold text-gray-500 rounded-full flex items-center justify-center shadow">
+                    {idx + 1}
+                  </div>
+                </div>
+              );
+            }
+          })}
+        </div>
       </div>
     </div>
   );

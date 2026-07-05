@@ -1032,4 +1032,34 @@ Khắc phục triệt để các root cause bug khiến gameplay H5 không hoạ
 - [x] Build: `npm run build` thành công, các chunk bundle kết xuất OK
 
 
+---
+
+## Sprint 12: QUEST FLOW MANUAL TURN-IN & VISUAL POLISH — 2026-07-05
+
+### Mục tiêu
+Cải tiến cơ chế hoàn thành nhiệm vụ sang thủ công qua tab Nhiệm Vụ mới trong bảng nhân vật. Loại bỏ các nút dư thừa, cải thiện hiệu ứng chiến đấu (camera rung, quái chớp đỏ, X-slash bạo kích, sparks bay), làm quái di chuyển/đánh chậm lại và phân tán giãn cách tránh tụm lại một chỗ.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S12.1 | Hủy tự động hoàn thành | ✅ | Tách logic cập nhật tiến độ ra khỏi logic trao thưởng và hoàn thành nhiệm vụ trong `quest.service.ts` |
+| S12.2 | API hoàn thành nhiệm vụ | ✅ | Tạo endpoint `POST /api/quest/complete` cho phép gọi thủ công nhận thưởng và nhận quest tiếp theo |
+| S12.3 | Tab Nhiệm Vụ mới | ✅ | Tích hợp tab `Nhiệm Vụ` vào `CharacterPanel.tsx` giúp người chơi xem danh sách nhiệm vụ và click nhận thưởng thủ công |
+| S12.4 | Dọn dẹp nút Chế tạo | ✅ | Xóa nút Chế tạo trùng lặp hiển thị sai vị trí trên góc trái |
+| S12.5 | Ô skill HUD cố định | ✅ | Hiển thị 3 ô phím tắt kỹ năng cố định trên HUD (nếu trống sẽ hiện ổ khóa) |
+| S12.6 | Xóa text hướng dẫn giữa màn hình | ✅ | Xóa dòng text hướng dẫn "SPACE: Attack..." ở trung tâm dưới Phaser scene |
+| S12.7 | Phaser quái chết xoay biến mất | ✅ | Thêm tween xoay tròn, thu nhỏ và fade-out cho quái vật khi chết |
+| S12.8 | Hiệu ứng rơi đồ (Drops) | ✅ | Đồng bộ roll drop trên server, grant vật phẩm vào túi đồ và hiển thị text bay màu xanh lá `📦 +Số lượng TênVậtPhẩm` |
+| S12.9 | Đánh nhau đã mắt hơn | ✅ | Thêm chớp đỏ khi quái nhận sát thương, rung camera, chém X-slash khi bạo kích và bay tia sparks |
+| S12.10 | Quái đi/đánh chậm lại | ✅ | Giảm 50% tốc độ di chuyển và tăng cooldown đánh từ 1s lên 2.5s (50 ticks) |
+| S12.11 | Steering separation quái đè nhau | ✅ | Triển khai tách quái (30px) và tránh người chơi (25px) trên game loop server giúp quái quây xung quanh player thay vì chụm một chỗ |
+
+### Xác nhận
+- [x] Typecheck: 0 errors
+- [x] Lint: 0 errors (warnings unchanged)
+- [x] Build: `npm run build` thành công, các chunk bundle kết xuất OK
+
+
+
 

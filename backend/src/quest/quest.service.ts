@@ -166,71 +166,93 @@ export const questService = {
       JSON.stringify(progress),
     );
 
-    // Check if all objectives are complete
-    const quest = await questRepository.findById(questId);
-    if (quest) {
-      const objectives = parseJson<QuestObjective[]>(quest.objectives) ?? [];
-      const allDone = objectives.every(
-        (obj, i) => progress[i] && progress[i].current >= obj.count,
-      );
-      if (allDone) {
-        // Grant rewards
-        if (quest.rewards) {
-          const rewards = parseJson<QuestReward[]>(quest.rewards) ?? [];
-          const player = await playerRepository.findById(playerId);
-          if (player) {
-            let goldReward = 0;
-            let spiritStoneReward = 0;
-            let expReward = 0;
+    const result = mapPlayerQuest(row as unknown as PlayerQuestRow);
+    void questService.emitQuestUpdate(playerId);
+    return result;
+  },
 
-            for (const r of rewards) {
-              if (r.type === 'gold') {
-                goldReward += r.amount;
-              } else if (r.type === 'spirit_stone') {
-                spiritStoneReward += r.amount;
-              } else if (r.type === 'exp') {
-                expReward += r.amount;
-              } else if (r.type === 'item') {
-                 const itemRef = (r as { item_ref?: string }).item_ref || r.itemId;
-                if (itemRef) {
-                  const items = await db.select().from(schema.itemTemplates).where(eq(schema.itemTemplates.name, itemRef)).limit(1);
-                  if (items.length > 0) {
-                    try {
-                      await inventoryService.addItem(playerId, {
-                        itemId: items[0].id,
-                        quantity: r.amount,
-                      });
-                    } catch (itemErr) {
-                      console.error('[Quest Reward] Failed to add item reward:', itemErr);
-                    }
-                  }
+  async completeQuest(
+    playerId: string,
+    questId: string,
+  ): Promise<PlayerQuest> {
+    const pq = await questRepository.findPlayerQuest(playerId, questId);
+    if (!pq || pq.status !== 'active') {
+      throw new Error('Quest not active or not found');
+    }
+
+    const quest = await questRepository.findById(questId);
+    if (!quest) {
+      throw new Error('Quest template not found');
+    }
+
+    const objectives = parseJson<QuestObjective[]>(quest.objectives) ?? [];
+    const progress = parseJson<ObjectiveProgress[]>(pq.objectives_progress) ?? [];
+
+    const allDone = objectives.every(
+      (obj, i) => progress[i] && progress[i].current >= obj.count,
+    );
+
+    if (!allDone) {
+      throw new Error('Quest objectives not completed');
+    }
+
+    // Grant rewards
+    if (quest.rewards) {
+      const rewards = parseJson<QuestReward[]>(quest.rewards) ?? [];
+      const player = await playerRepository.findById(playerId);
+      if (player) {
+        let goldReward = 0;
+        let spiritStoneReward = 0;
+        let expReward = 0;
+
+        for (const r of rewards) {
+          if (r.type === 'gold') {
+            goldReward += r.amount;
+          } else if (r.type === 'spirit_stone') {
+            spiritStoneReward += r.amount;
+          } else if (r.type === 'exp') {
+            expReward += r.amount;
+          } else if (r.type === 'item') {
+            const itemRef = (r as { item_ref?: string }).item_ref || r.itemId;
+            if (itemRef) {
+              const items = await db
+                .select()
+                .from(schema.itemTemplates)
+                .where(eq(schema.itemTemplates.name, itemRef))
+                .limit(1);
+              if (items.length > 0) {
+                try {
+                  await inventoryService.addItem(playerId, {
+                    itemId: items[0].id,
+                    quantity: r.amount,
+                  });
+                } catch (itemErr) {
+                  console.error('[Quest Reward] Failed to add item reward:', itemErr);
                 }
               }
             }
-
-            await playerRepository.update(playerId, {
-              gold: player.gold + goldReward,
-              spirit_stone: player.spirit_stone + spiritStoneReward,
-              exp: player.exp + expReward,
-            });
           }
         }
 
-        const completed = await questRepository.completeQuest(pq.id);
-        // Set story flag if defined
-        if (quest.flag_complete) {
-          await questRepository.setStoryFlag(playerId, quest.flag_complete);
-
-          // Auto-accept next quests unlocked by this flag
-          await questService.autoAcceptQuestsByFlag(playerId, quest.flag_complete);
-        }
-        const result = mapPlayerQuest(completed as unknown as PlayerQuestRow);
-        void questService.emitQuestUpdate(playerId);
-        return result;
+        await playerRepository.update(playerId, {
+          gold: player.gold + goldReward,
+          spirit_stone: player.spirit_stone + spiritStoneReward,
+          exp: player.exp + expReward,
+        });
       }
     }
 
-    const result = mapPlayerQuest(row as unknown as PlayerQuestRow);
+    const completed = await questRepository.completeQuest(pq.id);
+
+    // Set story flag if defined
+    if (quest.flag_complete) {
+      await questRepository.setStoryFlag(playerId, quest.flag_complete);
+
+      // Auto-accept next quests unlocked by this flag
+      await questService.autoAcceptQuestsByFlag(playerId, quest.flag_complete);
+    }
+
+    const result = mapPlayerQuest(completed as unknown as PlayerQuestRow);
     void questService.emitQuestUpdate(playerId);
     return result;
   },

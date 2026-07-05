@@ -80,6 +80,17 @@ export const questController = {
     }
   },
 
+  async completeQuest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const playerId = getPlayerId(req);
+      const { questId } = acceptQuestSchema.parse(req.body);
+      const pq = await questService.completeQuest(playerId, questId);
+      res.json({ success: true, data: pq });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // Story Flags
   async getStoryFlags(req: Request, res: Response, next: NextFunction) {
     try {

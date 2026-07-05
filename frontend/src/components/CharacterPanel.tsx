@@ -157,6 +157,29 @@ interface RawEquipmentInstance {
   obtainedAt?: string;
 }
 
+interface QuestObjective {
+  type: string;
+  target: string;
+  count: number;
+  description?: string;
+}
+
+interface QuestTemplate {
+  id: string;
+  name: string;
+  type: string;
+  description: string;
+  objectives: QuestObjective[] | string;
+  flagRequired: string | null;
+}
+
+interface PlayerQuest {
+  id: string;
+  questId: string;
+  status: string;
+  objectivesProgress: Array<{ index: number; current: number; target: number }>;
+}
+
 export default function CharacterPanel(): React.ReactElement | null {
   const {
     isCharacterPanelOpen,
@@ -170,13 +193,15 @@ export default function CharacterPanel(): React.ReactElement | null {
     setEquippedItems,
   } = useGameStore();
 
-  const [activeTab, setActiveTab] = useState<'stats' | 'gu' | 'equip'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'gu' | 'equip' | 'quest'>('stats');
   const [profile, setProfile] = useState<ProfileState | null>(null);
   const [stats, setStats] = useState<StatsState | null>(null);
   const [playerEquipInstances, setPlayerEquipInstances] = useState<EquipmentInstance[]>([]);
   const [selectedGu, setSelectedGu] = useState<PlayerGuState | null>(null);
   const [selectedEquip, setSelectedEquip] = useState<EquipmentInstance | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [activePlayerQuests, setActivePlayerQuests] = useState<PlayerQuest[]>([]);
+  const [questTemplates, setQuestTemplates] = useState<QuestTemplate[]>([]);
 
   const token = localStorage.getItem('token');
 
@@ -290,6 +315,26 @@ export default function CharacterPanel(): React.ReactElement | null {
             isEquipped: inst.isEquipped ?? 'false',
             slotIndex: inst.slotIndex != null ? Number(inst.slotIndex) : null,
           })));
+        }
+      })
+      .catch(() => {});
+
+    // Active Quests
+    fetch('/api/quest/player/active', { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.json())
+      .then((d: { success: boolean; data: any[] }) => {
+        if (d.success && Array.isArray(d.data)) {
+          setActivePlayerQuests(d.data as PlayerQuest[]);
+        }
+      })
+      .catch(() => {});
+
+    // Quest Templates
+    fetch('/api/quest', { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.json())
+      .then((d: { success: boolean; data: any[] }) => {
+        if (d.success && Array.isArray(d.data)) {
+          setQuestTemplates(d.data as QuestTemplate[]);
         }
       })
       .catch(() => {});
@@ -479,6 +524,29 @@ export default function CharacterPanel(): React.ReactElement | null {
     }
   };
 
+  const handleCompleteQuest = async (questId: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/quest/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ questId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Hoàn thành nhiệm vụ thành công!');
+        loadData();
+      } else {
+        showToast(data.message ?? 'Không thể hoàn thành nhiệm vụ.');
+      }
+    } catch {
+      showToast('Lỗi kết nối.');
+    }
+  };
+
   const showToast = (txt: string) => {
     setMessage(txt);
     setTimeout(() => setMessage(null), 3000);
@@ -548,6 +616,18 @@ export default function CharacterPanel(): React.ReactElement | null {
           }`}
         >
           ⚔️ Trang Bị
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('quest');
+            setSelectedGu(null);
+            setSelectedEquip(null);
+          }}
+          className={`flex-1 py-2 text-xs font-semibold border-b-2 transition-colors ${
+            activeTab === 'quest' ? 'border-gu-accent text-gu-accent bg-gu-border/10' : 'border-transparent text-gray-400 hover:text-white'
+          }`}
+        >
+          📜 Nhiệm Vụ
         </button>
       </div>
 
@@ -835,6 +915,107 @@ export default function CharacterPanel(): React.ReactElement | null {
                       })}
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= QUESTS TAB ================= */}
+        {activeTab === 'quest' && (
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold text-gu-accent border-b border-gu-border pb-1.5 uppercase tracking-wide">
+              Nhiệm Vụ Đang Thực Hiện
+            </h3>
+            {activePlayerQuests.length === 0 ? (
+              <p className="text-xs text-gray-500 italic py-6 text-center select-none">
+                Hiện tại không có nhiệm vụ nào hoạt động.
+              </p>
+            ) : (
+              <div className="space-y-3.5">
+                {activePlayerQuests.map((pq) => {
+                  const template = questTemplates.find((t) => t.id === pq.questId);
+                  if (!template) return null;
+
+                  const objectives = template.objectives
+                    ? typeof template.objectives === 'string'
+                      ? (JSON.parse(template.objectives) as QuestObjective[])
+                      : (template.objectives as QuestObjective[])
+                    : [];
+
+                  const allDone = objectives.every((obj, i) => {
+                    const prog = pq.objectivesProgress?.[i];
+                    return prog && prog.current >= obj.count;
+                  });
+
+                  return (
+                    <div
+                      key={pq.id}
+                      className="bg-gu-darker/50 border border-gu-border/80 rounded-xl p-3.5 space-y-2.5 shadow-lg relative text-white"
+                    >
+                      {/* Quest Title & Type */}
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-xs font-bold text-yellow-400">{template.name}</h4>
+                        <span className="text-[8px] bg-yellow-950/80 border border-yellow-800 text-yellow-300 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">
+                          {template.type === 'main' ? 'Chính' : 'Phụ'}
+                        </span>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-[10px] text-gray-400 leading-relaxed italic border-l-2 border-gray-700 pl-2">
+                        {template.description}
+                      </p>
+
+                      {/* Objectives */}
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[9px] font-bold text-gray-400 uppercase">Mục tiêu:</span>
+                        {objectives.map((obj, i) => {
+                          const prog = pq.objectivesProgress?.[i] || { current: 0, target: obj.count };
+                          const isObjDone = prog.current >= obj.count;
+
+                          // Dynamic objective description
+                          let objectiveLabel = '';
+                          if (obj.type === 'kill') {
+                            objectiveLabel = `Tiêu diệt ${obj.target}`;
+                          } else if (obj.type === 'talk') {
+                            objectiveLabel = `Đối thoại với ${obj.target}`;
+                          } else if (obj.type === 'reach') {
+                            objectiveLabel = `Đi đến ${obj.target}`;
+                          } else if (obj.type === 'collect') {
+                            objectiveLabel = `Thu thập ${obj.target}`;
+                          } else {
+                            objectiveLabel = obj.description || `Mục tiêu ${i + 1}`;
+                          }
+
+                          return (
+                            <div
+                              key={i}
+                              className={`flex justify-between items-center text-[10px] pl-1 ${
+                                isObjDone ? 'text-green-400 font-medium' : 'text-gray-400'
+                              }`}
+                            >
+                              <span>{isObjDone ? '✓' : '•'} {objectiveLabel}</span>
+                              <span className="font-mono">
+                                {prog.current}/{obj.count}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Complete / Claim Reward Button */}
+                      {allDone && (
+                        <div className="pt-2 border-t border-gu-border/25 mt-1.5 flex justify-end">
+                          <button
+                            onClick={() => handleCompleteQuest(pq.questId)}
+                            className="w-full py-1.5 text-xs bg-yellow-400 hover:bg-yellow-300 text-gu-dark font-bold rounded-lg shadow-md hover:shadow-lg active:scale-98 transition-all uppercase tracking-wider text-center"
+                          >
+                            Nhận Phần Thưởng (Hoàn Thành)
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

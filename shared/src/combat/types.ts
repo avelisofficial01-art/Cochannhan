@@ -82,6 +82,7 @@ export interface CombatResult {
   targetMaxHp: number;
   targetDefeated: boolean;
   statusApplied: ActiveStatusEffect[];
+  drops?: Array<{ itemName: string; quantity: number }>;
 }
 
 // Monster

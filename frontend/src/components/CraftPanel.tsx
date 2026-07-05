@@ -11,7 +11,7 @@ async function fetchRecipes(token: string): Promise<{ data?: Array<Record<string
   return res.json();
 }
 
-export default function CraftPanel(): React.ReactElement {
+export default function CraftPanel(): React.ReactElement | null {
   const {
     isCraftPanelOpen,
     toggleCraftPanel,
@@ -45,15 +45,7 @@ export default function CraftPanel(): React.ReactElement {
   }, [setRecipeList]);
 
   if (!isCraftPanelOpen) {
-    return (
-      <button
-        onClick={toggleCraftPanel}
-        className="absolute top-2 left-[220px] z-20 px-3 py-1.5 text-xs bg-gu-dark border border-gu-border rounded hover:bg-gu-border/30 transition-colors"
-        title="Open Craft Panel (C)"
-      >
-        🔧 Chế tạo
-      </button>
-    );
+    return null;
   }
 
   return (

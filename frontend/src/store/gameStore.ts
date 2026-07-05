@@ -26,6 +26,8 @@ export interface CombatResult {
   targetX: number;
   targetY: number;
   damageType?: string;
+  targetDefeated?: boolean;
+  drops?: Array<{ itemName: string; quantity: number }>;
 }
 
 export interface PlayerGuState {

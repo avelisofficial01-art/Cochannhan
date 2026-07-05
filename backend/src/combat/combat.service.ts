@@ -11,7 +11,8 @@ import * as storyRepo from '../story/story.repository.js';
 import { questService } from '../quest/quest.service.js';
 import { db } from '../database/connection.js';
 import * as schema from '../database/schema/index.js';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
+import { inventoryService } from '../inventory/inventory.service.js';
 import {
   initBossState,
   checkBossPhase,
@@ -208,6 +209,7 @@ export async function executePlayerAttack(
   // Apply damage to monster
   target.currentHp -= result.finalDamage;
   const defeated = target.currentHp <= 0;
+  const grantedDrops: Array<{ itemName: string; quantity: number }> = [];
 
   if (defeated) {
     // Boss defeat — set story flag
@@ -218,6 +220,48 @@ export async function executePlayerAttack(
       });
     }
     bossStates.delete(targetInstanceId);
+
+    // Roll drops
+    const dropTable = target.template.dropTable || (target.template as any).drop_table;
+    const rolledDrops = [];
+    if (dropTable) {
+      const parsedDropTable = typeof dropTable === 'string' ? JSON.parse(dropTable) : dropTable;
+      if (Array.isArray(parsedDropTable)) {
+        for (const entry of parsedDropTable) {
+          const roll = Math.random() * 100;
+          if (roll <= entry.chance) {
+            const minQ = entry.minQuantity ?? entry.quantityMin ?? 1;
+            const maxQ = entry.maxQuantity ?? entry.quantityMax ?? 1;
+            const qty = maxQ > minQ ? minQ + Math.floor(Math.random() * (maxQ - minQ + 1)) : minQ;
+            
+            // Find item by name
+            const itemName = entry.itemName ?? entry.itemId;
+            if (itemName) {
+              const [item] = await db.select().from(schema.itemTemplates)
+                .where(or(eq(schema.itemTemplates.name, itemName), eq(schema.itemTemplates.id, itemName)))
+                .limit(1);
+              if (item) {
+                rolledDrops.push({ itemId: item.id, itemName: item.name, quantity: qty });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Grant items to inventory
+    for (const drop of rolledDrops) {
+      try {
+        await inventoryService.addItem(playerId, {
+          itemId: drop.itemId,
+          quantity: drop.quantity,
+        });
+        grantedDrops.push({ itemName: drop.itemName, quantity: drop.quantity });
+      } catch (err) {
+        console.error(`[Combat] Failed to grant drop to player ${playerId}:`, err);
+      }
+    }
+
     despawnMonster(targetInstanceId);
 
     // Schedule respawn
@@ -258,6 +302,7 @@ export async function executePlayerAttack(
     targetMaxHp: target.template.hp,
     targetDefeated: defeated,
     statusApplied: result.statusApplied,
+    drops: grantedDrops,
   };
 }
 
@@ -274,8 +319,8 @@ export function executeMonsterAttack(
   // Check if can act
   if (!canAct(monster.statusEffects)) return null;
 
-  // Attack cooldown: 1 attack per second (20 ticks)
-  if (currentTick - monster.lastAttackTick < 20) return null;
+  // Attack cooldown: 2.5 seconds (50 ticks)
+  if (currentTick - monster.lastAttackTick < 50) return null;
 
   monster.lastAttackTick = currentTick;
 

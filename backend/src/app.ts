@@ -576,6 +576,8 @@ io.on('connection', async (socket) => {
       targetX: 0, // will be filled from monster position by client
       targetY: 0,
       damageType: result.damageType,
+      targetDefeated: result.targetDefeated,
+      drops: (result as any).drops,
     });
 
     // If monster defeated, emit death to all players in map
@@ -737,10 +739,43 @@ setInterval(async () => {
           } else {
             // Chase target player
             const monsterSpeed = monster.template.speed ?? 100;
-            const moveStep = monsterSpeed / 20; // units to move in 50ms tick
+            // Slower speed: multiply by 0.5
+            const moveStep = (monsterSpeed * 0.5) / 20; // units to move in 50ms tick
             const angle = Math.atan2(dy, dx);
-            monster.x += Math.cos(angle) * moveStep;
-            monster.y += Math.sin(angle) * moveStep;
+
+            let nextX = monster.x + Math.cos(angle) * moveStep;
+            let nextY = monster.y + Math.sin(angle) * moveStep;
+
+            // Separation logic to prevent overlapping with other monsters
+            const minDistanceBetweenMonsters = 30; // 30px separation
+            for (const other of monsters) {
+              if (other.instanceId === monster.instanceId || other.currentHp <= 0) continue;
+              const ox = nextX - other.x;
+              const oy = nextY - other.y;
+              const oDist = Math.sqrt(ox * ox + oy * oy);
+              if (oDist < minDistanceBetweenMonsters) {
+                // Apply a gentle push force away
+                const pushForce = (minDistanceBetweenMonsters - oDist) * 0.3;
+                const pushAngle = oDist > 0.1 ? Math.atan2(oy, ox) : Math.random() * Math.PI * 2;
+                nextX += Math.cos(pushAngle) * pushForce;
+                nextY += Math.sin(pushAngle) * pushForce;
+              }
+            }
+
+            // Avoidance to prevent standing directly on top of the player
+            const minPlayerDistance = 25; // Keep at least 25px away from player
+            const playerDx = targetPlayer.x - nextX;
+            const playerDy = targetPlayer.y - nextY;
+            const playerDist = Math.sqrt(playerDx * playerDx + playerDy * playerDy);
+            if (playerDist < minPlayerDistance) {
+              const pushBackAngle = Math.atan2(playerDy, playerDx) + Math.PI;
+              const pushBackForce = minPlayerDistance - playerDist;
+              nextX += Math.cos(pushBackAngle) * pushBackForce;
+              nextY += Math.sin(pushBackAngle) * pushBackForce;
+            }
+
+            monster.x = nextX;
+            monster.y = nextY;
 
             // Broadcast monster movement update to all players on map
             io.to(`map:${mapId}`).emit('monster:move', {
