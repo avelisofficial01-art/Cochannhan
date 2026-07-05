@@ -6,8 +6,8 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { db } from './database/connection.js';
-import { worldMaps, mapPortals, mapSpawns, monsterTemplates, npcTemplates, questTemplates, players } from './database/schema/index.js';
-import { eq, or } from 'drizzle-orm';
+import { worldMaps, mapPortals, mapSpawns, monsterTemplates, npcTemplates, questTemplates, players, accounts, playerQuests, playerStats, storyFlags } from './database/schema/index.js';
+import { eq, or, and } from 'drizzle-orm';
 import authRouter from './auth/auth.route.js';
 import playerRouter from './player/player.route.js';
 import { playerRepository } from './player/player.repository.js';
@@ -119,6 +119,122 @@ app.get('/api/health', async (_req, res) => {
           monsters: monstersCount,
           quests: questsCount,
         }
+      },
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+// Admin seed endpoint (dev/test only)
+app.post('/api/admin/seed', async (_req, res) => {
+  try {
+    const bcrypt = await import('bcryptjs');
+    const ADMIN_EMAIL = 'admin@game.local';
+    const ADMIN_USERNAME = 'Admin';
+    const ADMIN_PASSWORD = 'admin123';
+
+    // Check existing account
+    const [existingAccount] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.email, ADMIN_EMAIL));
+
+    const accountId = existingAccount?.id ?? (await (async () => {
+      const passwordHash = await bcrypt.default.hash(ADMIN_PASSWORD, 12);
+      const [acc] = await db.insert(accounts).values({
+        email: ADMIN_EMAIL,
+        username: ADMIN_USERNAME,
+        password_hash: passwordHash,
+        status: 'active',
+      }).returning({ id: accounts.id });
+      return acc.id;
+    })());
+
+    // Check existing player
+    const [existingPlayer] = await db
+      .select()
+      .from(players)
+      .where(eq(players.account_id, accountId));
+
+    let playerId: string;
+
+    if (existingPlayer) {
+      await db.update(players).set({
+        realm: 9, hp: 10000, mana: 5000, exp: 999999,
+        gold: 999999, spirit_stone: 999999,
+        current_map: 'bac_nguyen_village', current_x: 500, current_y: 400,
+      }).where(eq(players.id, existingPlayer.id));
+
+      const [existingStats] = await db.select().from(playerStats).where(eq(playerStats.player_id, existingPlayer.id));
+      if (existingStats) {
+        await db.update(playerStats).set({ hp_bonus: 0, atk_bonus: 500, def_bonus: 500, crit_bonus: 95, move_speed: 600 })
+          .where(eq(playerStats.id, existingStats.id));
+      } else {
+        await db.insert(playerStats).values({ player_id: existingPlayer.id, hp_bonus: 0, atk_bonus: 500, def_bonus: 500, crit_bonus: 95, move_speed: 600 });
+      }
+      playerId = existingPlayer.id;
+    } else {
+      const [player] = await db.insert(players).values({
+        account_id: accountId, name: 'Admin', realm: 9, hp: 10000, mana: 5000,
+        exp: 999999, gold: 999999, spirit_stone: 999999,
+        current_map: 'bac_nguyen_village', current_x: 500, current_y: 400,
+      }).returning({ id: players.id });
+
+      await db.insert(playerStats).values({ player_id: player.id, hp_bonus: 0, atk_bonus: 500, def_bonus: 500, crit_bonus: 95, move_speed: 600 });
+      playerId = player.id;
+    }
+
+    // Set story flags
+    const flagsToSet = ['talked_village_chief', 'killed_3_wild_beasts', 'entered_rung_tuyet', 'defeated_wolf_king'];
+    for (const flagKey of flagsToSet) {
+      const [existingFlag] = await db.select().from(storyFlags)
+        .where(and(
+          eq(storyFlags.flag_key, flagKey),
+          eq(storyFlags.player_id, playerId)
+        ));
+      if (!existingFlag) {
+        await db.insert(storyFlags).values({ player_id: playerId, flag_key: flagKey, flag_value: 'true' });
+      }
+    }
+
+    // Auto-accept all quests
+    const allQuests = await db.select().from(questTemplates);
+    let acceptedCount = 0;
+    for (const qt of allQuests) {
+      const [existingPq] = await db.select().from(playerQuests)
+        .where(and(
+          eq(playerQuests.player_id, playerId),
+          eq(playerQuests.quest_id, qt.id)
+        ));
+      if (!existingPq) {
+        const objectives = JSON.parse(qt.objectives as string) as { type: string; target: string; count: number }[];
+        const progress = objectives.map((obj, idx) => ({ index: idx, current: 0, target: obj.count }));
+        await db.insert(playerQuests).values({
+          player_id: playerId, quest_id: qt.id, status: 'active',
+          objectives_progress: JSON.stringify(progress),
+        });
+        acceptedCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Admin account ready!',
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        realm: 9,
+        gold: 999999,
+        spiritStone: 999999,
+        atk: '~734 (one-shot everything)',
+        def: '~617',
+        crit: '100%',
+        questsAccepted: acceptedCount,
+        flagsSet: flagsToSet,
       },
     });
   } catch (err) {

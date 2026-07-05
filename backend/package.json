@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "seed-admin": "tsx src/scripts/seed-admin.ts"
   },
   "dependencies": {
     "@co-dao/shared": "*",
