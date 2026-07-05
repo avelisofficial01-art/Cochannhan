@@ -465,6 +465,8 @@ io.on('connection', async (socket) => {
         console.log(`[Socket] ✅ Map found: "${map.name}" (id=${map.id}, region=${map.region})`);
 
         // Emit map metadata
+        const safeSpawnX = (pos?.x !== undefined && pos?.x !== null && !isNaN(pos.x)) ? pos.x : 400;
+        const safeSpawnY = (pos?.y !== undefined && pos?.y !== null && !isNaN(pos.y)) ? pos.y : 300;
         socket.emit('map:init', {
           id: map.id,
           name: map.name,
@@ -472,6 +474,8 @@ io.on('connection', async (socket) => {
           width: map.width,
           height: map.height,
           background: map.background,
+          spawnX: safeSpawnX,
+          spawnY: safeSpawnY,
         });
 
         // Trigger reach map objectives update

@@ -147,7 +147,7 @@ export function useSocket(): { isConnected: boolean } {
       tryEmit(maxRetries);
     };
 
-    socket.on('map:init', (data: { id: string; name: string; region: string; width: number; height: number; background: string }) => {
+    socket.on('map:init', (data: { id: string; name: string; region: string; width: number; height: number; background: string; spawnX?: number; spawnY?: number }) => {
       useGameStore.getState().setMap(data.id);
       emitToGameScene('map:init', data);
     });

@@ -78,15 +78,16 @@ export default function GamePage(): React.ReactElement {
     <div className="h-dvh bg-gu-darker relative overflow-hidden" style={{ touchAction: 'manipulation' }}>
       {/* Game area — fills entire viewport */}
       <div className="absolute inset-0 bg-gu-darker overflow-hidden">
+        {/* Phaser canvas wrapper - rendered first so React overlays sit on top */}
+        <div
+          ref={containerRef}
+          className="absolute inset-0 w-full h-full z-0"
+        />
         <CharacterPanel />
         <GameHUD />
         <CraftPanel />
         <DialoguePanel />
         <QuestTracker />
-        <div
-          ref={containerRef}
-          className="w-full h-full"
-        />
       </div>
     </div>
   );

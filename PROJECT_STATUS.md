@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 14 — Integrated H5 HUD Overlay & Viewport Consolidation
+**Sprint:** 14 — H5 Unified Viewport, Quest Filtering & Coordinate Synchronization
 
 **Status:** ✅ Completed
 
@@ -36,17 +36,17 @@
 | Sprint 11 | Quest System Improvement | ✅ Completed |
 | Sprint 12 | Quest Flow Manual Turn-In & Visual Polish | ✅ Completed |
 | Sprint 13 | Mobile Interaction Fix & Position Synchronization | ✅ Completed |
-| Sprint 14 | Integrated H5 HUD Overlay & Viewport Consolidation | ✅ Completed |
+| Sprint 14 | H5 Unified Viewport, Quest Filtering & Coordinate Sync | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 14 — Integrated H5 HUD Overlay & Viewport Consolidation
+Current Module: ✅ Sprint 14 — H5 Unified Viewport, Quest Filtering & Coordinate Sync
 
 # Sprint 14 Checklist
 
-## Integrated H5 HUD Overlay & Viewport Consolidation (S14.1)
+## H5 Unified Viewport, Quest Filtering & Coordinate Synchronization (S14.1)
 - [x] Consolidate the main layout viewport to fill 100% of screen height
 - [x] Completely remove external React `<header>` and `<footer>` layouts from `GamePage.tsx`
 - [x] Define global `ProfileState` and `StatsState` types and state properties inside `gameStore.ts`
@@ -54,6 +54,10 @@ Current Module: ✅ Sprint 14 — Integrated H5 HUD Overlay & Viewport Consolida
 - [x] Set up active periodic (5s) background profile and stats sync fetches inside `GameHUD.tsx`
 - [x] Implement the top HUD overlay bar showing Player Avatar, Username, Realm name, Gold balance, Spirit Stone balance, Online ping, and Đăng Xuất (Logout) button
 - [x] Expand the bottom HUD dock with direct quick-open buttons for stats, gu, equip, quest, and craft panels
+- [x] Filter out completed quests in `CharacterPanel.tsx` quest tab render (only map status === active)
+- [x] Integrate toggle collapse/expand controls in `QuestTracker.tsx` header to prevent mobile clutter
+- [x] Pass `spawnX`/`spawnY` coordinate parameters in server `map:init` emit and validate values against NaN fallbacks on client
+- [x] Fix fractional drop rates math in `rollDrops` (using 0..1 roll check) and multiply by 2x for testing
 - [x] Typecheck + build + lint all pass
 
 ---

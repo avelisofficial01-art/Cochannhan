@@ -228,8 +228,10 @@ export async function executePlayerAttack(
       const parsedDropTable = typeof dropTable === 'string' ? JSON.parse(dropTable) : dropTable;
       if (Array.isArray(parsedDropTable)) {
         for (const entry of parsedDropTable) {
-          const roll = Math.random() * 100;
-          if (roll <= entry.chance) {
+          // entry.chance is configured as fraction (e.g. 0.6 = 60%). Scale by 2.0 (cap at 1.0) for dev mode.
+          const adjustedChance = Math.min(1.0, (entry.chance ?? 0) * 2.0);
+          const roll = Math.random();
+          if (roll <= adjustedChance) {
             const minQ = entry.minQuantity ?? entry.quantityMin ?? 1;
             const maxQ = entry.maxQuantity ?? entry.quantityMax ?? 1;
             const qty = maxQ > minQ ? minQ + Math.floor(Math.random() * (maxQ - minQ + 1)) : minQ;
@@ -397,8 +399,10 @@ export function rollDrops(template: MonsterTemplate): Array<{
   const drops: Array<{ itemId: string; quantity: number }> = [];
 
   for (const entry of template.dropTable) {
-    const roll = Math.random() * 100;
-    if (roll <= entry.chance) {
+    // entry.chance is configured as fraction (e.g. 0.6 = 60%). Scale by 2.0 (cap at 1.0) for dev mode.
+    const adjustedChance = Math.min(1.0, (entry.chance ?? 0) * 2.0);
+    const roll = Math.random();
+    if (roll <= adjustedChance) {
       const qty =
         entry.quantityMax > entry.quantityMin
           ? entry.quantityMin +

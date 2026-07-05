@@ -779,8 +779,10 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, data.width, data.height);
 
     // Reset player to spawn position (default: map center)
-    const spawnX = data.spawnX ?? Math.round(data.width / 2);
-    const spawnY = data.spawnY ?? Math.round(data.height / 2);
+    const rawSpawnX = data.spawnX;
+    const rawSpawnY = data.spawnY;
+    const spawnX = (rawSpawnX !== undefined && rawSpawnX !== null && !isNaN(rawSpawnX)) ? rawSpawnX : Math.round(data.width / 2);
+    const spawnY = (rawSpawnY !== undefined && rawSpawnY !== null && !isNaN(rawSpawnY)) ? rawSpawnY : Math.round(data.height / 2);
     this.playerX = spawnX;
     this.playerY = spawnY;
     if (this.playerSprite) {

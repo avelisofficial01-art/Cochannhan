@@ -909,105 +909,108 @@ export default function CharacterPanel(): React.ReactElement | null {
         )}
 
         {/* ================= QUESTS TAB ================= */}
-        {activeTab === 'quest' && (
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-gu-accent border-b border-gu-border pb-1.5 uppercase tracking-wide">
-              Nhiệm Vụ Đang Thực Hiện
-            </h3>
-            {activePlayerQuests.length === 0 ? (
-              <p className="text-xs text-gray-500 italic py-6 text-center select-none">
-                Hiện tại không có nhiệm vụ nào hoạt động.
-              </p>
-            ) : (
-              <div className="space-y-3.5">
-                {activePlayerQuests.map((pq) => {
-                  const template = questTemplates.find((t) => t.id === pq.questId);
-                  if (!template) return null;
+        {activeTab === 'quest' && (() => {
+          const activeQuestsOnly = activePlayerQuests.filter((q) => q.status === 'active');
+          return (
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold text-gu-accent border-b border-gu-border pb-1.5 uppercase tracking-wide">
+                Nhiệm Vụ Đang Thực Hiện
+              </h3>
+              {activeQuestsOnly.length === 0 ? (
+                <p className="text-xs text-gray-500 italic py-6 text-center select-none">
+                  Hiện tại không có nhiệm vụ nào hoạt động.
+                </p>
+              ) : (
+                <div className="space-y-3.5">
+                  {activeQuestsOnly.map((pq) => {
+                    const template = questTemplates.find((t) => t.id === pq.questId);
+                    if (!template) return null;
 
-                  const objectives = template.objectives
-                    ? typeof template.objectives === 'string'
-                      ? (JSON.parse(template.objectives) as QuestObjective[])
-                      : (template.objectives as QuestObjective[])
-                    : [];
+                    const objectives = template.objectives
+                      ? typeof template.objectives === 'string'
+                        ? (JSON.parse(template.objectives) as QuestObjective[])
+                        : (template.objectives as QuestObjective[])
+                      : [];
 
-                  const allDone = objectives.every((obj, i) => {
-                    const prog = pq.objectivesProgress?.[i];
-                    return prog && prog.current >= obj.count;
-                  });
+                    const allDone = objectives.every((obj, i) => {
+                      const prog = pq.objectivesProgress?.[i];
+                      return prog && prog.current >= obj.count;
+                    });
 
-                  return (
-                    <div
-                      key={pq.id}
-                      className="bg-gu-darker/50 border border-gu-border/80 rounded-xl p-3.5 space-y-2.5 shadow-lg relative text-white"
-                    >
-                      {/* Quest Title & Type */}
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-xs font-bold text-yellow-400">{template.name}</h4>
-                        <span className="text-[8px] bg-yellow-950/80 border border-yellow-800 text-yellow-300 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">
-                          {template.type === 'main' ? 'Chính' : 'Phụ'}
-                        </span>
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-[10px] text-gray-400 leading-relaxed italic border-l-2 border-gray-700 pl-2">
-                        {template.description}
-                      </p>
-
-                      {/* Objectives */}
-                      <div className="space-y-1.5 pt-1">
-                        <span className="text-[9px] font-bold text-gray-400 uppercase">Mục tiêu:</span>
-                        {objectives.map((obj, i) => {
-                          const prog = pq.objectivesProgress?.[i] || { current: 0, target: obj.count };
-                          const isObjDone = prog.current >= obj.count;
-
-                          // Dynamic objective description
-                          let objectiveLabel = '';
-                          if (obj.type === 'kill') {
-                            objectiveLabel = `Tiêu diệt ${obj.target}`;
-                          } else if (obj.type === 'talk') {
-                            objectiveLabel = `Đối thoại với ${obj.target}`;
-                          } else if (obj.type === 'reach') {
-                            objectiveLabel = `Đi đến ${obj.target}`;
-                          } else if (obj.type === 'collect') {
-                            objectiveLabel = `Thu thập ${obj.target}`;
-                          } else {
-                            objectiveLabel = obj.description || `Mục tiêu ${i + 1}`;
-                          }
-
-                          return (
-                            <div
-                              key={i}
-                              className={`flex justify-between items-center text-[10px] pl-1 ${
-                                isObjDone ? 'text-green-400 font-medium' : 'text-gray-400'
-                              }`}
-                            >
-                              <span>{isObjDone ? '✓' : '•'} {objectiveLabel}</span>
-                              <span className="font-mono">
-                                {prog.current}/{obj.count}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Complete / Claim Reward Button */}
-                      {allDone && (
-                        <div className="pt-2 border-t border-gu-border/25 mt-1.5 flex justify-end">
-                          <button
-                            onClick={() => handleCompleteQuest(pq.questId)}
-                            className="w-full py-1.5 text-xs bg-yellow-400 hover:bg-yellow-300 text-gu-dark font-bold rounded-lg shadow-md hover:shadow-lg active:scale-98 transition-all uppercase tracking-wider text-center"
-                          >
-                            Nhận Phần Thưởng (Hoàn Thành)
-                          </button>
+                    return (
+                      <div
+                        key={pq.id}
+                        className="bg-gu-darker/50 border border-gu-border/80 rounded-xl p-3.5 space-y-2.5 shadow-lg relative text-white"
+                      >
+                        {/* Quest Title & Type */}
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-xs font-bold text-yellow-400">{template.name}</h4>
+                          <span className="text-[8px] bg-yellow-950/80 border border-yellow-800 text-yellow-300 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">
+                            {template.type === 'main' ? 'Chính' : 'Phụ'}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+
+                        {/* Description */}
+                        <p className="text-[10px] text-gray-400 leading-relaxed italic border-l-2 border-gray-700 pl-2">
+                          {template.description}
+                        </p>
+
+                        {/* Objectives */}
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase">Mục tiêu:</span>
+                          {objectives.map((obj, i) => {
+                            const prog = pq.objectivesProgress?.[i] || { current: 0, target: obj.count };
+                            const isObjDone = prog.current >= obj.count;
+
+                            // Dynamic objective description
+                            let objectiveLabel = '';
+                            if (obj.type === 'kill') {
+                              objectiveLabel = `Tiêu diệt ${obj.target}`;
+                            } else if (obj.type === 'talk') {
+                              objectiveLabel = `Đối thoại với ${obj.target}`;
+                            } else if (obj.type === 'reach') {
+                              objectiveLabel = `Đi đến ${obj.target}`;
+                            } else if (obj.type === 'collect') {
+                              objectiveLabel = `Thu thập ${obj.target}`;
+                            } else {
+                              objectiveLabel = obj.description || `Mục tiêu ${i + 1}`;
+                            }
+
+                            return (
+                              <div
+                                key={i}
+                                className={`flex justify-between items-center text-[10px] pl-1 ${
+                                  isObjDone ? 'text-green-400 font-medium' : 'text-gray-400'
+                                }`}
+                              >
+                                <span>{isObjDone ? '✓' : '•'} {objectiveLabel}</span>
+                                <span className="font-mono">
+                                  {prog.current}/{obj.count}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Complete / Claim Reward Button */}
+                        {allDone && (
+                          <div className="pt-2 border-t border-gu-border/25 mt-1.5 flex justify-end">
+                            <button
+                              onClick={() => handleCompleteQuest(pq.questId)}
+                              className="w-full py-1.5 text-xs bg-yellow-400 hover:bg-yellow-300 text-gu-dark font-bold rounded-lg shadow-md hover:shadow-lg active:scale-98 transition-all uppercase tracking-wider text-center"
+                            >
+                              Nhận Phần Thưởng (Hoàn Thành)
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Footer hint */}

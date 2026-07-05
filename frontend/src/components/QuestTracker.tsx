@@ -26,6 +26,7 @@ interface PlayerQuest {
 export const QuestTracker: React.FC = () => {
   const { activeQuests, setActiveQuests } = useGameStore();
   const [questTemplates, setQuestTemplates] = useState<QuestTemplate[]>([]);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchActiveQuests = async () => {
@@ -79,16 +80,30 @@ export const QuestTracker: React.FC = () => {
   if (!activePlayerQuests || activePlayerQuests.length === 0) {
     return (
       <div style={styles.trackerContainer}>
-        <div style={styles.header}>Nhiệm Vụ</div>
-        <div style={styles.noQuest}>Chưa nhận nhiệm vụ nào. Hãy trò chuyện với Trưởng Làng.</div>
+        <div
+          style={{ ...styles.header, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <span>📋 Nhiệm Vụ</span>
+          <span style={{ fontSize: '10px', color: '#888' }}>{isCollapsed ? '[+]' : '[-]'}</span>
+        </div>
+        {!isCollapsed && (
+          <div style={styles.noQuest}>Chưa nhận nhiệm vụ nào. Hãy trò chuyện với Trưởng Làng.</div>
+        )}
       </div>
     );
   }
 
   return (
     <div style={styles.trackerContainer}>
-      <div style={styles.header}>Nhiệm Vụ Đang Làm</div>
-      {activePlayerQuests.map((pq) => {
+      <div
+        style={{ ...styles.header, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <span>📋 Nhiệm Vụ Đang Làm</span>
+        <span style={{ fontSize: '10px', color: '#888' }}>{isCollapsed ? '[+]' : '[-]'}</span>
+      </div>
+      {!isCollapsed && activePlayerQuests.map((pq) => {
         const template = questTemplates.find((t) => t.id === pq.questId);
         if (!template) return null;
 
