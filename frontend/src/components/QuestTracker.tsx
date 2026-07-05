@@ -74,7 +74,7 @@ export const QuestTracker: React.FC = () => {
     return () => clearInterval(interval);
   }, [setActiveQuests]);
 
-  const activePlayerQuests = activeQuests as PlayerQuest[];
+  const activePlayerQuests = (activeQuests as PlayerQuest[]).filter(q => q.status === 'active');
 
   if (!activePlayerQuests || activePlayerQuests.length === 0) {
     return (

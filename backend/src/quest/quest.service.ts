@@ -134,7 +134,6 @@ export const questService = {
         .where(eq(schema.questTemplates.name, 'Tỉnh Giấc Mộng'))
         .limit(1);
       if (awakenQuest) {
-        console.log(`[Quest] Auto-assigning first quest "Tỉnh Giấc Mộng" to player: ${playerId}`);
         const newPq = await questRepository.acceptQuest(playerId, awakenQuest.id);
         if (newPq) {
           return [mapPlayerQuest(newPq as unknown as PlayerQuestRow)];
@@ -221,8 +220,13 @@ export const questService = {
         // Set story flag if defined
         if (quest.flag_complete) {
           await questRepository.setStoryFlag(playerId, quest.flag_complete);
+
+          // Auto-accept next quests unlocked by this flag
+          await questService.autoAcceptQuestsByFlag(playerId, quest.flag_complete);
         }
-        return mapPlayerQuest(completed as unknown as PlayerQuestRow);
+        const result = mapPlayerQuest(completed as unknown as PlayerQuestRow);
+        void questService.emitQuestUpdate(playerId);
+        return result;
       }
     }
 
@@ -252,7 +256,6 @@ export const questService = {
         if (obj.type === 'kill' && obj.target === monsterName) {
           const progress = pq.objectivesProgress?.[i] || { current: 0 };
           if (progress.current < obj.count) {
-            console.log(`[Quest] Updating kill progress for player ${playerId}, quest ${quest.name}, target ${monsterName}`);
             await questService.updateQuestProgress(playerId, pq.questId, i, 1);
           }
         }
@@ -303,7 +306,6 @@ export const questService = {
             if (shouldComplete) {
               const progress = pq.objectivesProgress?.[i] || { current: 0 };
               if (progress.current < obj.count) {
-                console.log(`[Quest] Auto-completing talk objective to ${targetName} for quest ${quest.name}`);
                 await questService.updateQuestProgress(playerId, pq.questId, i, 1);
               }
             }
@@ -330,9 +332,8 @@ export const questService = {
           const obj = objectives[i];
           if (obj.type === 'reach' && (obj.target === mapId || obj.target === mapName || obj.target === 'dinh_bangphong')) {
             const progress = pq.objectivesProgress?.[i] || { current: 0 };
-            if (progress.current < obj.count) {
-              console.log(`[Quest] Updating reach progress for player ${playerId}, quest ${quest.name}, target ${obj.target}`);
-              await questService.updateQuestProgress(playerId, pq.questId, i, 1);
+          if (progress.current < obj.count) {
+            await questService.updateQuestProgress(playerId, pq.questId, i, 1);
             }
           }
         }
@@ -348,5 +349,23 @@ export const questService = {
   ): Promise<boolean> {
     const row = await questRepository.getStoryFlag(playerId, key);
     return row !== null && row.flag_value === 'true';
+  },
+
+  async autoAcceptQuestsByFlag(playerId: string, flagKey: string): Promise<void> {
+    try {
+      const quests = await db
+        .select()
+        .from(schema.questTemplates)
+        .where(eq(schema.questTemplates.flag_required, flagKey));
+
+      for (const quest of quests) {
+        const existing = await questRepository.findPlayerQuest(playerId, quest.id);
+        if (!existing) {
+          await questRepository.acceptQuest(playerId, quest.id);
+        }
+      }
+    } catch (err) {
+      console.error('[Quest Auto-Accept] Failed to auto-accept quests by flag:', err);
+    }
   },
 };

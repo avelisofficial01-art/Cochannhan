@@ -838,6 +838,45 @@ Boss Bạch Lang Vương giữ nguyên (HP=800, ATK=35, DEF=20) — phù hợp v
 
 ---
 
+## Sprint 11: QUEST SYSTEM IMPROVEMENT — 2026-07-05
+
+### Mục tiêu
+Cải thiện hệ thống quest: quest hoàn thành tự động chuyển sang quest tiếp theo, hiển thị progress kill quest, loại bỏ quest đã hoàn thành khỏi tracker.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S11.1 | Quest Flow | ✅ | Fix 3 bugs + clean debug logs |
+
+### Bug fixes
+
+1. **QuestTracker hiển thị quest đã hoàn thành:**
+   - **File:** `frontend/src/components/QuestTracker.tsx`
+   - **Fix:** Filter `activePlayerQuests` với `q.status === 'active'`
+   - Quest đã hoàn thành không còn hiện trong tracker
+
+2. **Không auto-accept quest tiếp theo khi hoàn thành:**
+   - **File:** `backend/src/quest/quest.service.ts`
+   - **Fix:** Thêm method `autoAcceptQuestsByFlag()` — khi quest hoàn thành set story flag, tự động tìm và accept quest mới có `flag_required` trùng flag vừa set
+   - Called trong `updateQuestProgress` sau khi `setStoryFlag`
+
+3. **Socket `quest:updated` không emit khi quest hoàn thành:**
+   - **File:** `backend/src/quest/quest.service.ts`
+   - **Fix:** Restructure `updateQuestProgress` — `quest:updated` luôn được emit (cả khi quest complete và chưa complete)
+   - Trước đây: `return mapPlayerQuest(...)` trước khi emit ở line 230
+
+### Cleanup
+- Xóa 3 `console.log` trong quest.service.ts (handleMonsterKill, setStoryFlag, handleReachMap)
+
+### Xác nhận
+- [x] Typecheck: 0 lỗi
+- [x] Lint: 0 errors (chỉ có pre-existing warnings)
+- [x] Build: frontend + backend OK
+- [x] Không thay đổi API, schema, story
+
+---
+
 ## Sprint 7: POLISH & STABILIZE — 2026-07-04
 
 ### Mục tiêu

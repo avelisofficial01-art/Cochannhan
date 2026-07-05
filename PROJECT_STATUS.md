@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 10 — Maintenance & Combat Balance
+**Sprint:** 11 — Quest System Improvement
 
 **Status:** ✅ Completed
 
@@ -38,7 +38,18 @@
 
 # Current Task
 
-Current Module: ✅ Sprint 10 — Maintenance & Combat Balance
+Current Module: ✅ Sprint 11 — Quest System Improvement
+
+---
+
+# Sprint 11 Checklist
+
+## Quest Flow (S11.1)
+- [x] Filter QuestTracker to only show active quests (not completed)
+- [x] Backend auto-accept next quests when a quest is completed (flag-based)
+- [x] Fix bug: `quest:updated` not emitted on quest completion (emit moved before return)
+- [x] Remove 3 `console.log` debug lines from quest.service.ts
+- [x] Typecheck + build + lint all pass
 
 ---
 
