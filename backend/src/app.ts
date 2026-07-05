@@ -387,7 +387,7 @@ io.on('connection', async (socket) => {
                   element: tmpl.element as 'physical' | 'fire' | 'water' | 'lightning' | 'wind' | 'earth' | 'wood' | 'ice' | 'poison' | 'blood' | 'soul' | 'space' | 'time' | 'light' | 'dark',
                   sprite: tmpl.sprite,
                   dropTable: tmpl.drop_table ? JSON.parse(tmpl.drop_table) : null,
-                  mapId: tmpl.map_id,
+                  mapId: map.id,
                   respawnTime: tmpl.respawn_time,
                 };
                 combatService.spawnMonster(camelTemplate, spawn.x, spawn.y);

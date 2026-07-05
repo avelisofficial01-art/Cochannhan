@@ -130,32 +130,32 @@ export async function seedDatabase(): Promise<void> {
       }
     }
 
-    // 4. Seed portals
-    if (needsWorldData) {
-      console.log('[Seed] Seeding portals...');
-      for (const p of mapPortalSeeds) {
-        const fromId = mapUuidMap.get(p.from_map_ref);
-        const toId = mapUuidMap.get(p.to_map_ref);
-        if (fromId && toId) {
-          await db.insert(schema.mapPortals).values({
-            from_map_id: fromId,
-            to_map_id: toId,
-            from_x: p.from_x,
-            from_y: p.from_y,
-            to_x: p.to_x,
-            to_y: p.to_y,
-            portal_name: p.portal_name,
-          });
+    // 4. Seed portals (delete all and re-seed to apply config changes instantly)
+    console.log('[Seed] Refreshing portals...');
+    await db.delete(schema.mapPortals);
+    await db.delete(schema.portals);
+    for (const p of mapPortalSeeds) {
+      const fromId = mapUuidMap.get(p.from_map_ref);
+      const toId = mapUuidMap.get(p.to_map_ref);
+      if (fromId && toId) {
+        await db.insert(schema.mapPortals).values({
+          from_map_id: fromId,
+          to_map_id: toId,
+          from_x: p.from_x,
+          from_y: p.from_y,
+          to_x: p.to_x,
+          to_y: p.to_y,
+          portal_name: p.portal_name,
+        });
 
-          // Also seed older portals table
-          await db.insert(schema.portals).values({
-            from_map: fromId,
-            to_map: toId,
-            x: p.from_x,
-            y: p.from_y,
-            condition: null,
-          });
-        }
+        // Also seed older portals table
+        await db.insert(schema.portals).values({
+          from_map: fromId,
+          to_map: toId,
+          x: p.from_x,
+          y: p.from_y,
+          condition: null,
+        });
       }
     }
 

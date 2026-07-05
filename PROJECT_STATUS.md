@@ -336,7 +336,7 @@ Current Module: ✅ Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation
 
 **2026-07-05**: NPC Interaction, Quest Progression, Map Navigation & Combat Visual Hotfixes.
 - Fixes: Phaser texture-space hit-area bounds for NPCs, dialogue starting-node selection based on active story flags, backend setStoryFlag body parser formatting mismatch, and persistent localStorage cutscene played state.
-- Map & Spawns: Relocated Làng Cổ Thảo rabbit coordinates inside the 1500x1500px map boundaries (from 1600 to 1200) and configured the database seeding process to automatically refresh spawns on server start.
+- Map & Spawns: Relocated Làng Cổ Thảo rabbit coordinates inside the 1500x1500px map boundaries (from 1600 to 1200), configured database seeding to unconditionally refresh portals and spawns on startup, and corrected the runtime monster template mapId mapping on the server to ensure monsters appear on their respective maps.
 - Navigation: Implemented off-screen portal directional pointers (dynamic rotating HUD arrows) to guide players to maps/portals.
 - Visuals: Implemented real-time sword arc slash animation effects at target coordinates when the player executes attacks.
 
