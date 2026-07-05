@@ -154,8 +154,21 @@ export async function fetchWithAuth(
         retryHeaders['Authorization'] = `Bearer ${newToken}`;
       }
 
-      return fetch(url, { ...options, headers: retryHeaders });
+      const retryResponse = await fetch(url, { ...options, headers: retryHeaders });
+      if (retryResponse.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+        throw new Error('Unauthorized');
+      }
+      return retryResponse;
     }
+
+    // Refresh failed — redirect to login
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    window.location.href = '/login';
+    throw new Error('Unauthorized');
   }
 
   return response;
