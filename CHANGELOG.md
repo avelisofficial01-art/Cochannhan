@@ -1061,5 +1061,31 @@ Cải tiến cơ chế hoàn thành nhiệm vụ sang thủ công qua tab Nhiệ
 - [x] Build: `npm run build` thành công, các chunk bundle kết xuất OK
 
 
+---
+
+## Sprint 13: MOBILE INTERACTION FIX & POSITION SYNCHRONIZATION — 2026-07-05
+
+### Mục tiêu
+Sửa lỗi xung đột cảm ứng trên mobile không bấm tiếp tục đối thoại được. Khắc phục triệt để lỗi quái đứng từ xa đánh người chơi sau khi hồi sinh bằng cách đồng bộ lại bộ nhớ đệm tọa độ người chơi trên server. Sửa lỗi lệch tọa độ hiển thị hiệu ứng bạo kích/sát thương. Đồng bộ và sửa lỗi nhận/hoàn thành nhiệm vụ cốt truyện.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S13.1 | Khắc phục cảm ứng mobile | ✅ | Thêm `onTouchEnd` cùng `preventDefault`/`stopPropagation` và style `pointerEvents: 'auto'` vào `DialoguePanel` để vượt qua bộ chặn cảm ứng của Phaser |
+| S13.2 | Sync vị trí khi hồi sinh | ✅ | Cập nhật tọa độ của player trong bộ nhớ đệm `playerPositions` về cổng làng (400, 300) ngay khi chết giúp quái dừng đánh bia mộ cũ |
+| S13.3 | Sync vị trí khi chuyển map | ✅ | Tự động lấy tọa độ spawn trong DB nạp vào bộ nhớ đệm nếu sự kiện `map:join` không gửi kèm tọa độ |
+| S13.4 | Đồng bộ targetId chiến đấu | ✅ | Gửi kèm `targetId` trong gói tin `combat:result` từ server |
+| S13.5 | Sửa tọa độ hiệu ứng đánh | ✅ | Client tìm quái theo `targetId` để lấy tọa độ thực thay vì vẽ hiệu ứng bạo kích/chữ số sát thương mặc định tại góc (0, 0) |
+| S13.6 | Khởi tạo tiến trình nhiệm vụ | ✅ | Tự động nạp cấu hình chỉ tiêu số lượng mục tiêu từ quest template khi nhận nhiệm vụ mới thay vì để trống `[]` gây lỗi hiển thị |
+| S13.7 | Gửi thông báo nhận quest mới | ✅ | Tự động gọi `emitQuestUpdate` sau khi tự nhận nhiệm vụ tiếp nối qua flag để client nhận quest ngay lập tức |
+
+### Xác nhận
+- [x] Typecheck: 0 errors
+- [x] Lint: 0 errors (warnings unchanged)
+- [x] Build: `npm run build` thành công, các chunk bundle kết xuất OK
+
+
+
 
 

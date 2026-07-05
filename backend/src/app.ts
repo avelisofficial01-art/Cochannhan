@@ -390,12 +390,37 @@ io.on('connection', async (socket) => {
     currentMapId = targetMapId;
 
     // Update position in cache
-    const pos = playerPositions.get(accountId);
-    if (pos) {
+    let pos = playerPositions.get(accountId);
+    if (!pos) {
+      pos = {
+        accountId,
+        playerId: playerId ?? '',
+        name: playerName ?? 'Unknown',
+        mapId: targetMapId,
+        x: targetX ?? 400,
+        y: targetY ?? 300,
+      };
+      playerPositions.set(accountId, pos);
+    } else {
       pos.mapId = targetMapId;
       if (targetX !== undefined && targetY !== undefined) {
         pos.x = targetX;
         pos.y = targetY;
+      }
+    }
+
+    // Fallback sync from DB if x/y are missing
+    if (targetX === undefined || targetY === undefined) {
+      if (playerId) {
+        const [playerRow] = await db
+          .select()
+          .from(players)
+          .where(eq(players.id, playerId))
+          .limit(1);
+        if (playerRow) {
+          pos.x = playerRow.current_x;
+          pos.y = playerRow.current_y;
+        }
       }
     }
 
@@ -573,11 +598,12 @@ io.on('connection', async (socket) => {
     socket.emit('combat:result', {
       damage: result.damage,
       isCritical: result.isCritical,
+      targetId: data.targetInstanceId,
       targetX: 0, // will be filled from monster position by client
       targetY: 0,
       damageType: result.damageType,
       targetDefeated: result.targetDefeated,
-      drops: (result as any).drops,
+      drops: result.drops,
     });
 
     // If monster defeated, emit death to all players in map
@@ -726,6 +752,14 @@ setInterval(async () => {
                     current_x: 400,
                     current_y: 300,
                   });
+
+                  // Update server cache to prevent ghost attacks
+                  const cachedPos = playerPositions.get(targetPlayer.accountId);
+                  if (cachedPos) {
+                    cachedPos.mapId = 'bac_nguyen_village';
+                    cachedPos.x = 400;
+                    cachedPos.y = 300;
+                  }
 
                   // Trigger respawn teleport on client
                   io.to(`player:${targetPlayer.playerId}`).emit('player:respawn', {

@@ -126,7 +126,8 @@ export const DialoguePanel: React.FC = () => {
             choices: null,
           });
         }
-      } catch (err) {
+      } catch {
+        // Ignore
       } finally {
         setLoading(false);
       }
@@ -199,7 +200,8 @@ export const DialoguePanel: React.FC = () => {
       if (activeQuestsJson.success && activeQuestsJson.data) {
         setActiveQuests(activeQuestsJson.data as unknown[]);
       }
-    } catch (err) {
+    } catch {
+      // Ignore
     }
   };
 
@@ -234,6 +236,11 @@ export const DialoguePanel: React.FC = () => {
                 onClick={() => {
                   void handleChoice(choice);
                 }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void handleChoice(choice);
+                }}
               >
                 {choice.text}
               </button>
@@ -242,6 +249,11 @@ export const DialoguePanel: React.FC = () => {
             <button
               style={styles.choiceButton}
               onClick={() => {
+                void handleClose();
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 void handleClose();
               }}
             >
@@ -264,6 +276,7 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: '760px',
     zIndex: 9999,
     fontFamily: 'system-ui, -apple-system, sans-serif',
+    pointerEvents: 'auto',
   },
   dialogueContainer: {
     display: 'flex',
@@ -279,6 +292,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e0e0e0',
     minHeight: '110px',
     position: 'relative',
+    pointerEvents: 'auto',
   },
   npcAvatar: {
     marginRight: '20px',

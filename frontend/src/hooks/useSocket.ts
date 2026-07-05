@@ -104,12 +104,23 @@ export function useSocket(): { isConnected: boolean } {
       emitToGameScene('player:respawn', data);
     });
 
-    socket.on('combat:result', (data: { damage: number; isCritical: boolean; targetX?: number; targetY?: number; damageType?: string; targetDefeated?: boolean; drops?: Array<{ itemName: string; quantity: number }> }) => {
+    socket.on('combat:result', (data: { damage: number; isCritical: boolean; targetId?: string; targetX?: number; targetY?: number; damageType?: string; targetDefeated?: boolean; drops?: Array<{ itemName: string; quantity: number }> }) => {
+      let x = data.targetX ?? 0;
+      let y = data.targetY ?? 0;
+
+      if (data.targetId) {
+        const mon = useGameStore.getState().monsters.find((m) => m.instanceId === data.targetId);
+        if (mon) {
+          x = mon.x;
+          y = mon.y;
+        }
+      }
+
       const result: CombatResult = {
         damage: data.damage,
         isCritical: data.isCritical,
-        targetX: data.targetX ?? 0,
-        targetY: data.targetY ?? 0,
+        targetX: x,
+        targetY: y,
         damageType: data.damageType,
         targetDefeated: data.targetDefeated,
         drops: data.drops,

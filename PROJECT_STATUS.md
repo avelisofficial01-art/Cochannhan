@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 12 — Quest Flow Manual Turn-In & Visual Polish
+**Sprint:** 13 — Mobile Interaction Fix & Position Synchronization
 
 **Status:** ✅ Completed
 
@@ -35,12 +35,27 @@
 | Sprint 10 | Maintenance & Combat Balance | ✅ Completed |
 | Sprint 11 | Quest System Improvement | ✅ Completed |
 | Sprint 12 | Quest Flow Manual Turn-In & Visual Polish | ✅ Completed |
+| Sprint 13 | Mobile Interaction Fix & Position Synchronization | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 12 — Quest Flow Manual Turn-In & Visual Polish
+Current Module: ✅ Sprint 13 — Mobile Interaction Fix & Position Synchronization
+
+# Sprint 13 Checklist
+
+## Mobile Interaction Fix & Position Synchronization (S13.1)
+- [x] Add explicit `onTouchEnd` event listeners with `preventDefault`/`stopPropagation` on DialoguePanel choice and continue buttons
+- [x] Configure explicit `pointerEvents: 'auto'` style properties for `dialogueOverlay` and `dialogueContainer`
+- [x] Synchronize player coordinates inside the backend `playerPositions` cache when players respawn (after death)
+- [x] Load player coordinates from the database inside backend `map:join` socket handler when joining without specific coordinates
+- [x] Emit the `targetId` along with the `combat:result` event from the server
+- [x] Resolve `targetX` and `targetY` from the active monster instance coordinate in Zustand inside client `combat:result` socket listener
+- [x] Pre-populate `objectives_progress` using counts resolved from quest templates upon quest acceptance
+- [x] Typecheck + build + lint all pass
+
+---
 
 # Sprint 12 Checklist
 

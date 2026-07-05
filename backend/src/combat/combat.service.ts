@@ -222,7 +222,7 @@ export async function executePlayerAttack(
     bossStates.delete(targetInstanceId);
 
     // Roll drops
-    const dropTable = target.template.dropTable || (target.template as any).drop_table;
+    const dropTable = target.template.dropTable || (target.template as unknown as Record<string, unknown>).drop_table;
     const rolledDrops = [];
     if (dropTable) {
       const parsedDropTable = typeof dropTable === 'string' ? JSON.parse(dropTable) : dropTable;

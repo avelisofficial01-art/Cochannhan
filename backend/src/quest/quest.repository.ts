@@ -61,13 +61,34 @@ export const questRepository = {
   },
 
   async acceptQuest(playerId: string, questId: string) {
+    const [quest] = await db
+      .select()
+      .from(questTemplates)
+      .where(eq(questTemplates.id, questId))
+      .limit(1);
+
+    let progressStr = '[]';
+    if (quest) {
+      try {
+        const objectives = JSON.parse(quest.objectives as string) as { count: number }[];
+        const progress = objectives.map((obj, idx) => ({
+          index: idx,
+          current: 0,
+          target: obj.count,
+        }));
+        progressStr = JSON.stringify(progress);
+      } catch (err) {
+        console.error('Failed to parse quest objectives for progress initialization:', err);
+      }
+    }
+
     const rows = await db
       .insert(playerQuests)
       .values({
         player_id: playerId,
         quest_id: questId,
         status: 'active',
-        objectives_progress: '[]',
+        objectives_progress: progressStr,
       })
       .returning();
     return rows[0];

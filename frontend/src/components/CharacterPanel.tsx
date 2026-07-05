@@ -322,7 +322,7 @@ export default function CharacterPanel(): React.ReactElement | null {
     // Active Quests
     fetch('/api/quest/player/active', { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
-      .then((d: { success: boolean; data: any[] }) => {
+      .then((d: { success: boolean; data: unknown[] }) => {
         if (d.success && Array.isArray(d.data)) {
           setActivePlayerQuests(d.data as PlayerQuest[]);
         }
@@ -332,7 +332,7 @@ export default function CharacterPanel(): React.ReactElement | null {
     // Quest Templates
     fetch('/api/quest', { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
-      .then((d: { success: boolean; data: any[] }) => {
+      .then((d: { success: boolean; data: unknown[] }) => {
         if (d.success && Array.isArray(d.data)) {
           setQuestTemplates(d.data as QuestTemplate[]);
         }

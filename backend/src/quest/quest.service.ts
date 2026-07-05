@@ -380,11 +380,16 @@ export const questService = {
         .from(schema.questTemplates)
         .where(eq(schema.questTemplates.flag_required, flagKey));
 
+      let acceptedAny = false;
       for (const quest of quests) {
         const existing = await questRepository.findPlayerQuest(playerId, quest.id);
         if (!existing) {
           await questRepository.acceptQuest(playerId, quest.id);
+          acceptedAny = true;
         }
+      }
+      if (acceptedAny) {
+        void questService.emitQuestUpdate(playerId);
       }
     } catch (err) {
       console.error('[Quest Auto-Accept] Failed to auto-accept quests by flag:', err);
