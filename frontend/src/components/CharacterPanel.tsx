@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fetchWithAuth } from '../api/client.js';
 import { useGameStore, type PlayerGuState, type ProfileState, type StatsState } from '../store/gameStore.js';
 
 const ELEMENT_COLORS: Record<string, string> = {
@@ -191,14 +192,9 @@ export default function CharacterPanel(): React.ReactElement | null {
   const [activePlayerQuests, setActivePlayerQuests] = useState<PlayerQuest[]>([]);
   const [questTemplates, setQuestTemplates] = useState<QuestTemplate[]>([]);
 
-  const token = localStorage.getItem('token');
-
   // Load profile, stats, Gu, and equipment
   const loadData = () => {
-    if (!token) return;
-
-    // Profile
-    fetch('/api/player/profile', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/player/profile')
       .then((res) => res.json())
       .then((d: { success: boolean; data: ProfileState }) => {
         if (d.success) setProfile(d.data);
@@ -206,7 +202,7 @@ export default function CharacterPanel(): React.ReactElement | null {
       .catch(() => {});
 
     // Stats
-    fetch('/api/player/stats', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/player/stats')
       .then((res) => res.json())
       .then((d: { success: boolean; data: StatsState }) => {
         if (d.success) setStats(d.data);
@@ -214,7 +210,7 @@ export default function CharacterPanel(): React.ReactElement | null {
       .catch(() => {});
 
     // Gu
-    fetch('/api/gu/player', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/gu/player')
       .then((res) => res.json())
       .then((d: { success: boolean; data: RawPlayerGu[] }) => {
         if (d.success && Array.isArray(d.data)) {
@@ -247,7 +243,7 @@ export default function CharacterPanel(): React.ReactElement | null {
           // Get active synergies
           const equippedIds = list.filter((g) => g.isEquipped).map((g) => g.guTemplateId);
           if (equippedIds.length >= 2) {
-            fetch('/api/gu/synergies', { headers: { Authorization: `Bearer ${token}` } })
+            fetchWithAuth('/api/gu/synergies')
               .then((res) => res.json())
               .then((synData: { success: boolean; data: RawSynergy[] }) => {
                 if (synData.success && Array.isArray(synData.data)) {
@@ -266,7 +262,7 @@ export default function CharacterPanel(): React.ReactElement | null {
       .catch(() => {});
 
     // Equipment templates
-    fetch('/api/equipment/templates', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/equipment/templates')
       .then((res) => res.json())
       .then((d: { success: boolean; data: RawEquipmentTemplate[] }) => {
         if (d.success && Array.isArray(d.data)) {
@@ -291,7 +287,7 @@ export default function CharacterPanel(): React.ReactElement | null {
       .catch(() => {});
 
     // Player Equipment instances
-    fetch('/api/equipment/player', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/equipment/player')
       .then((res) => res.json())
       .then((d: { success: boolean; data: RawEquipmentInstance[] }) => {
         if (d.success && Array.isArray(d.data)) {
@@ -308,7 +304,7 @@ export default function CharacterPanel(): React.ReactElement | null {
       .catch(() => {});
 
     // Active Quests
-    fetch('/api/quest/player/active', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/quest/player/active')
       .then((res) => res.json())
       .then((d: { success: boolean; data: unknown[] }) => {
         if (d.success && Array.isArray(d.data)) {
@@ -318,7 +314,7 @@ export default function CharacterPanel(): React.ReactElement | null {
       .catch(() => {});
 
     // Quest Templates
-    fetch('/api/quest', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/quest')
       .then((res) => res.json())
       .then((d: { success: boolean; data: unknown[] }) => {
         if (d.success && Array.isArray(d.data)) {
@@ -358,7 +354,7 @@ export default function CharacterPanel(): React.ReactElement | null {
 
   // Gu Actions
   const handleEquipGu = async (guId: string) => {
-    if (!token) return;
+    if (!localStorage.getItem('token')) return;
     // Find first available slot (0-5)
     const equipped = playerGuList.filter((g) => g.isEquipped);
     const slotsUsed = equipped.map((g) => g.slotIndex);
@@ -375,12 +371,11 @@ export default function CharacterPanel(): React.ReactElement | null {
     }
 
     try {
-      const res = await fetch('/api/gu/equip', {
+      const res = await fetchWithAuth('/api/gu/equip', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+              },
         body: JSON.stringify({ playerGuId: guId, slotIndex: targetSlot }),
       });
       const data = await res.json();
@@ -397,14 +392,13 @@ export default function CharacterPanel(): React.ReactElement | null {
   };
 
   const handleUnequipGu = async (guId: string) => {
-    if (!token) return;
+    if (!localStorage.getItem('token')) return;
     try {
-      const res = await fetch('/api/gu/unequip', {
+      const res = await fetchWithAuth('/api/gu/unequip', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+              },
         body: JSON.stringify({ playerGuId: guId }),
       });
       const data = await res.json();
@@ -422,17 +416,16 @@ export default function CharacterPanel(): React.ReactElement | null {
 
   // Equipment Actions
   const handleEquipItem = async (instanceId: string, slotName: string) => {
-    if (!token) return;
+    if (!localStorage.getItem('token')) return;
     const slotIdx = SLOTS.indexOf(slotName);
     if (slotIdx === -1) return;
 
     try {
-      const res = await fetch('/api/equipment/equip', {
+      const res = await fetchWithAuth('/api/equipment/equip', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+              },
         body: JSON.stringify({ playerEquipmentId: instanceId, slotIndex: slotIdx }),
       });
       const data: { success: boolean; message?: string } = await res.json();
@@ -450,14 +443,13 @@ export default function CharacterPanel(): React.ReactElement | null {
   };
 
   const handleUnequipItem = async (instanceId: string) => {
-    if (!token) return;
+    if (!localStorage.getItem('token')) return;
     try {
-      const res = await fetch('/api/equipment/unequip', {
+      const res = await fetchWithAuth('/api/equipment/unequip', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+              },
         body: JSON.stringify({ playerEquipmentId: instanceId }),
       });
       const data: { success: boolean; message?: string } = await res.json();
@@ -474,14 +466,13 @@ export default function CharacterPanel(): React.ReactElement | null {
   };
 
   const handleEnhanceItem = async (instanceId: string) => {
-    if (!token) return;
+    if (!localStorage.getItem('token')) return;
     try {
-      const res = await fetch('/api/equipment/enhance', {
+      const res = await fetchWithAuth('/api/equipment/enhance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+              },
         body: JSON.stringify({ playerEquipmentId: instanceId }),
       });
       const data: { success: boolean; message?: string; data?: RawEquipmentInstance } = await res.json();
@@ -513,14 +504,13 @@ export default function CharacterPanel(): React.ReactElement | null {
   };
 
   const handleCompleteQuest = async (questId: string) => {
-    if (!token) return;
+    if (!localStorage.getItem('token')) return;
     try {
-      const res = await fetch('/api/quest/complete', {
+      const res = await fetchWithAuth('/api/quest/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+              },
         body: JSON.stringify({ questId }),
       });
       const data = await res.json();

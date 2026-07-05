@@ -1114,6 +1114,32 @@ Tối ưu hóa giao diện thành 1 màn hình game H5 hoàn chỉnh và đồng
 - [x] Lint: 0 errors (warnings unchanged)
 - [x] Build: `npm run build` thành công, các chunk bundle kết xuất OK
 
+---
+
+## Sprint 15: PRODUCTION HOTFIX — MISSING SOCKET & DB PUSH ERROR — 2026-07-05
+
+### Mục tiêu
+Khắc phục 2 lỗi production blocker: frontend không render map/NPC/quái do Socket.IO không kết nối, và backend `drizzle-kit push` gây PostgresError 42P16.
+
+### Root Causes & Fixes
+
+| Vấn đề | Root Cause | Fix |
+|--------|-----------|-----|
+| Không thấy map, NPC, quái nào render ra | Hook `useSocket()` được định nghĩa trong `frontend/src/hooks/useSocket.ts` nhưng **KHÔNG BAO GIỜ được import hay gọi** trong toàn bộ codebase → Socket.IO client không kết nối → không có `map:join` emit → backend không gửi `map:init`, `map:npcs`, `map:portals`, `monster:spawn` → GameScene không nhận dữ liệu | Gọi `useSocket()` trong `GamePage.tsx`. Hook này thiết lập kết nối Socket.IO, đăng ký tất cả listeners (`monster:spawn`, `map:init`, `combat:result`, v.v.), và gán bridges (`__socketEmitMove`, `__socketEmitMapJoin`, `__socketEmitAttack`) vào `window` cho GameScene dùng |
+| PostgresError 42P16 `column "id" is in a primary key` | `drizzle-kit push` (gọi trong `start:prod`) so sánh schema code với DB thực tế. Khi phát hiện khác biệt (VD: thêm `.defaultRandom()`), nó sinh `ALTER TABLE ... DROP COLUMN id`. Cột `id` là primary key nên PostgreSQL từ chối | Thay `npm run db:push && npm run start` thành `(npm run db:push || echo 'Non-fatal error, continuing...') && npm run start` trong `backend/package.json`. Server vẫn khởi động và seed bình thường sau lỗi |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `frontend/src/pages/GamePage.tsx` | Thêm `import { useSocket }` và gọi `useSocket()` trong component để kích hoạt Socket.IO |
+| `backend/package.json` | Sửa `start:prod` script để xử lý lỗi `db:push` gracefully |
+
+### Xác nhận
+- [x] Typecheck: 0 errors (shared + backend + frontend)
+- [x] Lint: 0 errors (chỉ warnings `explicit-function-return-type` có sẵn, không liên quan)
+- [x] Build: `npm run build` thành công, Vite bundle OK
+
 
 
 

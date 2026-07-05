@@ -5,6 +5,7 @@ import { PreloadScene } from '../game/PreloadScene.js';
 import { GameScene } from '../game/GameScene.js';
 import { UIScene } from '../game/UIScene.js';
 import { useAuthStore } from '../store/auth.js';
+import { useSocket } from '../hooks/useSocket.js';
 import { api } from '../api/client.js';
 import CharacterPanel from '../components/CharacterPanel.js';
 import GameHUD from '../components/GameHUD.js';
@@ -16,6 +17,7 @@ export default function GamePage(): React.ReactElement {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { player, setPlayer } = useAuthStore();
+  useSocket();
 
   useEffect(() => {
     if (!player) {

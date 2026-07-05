@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fetchWithAuth } from '../api/client.js';
 import { useGameStore, type MonsterSprite, type ProfileState, type StatsState } from '../store/gameStore.js';
 
 interface HUDActiveSkill {
@@ -41,7 +42,6 @@ const REALM_NAMES: Record<number, string> = {
 };
 
 export default function GameHUD(): React.ReactElement {
-  const token = localStorage.getItem('token');
   const {
     playerGuList,
     monsters,
@@ -62,15 +62,14 @@ export default function GameHUD(): React.ReactElement {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const loadProfileAndStats = (): void => {
-    if (!token) return;
-    fetch('/api/player/profile', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/player/profile')
       .then((res) => res.json())
       .then((d: { success: boolean; data: ProfileState }) => {
         if (d.success) setProfile(d.data);
       })
       .catch(() => {});
 
-    fetch('/api/player/stats', { headers: { Authorization: `Bearer ${token}` } })
+    fetchWithAuth('/api/player/stats')
       .then((res) => res.json())
       .then((d: { success: boolean; data: StatsState }) => {
         if (d.success) setStats(d.data);
@@ -82,7 +81,7 @@ export default function GameHUD(): React.ReactElement {
     loadProfileAndStats();
     const interval = setInterval(loadProfileAndStats, 5000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, []);
 
   // Scan for active skills from equipped Gu
   useEffect(() => {

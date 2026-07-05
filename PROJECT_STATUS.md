@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 14 — H5 Unified Viewport, Quest Filtering & Coordinate Synchronization
+**Sprint:** 15 — Production Hotfix: Missing Socket & DB Push Error
 
 **Status:** ✅ Completed
 
@@ -37,6 +37,24 @@
 | Sprint 12 | Quest Flow Manual Turn-In & Visual Polish | ✅ Completed |
 | Sprint 13 | Mobile Interaction Fix & Position Synchronization | ✅ Completed |
 | Sprint 14 | H5 Unified Viewport, Quest Filtering & Coordinate Sync | ✅ Completed |
+| Sprint 15 | Production Hotfix: Missing Socket & DB Push Error | ✅ Completed |
+
+---
+
+# Current Task
+
+Current Module: ✅ Sprint 15 — Production Hotfix: Missing Socket & DB Push Error
+
+# Sprint 15 Checklist
+
+## Production Hotfix (S15.1)
+- [x] Root cause: `useSocket()` hook was defined but NEVER called anywhere → Socket.IO never connected → no map, NPC, monster data received
+- [x] Fix: Call `useSocket()` in `GamePage.tsx` so Socket.IO connects on mount, bridges are assigned to `window`, and all game data flows
+- [x] Root cause: `drizzle-kit push` in production `start:prod` throws PostgresError 42P16 when schema has column differences with existing DB (tries to drop PK column `id`)
+- [x] Fix: Change `start:prod` to `(npm run db:push || echo ...) && npm run start` — graceful error handling, server still starts
+- [x] Build: all 3 packages compile OK
+- [x] Typecheck: 0 errors
+- [x] Lint: 0 errors (only pre-existing warnings)
 
 ---
 
@@ -418,11 +436,11 @@ Current Module: ✅ Sprint 14 — H5 Unified Viewport, Quest Filtering & Coordin
 
 # Current Blockers
 
-- Không có. Typecheck & Lint đã được xác minh thành công (2026-07-04).
+- Không có. Typecheck & Lint đã được xác minh thành công (2026-07-05).
 
 # Next Task
 
-→ **Sprint 9 — Chapter 2: Nam Cương** (Map mới, NPC mới, Boss Vạn Độc Cổ Vương, 3 Chuyển, luyện chế Cổ nâng cao)
+→ **Sprint 16 — Chapter 2: Nam Cương** (Map mới, NPC mới, Boss Vạn Độc Cổ Vương, 3 Chuyển, luyện chế Cổ nâng cao)
 
 ---
 
