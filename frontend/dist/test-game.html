@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1024, initial-scale=1.0" />
+  <title>CỔ ĐẠO — Local Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      background: #0a0a0a; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh;
+      font-family: monospace;
+    }
+    #game-container {
+      width: 1024px;
+      height: 640px;
+      border: 2px solid #333;
+    }
+    #status {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      color: #0f0;
+      font-size: 12px;
+      z-index: 10;
+      background: rgba(0,0,0,0.7);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">Loading...</div>
+  <div id="game-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script>
+    const statusEl = document.getElementById('status');
+
+    function log(msg) {
+      statusEl.textContent = msg;
+      console.log('[TestGame]', msg);
+    }
+
+    // ── Map IDs và monster config ──
+    const MONSTER_SPAWNS = [
+      { id: 'mon_1', templateId: 'wolf_lv1', x: 300, y: 300, monsterIndex: 1 },
+      { id: 'mon_2', templateId: 'wolf_lv1', x: 700, y: 200, monsterIndex: 2 },
+      { id: 'mon_3', templateId: 'viper_lv1', x: 500, y: 450, monsterIndex: 3 },
+      { id: 'mon_4', templateId: 'wolf_lv1', x: 200, y: 500, monsterIndex: 4 },
+    ];
+
+    // ── Game Scene ──
+    class TestGameScene extends Phaser.Scene {
+      constructor() {
+        super({ key: 'TestGameScene' });
+      }
+
+      preload() {
+        log('Preloading assets...');
+
+        // Map
+        this.load.image('map_bnp', '/maps/map_bac_nguyen.png');
+
+        // Player
+        this.load.image('player', '/characters/char_1.png');
+
+        // Monsters
+        this.load.image('monster_1', '/monsters/monster_1.png');
+        this.load.image('monster_2', '/monsters/monster_2.png');
+        this.load.image('monster_3', '/monsters/monster_3.png');
+        this.load.image('monster_4', '/monsters/monster_4.png');
+        this.load.image('monster_5', '/monsters/monster_5.png');
+
+        // Debug load errors
+        this.load.on('loaderror', (file) => {
+          console.error('❌ Failed to load:', file.key, file.url);
+          log('❌ FAIL: ' + file.key);
+        });
+
+        this.load.on('filecomplete', (key) => {
+          console.log('✓ Loaded:', key);
+        });
+
+        this.load.on('complete', () => {
+          log('✅ All assets loaded!');
+        });
+      }
+
+      create() {
+        log('Creating scene...');
+
+        const W = 1024;
+        const H = 640;
+
+        // ── Map background ──
+        if (this.textures.exists('map_bnp')) {
+          this.add.image(W / 2, H / 2, 'map_bnp').setDisplaySize(W * 1.2, H * 1.2);
+          log('✅ Map: map_bac_nguyen.png');
+        } else {
+          log('⚠️ Map texture not found, using color');
+          this.cameras.main.setBackgroundColor('#1a3a1a');
+        }
+
+        // ── Monsters ──
+        MONSTER_SPAWNS.forEach((m) => {
+          const key = 'monster_' + m.monsterIndex;
+          if (this.textures.exists(key)) {
+            const mon = this.add.image(m.x, m.y, key).setDisplaySize(24, 24).setInteractive();
+            mon.setData('hp', 100);
+            mon.setData('name', m.templateId);
+            
+            // HP bar background
+            const hpBg = this.add.rectangle(m.x, m.y - 30, 40, 4, 0x333333);
+            mon.setData('hpBg', hpBg);
+            // HP bar fill
+            const hpBar = this.add.rectangle(m.x, m.y - 30, 40, 4, 0xff4444);
+            mon.setData('hpBar', hpBar);
+
+            // Click to attack
+            mon.on('pointerdown', () => {
+              const hp = mon.getData('hp') - 35;
+              mon.setData('hp', Math.max(0, hp));
+              const pct = mon.getData('hp') / 100;
+              mon.getData('hpBar').setScale(pct, 1);
+              this.showDamage(m.x, m.y - 40, '-35');
+              if (mon.getData('hp') <= 0) {
+                mon.destroy();
+                hpBg.destroy();
+                mon.getData('hpBar').destroy();
+              }
+            });
+
+            log('✅ Monster: ' + m.id);
+          }
+        });
+
+        // ── Player ──
+        if (this.textures.exists('player')) {
+          this.player = this.add.image(512, 320, 'player').setDisplaySize(24, 24);
+          this.player.setDepth(10);
+          log('✅ Player: char_1.png');
+        } else {
+          log('⚠️ Player texture not found, using rectangle');
+          this.player = this.add.rectangle(512, 320, 24, 24, 0x00ff88);
+          this.player.setDepth(10);
+        }
+
+        // ── Input ──
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.wasd = {
+          up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+          down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+          left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+          right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+        };
+
+        // ── UI hint ──
+        this.add.text(16, H - 24, 'Arrow/WASD: Move | Click monster: Attack', {
+          fontSize: '13px',
+          color: '#ffffff',
+          fontFamily: 'monospace',
+          backgroundColor: '#00000088',
+          padding: { x: 8, y: 4 },
+        }).setDepth(20).setScrollFactor(0);
+      }
+
+      update(time, delta) {
+        if (!this.player) return;
+
+        const speed = 2.5; // px per frame (~150 px/s at 60fps)
+        let dx = 0;
+        let dy = 0;
+
+        if (this.cursors.left.isDown || this.wasd.left.isDown) dx -= speed;
+        if (this.cursors.right.isDown || this.wasd.right.isDown) dx += speed;
+        if (this.cursors.up.isDown || this.wasd.up.isDown) dy -= speed;
+        if (this.cursors.down.isDown || this.wasd.down.isDown) dy += speed;
+
+        if (dx !== 0 || dy !== 0) {
+          this.player.x = Phaser.Math.Clamp(this.player.x + dx, 12, 1012);
+          this.player.y = Phaser.Math.Clamp(this.player.y + dy, 12, 628);
+        }
+      }
+
+      showDamage(x, y, text) {
+        const dmg = this.add.text(x, y, text, {
+          fontSize: '18px',
+          fontFamily: 'monospace',
+          color: '#ff4444',
+          stroke: '#000',
+          strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(20);
+
+        this.tweens.add({
+          targets: dmg,
+          y: y - 30,
+          alpha: 0,
+          duration: 800,
+          ease: 'Power2',
+          onComplete: () => dmg.destroy(),
+        });
+      }
+    }
+
+    // ── Boot & Launch ──
+    window.addEventListener('load', () => {
+      log('Starting Phaser...');
+
+      const config = {
+        type: Phaser.AUTO,
+        width: 1024,
+        height: 640,
+        parent: 'game-container',
+        backgroundColor: '#1a1a2e',
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
+        scene: [TestGameScene],
+      };
+
+      new Phaser.Game(config);
+      log('Phaser started!');
+    });
+  </script>
+</body>
+</html>
