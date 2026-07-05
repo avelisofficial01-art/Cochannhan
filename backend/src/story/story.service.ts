@@ -1,5 +1,6 @@
 import * as storyRepo from './story.repository.js';
 import type { StoryFlag } from '@co-dao/shared';
+import { questService } from '../quest/quest.service.js';
 
 export async function getFlags(playerId: string): Promise<StoryFlag[]> {
   return storyRepo.getPlayerFlags(playerId);
@@ -14,7 +15,12 @@ export async function setFlag(
   flagKey: string,
   flagValue: string,
 ): Promise<StoryFlag> {
-  return storyRepo.setFlag(playerId, flagKey, flagValue);
+  await questService.setStoryFlag(playerId, flagKey, flagValue);
+  const flag = await storyRepo.getFlag(playerId, flagKey);
+  if (!flag) {
+    throw new Error('Flag not found after set');
+  }
+  return flag;
 }
 
 export async function hasFlag(playerId: string, flagKey: string): Promise<boolean> {

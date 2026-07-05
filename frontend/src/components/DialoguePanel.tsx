@@ -59,25 +59,81 @@ export const DialoguePanel: React.FC = () => {
           if (activeNpc.name === 'Trưởng làng') {
             if (activeFlags.has('ch1_wolves_hunted') && !activeFlags.has('ch1_sent_to_elder')) {
               startNode = fetchedNodes.find(d => d.id === 'dlg_village_chief_thanks' || d.orderIndex === 6);
-            } else if (!activeFlags.has('ch1_intro_done')) {
+            } else if (activeFlags.has('ch1_sent_to_elder')) {
+              startNode = {
+                id: 'fallback',
+                orderIndex: 0,
+                text: 'Hãy đi tìm gặp Trưởng lão ở phía Bắc làng để nghe về truyền thừa Cổ Đạo.',
+                speaker: 'Trưởng làng',
+                choices: null,
+              };
+            } else if (activeFlags.has('ch1_intro_done')) {
+              startNode = {
+                id: 'fallback',
+                orderIndex: 0,
+                text: 'Hãy tiến sang Đồng Cỏ Hoang phía Đông và tiêu diệt 3 con Sói Tuyết để trừ hại cho dân làng.',
+                speaker: 'Trưởng làng',
+                choices: null,
+              };
+            } else {
               startNode = fetchedNodes.find(d => d.orderIndex === 0);
             }
           } else if (activeNpc.name === 'Trưởng lão') {
-            if (activeFlags.has('ch1_sent_to_elder') && !activeFlags.has('ch1_sent_to_blacksmith')) {
+            if (activeFlags.has('ch1_sent_to_blacksmith')) {
+              startNode = {
+                id: 'fallback',
+                orderIndex: 0,
+                text: 'Hãy đến gặp Thợ rèn để chuẩn bị vũ khí lên Đỉnh Băng Phong.',
+                speaker: 'Trưởng lão',
+                choices: null,
+              };
+            } else if (activeFlags.has('ch1_sent_to_elder')) {
               startNode = fetchedNodes.find(d => d.orderIndex === 0);
             }
           } else if (activeNpc.name === 'Thợ rèn') {
-            if (activeFlags.has('ch1_reached_peak') && !activeFlags.has('ch1_got_weapon')) {
+            if (activeFlags.has('ch1_got_weapon')) {
+              startNode = {
+                id: 'fallback',
+                orderIndex: 0,
+                text: 'Kiếm Băng Hàn đã trao cho ngươi. Hãy mau tiến vào Rừng Tuyết gia cố phong ấn.',
+                speaker: 'Thợ rèn',
+                choices: null,
+              };
+            } else if (activeFlags.has('ch1_reached_peak') && !activeFlags.has('ch1_got_weapon')) {
               startNode = fetchedNodes.find(d => d.id === 'dlg_blacksmith_reward' || d.orderIndex === 3);
-            } else if (activeFlags.has('ch1_sent_to_blacksmith') && !activeFlags.has('ch1_blacksmith_quest')) {
+            } else if (activeFlags.has('ch1_blacksmith_quest')) {
+              startNode = {
+                id: 'fallback',
+                orderIndex: 0,
+                text: 'Thu thập đủ 5 Đá Linh Hồn mang về đây, ta sẽ rèn Kiếm Băng Hàn cho ngươi.',
+                speaker: 'Thợ rèn',
+                choices: null,
+              };
+            } else if (activeFlags.has('ch1_sent_to_blacksmith')) {
               startNode = fetchedNodes.find(d => d.orderIndex === 0);
             }
           } else if (activeNpc.name === 'Bia Đá Cổ') {
-            if (!activeFlags.has('ch1_stele_read')) {
+            if (activeFlags.has('ch1_stele_read')) {
+              startNode = {
+                id: 'fallback',
+                orderIndex: 0,
+                text: 'Bia Đá Cổ đã bị rêu phong che phủ, không thể đọc thêm gì khác.',
+                speaker: 'Bia Đá Cổ',
+                choices: null,
+              };
+            } else {
               startNode = fetchedNodes.find(d => d.orderIndex === 0);
             }
           } else if (activeNpc.name === 'Bạch Lang Vương') {
-            if (!activeFlags.has('ch1_boss_confronted')) {
+            if (activeFlags.has('ch1_boss_confronted')) {
+              startNode = {
+                id: 'fallback',
+                orderIndex: 0,
+                text: 'Gừ... Hãy chịu chết đi phàm nhân!',
+                speaker: 'Bạch Lang Vương',
+                choices: null,
+              };
+            } else {
               startNode = fetchedNodes.find(d => d.orderIndex === 0);
             }
           }

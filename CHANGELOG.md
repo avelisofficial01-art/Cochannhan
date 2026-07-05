@@ -1266,3 +1266,29 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 
 ### Ghi chú
 - Sprint 19 hoàn thành xuất sắc, giúp sửa toàn bộ game blockers liên quan đến nhận nhiệm vụ, hiển thị thanh cooldown và lỗi auth.
+
+---
+
+## Sprint 20: HOTFIX QUEST PROGRESSION TALK OBJECTIVES & DIALOGUE LOOPS — 2026-07-06
+
+### Mục tiêu
+
+1. Khắc phục lỗi quest đầu tiên ("Tỉnh Giấc Mộng" / nói chuyện với Trưởng làng) không thể tự động tăng tiến độ mục tiêu khi đối thoại kết thúc.
+2. Khắc phục lỗi lặp hội thoại vô hạn với Trưởng làng, Trưởng lão, Thợ rèn, v.v. sau khi người chơi đã hoàn thành mạch hội thoại.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S20.1 | Đồng bộ story flag với quest backend | ✅ | Gọi `questService.setStoryFlag` thay cho `storyRepo.setFlag` trực tiếp trong `storyService.setFlag`, tự động chạy side effects thúc đẩy mục tiêu quest dạng `talk`. |
+| S20.2 | Sửa lặp hội thoại frontend | ✅ | Thêm kiểm tra flag cốt truyện hoàn thành trong `DialoguePanel.tsx` trước khi chọn startNode để hiển thị fallback hướng dẫn quest thay vì lặp lại hội thoại giới thiệu. |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/src/story/story.service.ts` | Tích hợp `questService.setStoryFlag` vào hàm `setFlag` |
+| `frontend/src/components/DialoguePanel.tsx` | Cải tiến điều kiện `startNode` để tránh lặp hội thoại đầu game |
+
+### Ghi chú
+- Sprint 20 hoàn thành, sửa triệt để lỗi không thể hoàn thành/nhận tiếp quest đầu tiên giúp luồng cốt truyện Chapter 1 chạy mượt mà từ lúc spawn đến boss Bạch Lang Vương.

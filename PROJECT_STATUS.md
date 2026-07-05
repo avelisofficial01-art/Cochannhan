@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 19 — Hotfix: Dialogue active flags mismatch & cooldown position
+**Sprint:** 20 — Hotfix: Quest progression talk objectives & dialogue loops
 
 **Status:** ✅ Completed
 
@@ -42,12 +42,13 @@
 | Sprint 17 | Hotfix: Story Auth 500 & Quest Flow | ✅ Completed |
 | Sprint 18 | Hotfix: Quest Accept 500 & Portal Two-Way Loop | ✅ Completed |
 | Sprint 19 | Hotfix: Dialogue active flags mismatch & cooldown position | ✅ Completed |
+| Sprint 20 | Hotfix: Quest progression talk objectives & dialogue loops | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 19 — Hotfix: Dialogue active flags mismatch & cooldown position
+Current Module: ✅ Sprint 20 — Hotfix: Quest progression talk objectives & dialogue loops
 
 # Sprint 15 Checklist
 
@@ -651,6 +652,40 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 - [x] Typecheck: 0 errors (shared + backend + frontend)
 - [x] Build: `npm run build` thành công
 - [x] Lint: 0 errors (warnings unchanged)
+
+---
+
+# Sprint 20: Hotfix Quest progression talk objectives & dialogue loops (2026-07-06)
+
+## Mục tiêu
+
+1. Fix lỗi "Tỉnh Giấc Mộng" quest (talk to Trưởng làng) không hoàn thành do setting story flag bỏ qua quest-advancement logic.
+2. Fix lỗi đối thoại lặp vô tận với các NPC (Trưởng làng, Trưởng lão, Thợ rèn, v.v.) sau khi đã hoàn thành dialogue chain.
+
+## Root Cause
+
+- Endpoint `/api/story/flags` được gọi bởi frontend chỉ cập nhật cơ sở dữ liệu qua `storyRepo.setFlag`, bỏ qua `questService.setStoryFlag` (chứa logic tự động cập nhật tiến trình quest talk).
+- Logic tìm kiếm `startNode` trong `DialoguePanel.tsx` không phát hiện được chain đã hoàn thành nếu nút đầu tiên của chain không có `setFlag` thuộc tính, dẫn đến tự động lặp lại từ orderIndex 0.
+
+## Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S20.1 | Kết nối story flag và quest backend | ✅ | Cập nhật `storyService.setFlag` để delegate qua `questService.setStoryFlag` nhằm chạy toàn bộ hiệu ứng phụ (advancement & auto-accept). |
+| S20.2 | Fix lặp hội thoại frontend | ✅ | Thêm logic phát hiện hội thoại đã hoàn thành bằng cách kiểm tra các flag kết quả và hiển thị fallback phù hợp cho Trưởng làng, Trưởng lão, Thợ rèn, Bia Đá Cổ, Bạch Lang Vương. |
+
+## Files đã sửa
+
+| File | Change |
+|------|--------|
+| `backend/src/story/story.service.ts` | Gọi `questService.setStoryFlag` trong `setFlag` |
+| `frontend/src/components/DialoguePanel.tsx` | Sửa logic chọn `startNode` với fallbacks phù hợp |
+
+## Xác nhận
+
+- [x] Typecheck: 0 errors (shared + backend + frontend)
+- [x] Lint: 0 errors (warnings unchanged)
+- [x] Build: `npm run build` thành công
 
 ---
 
