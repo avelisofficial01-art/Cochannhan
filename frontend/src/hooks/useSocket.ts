@@ -63,6 +63,9 @@ export function useSocket(): { isConnected: boolean } {
 
     socket.on('monster:spawn', (monsters: MonsterSprite[]) => {
       console.log(`[Socket] 📥 Received monster:spawn — ${monsters.length} monsters`);
+      if (monsters.length > 0) {
+        console.log(`[Socket] 📥 First monster: "${monsters[0].name}" at (${monsters[0].x},${monsters[0].y}) id=${monsters[0].instanceId}`);
+      }
       setMonsters(monsters);
       // Also notify GameScene to render them (in case scene registers late)
     });

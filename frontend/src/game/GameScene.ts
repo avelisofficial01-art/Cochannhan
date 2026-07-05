@@ -407,8 +407,15 @@ export class GameScene extends Phaser.Scene {
   /* ───────────────────────────────────────
    *  Monster sync — render sprites + HP bars
    * ─────────────────────────────────────── */
+  private monsterSyncLogged = false;
   private syncMonsters(): void {
     const storeMonsters = useGameStore.getState().monsters;
+    
+    if (!this.monsterSyncLogged && storeMonsters.length > 0) {
+      console.log(`[GameScene] 🐾 syncMonsters — ${storeMonsters.length} monsters in store, rendering...`);
+      this.monsterSyncLogged = true;
+    }
+    
     const storeIds = new Set(storeMonsters.map((m) => m.instanceId));
 
     // Remove dead / despawned monsters

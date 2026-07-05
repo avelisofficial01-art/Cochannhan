@@ -338,6 +338,8 @@ export async function seedDatabase(): Promise<void> {
     // 8. Seed Map Spawns (delete all and re-seed to apply config changes instantly)
     console.log('[Seed] Refreshing map spawns...');
     await db.delete(schema.mapSpawns);
+    let seededSpawnCount = 0;
+    let skippedSpawnCount = 0;
     for (const s of mapSpawnSeeds) {
       const mapId = mapUuidMap.get(s.map_ref);
       if (mapId) {
@@ -349,8 +351,13 @@ export async function seedDatabase(): Promise<void> {
           y: s.y,
           respawn_time: s.respawn_time,
         });
+        seededSpawnCount++;
+      } else {
+        skippedSpawnCount++;
+        console.warn(`[Seed] ⚠️ Skipping spawn "${s.spawn_ref}" — map_ref "${s.map_ref}" not found in mapUuidMap`);
       }
     }
+    console.log(`[Seed] ✓ Seeded ${seededSpawnCount} map spawns (skipped ${skippedSpawnCount})`);
 
     // 9. Seed Quest Templates (safely checking for missing/updated templates)
     console.log('[Seed] Checking and seeding quest templates...');
@@ -470,6 +477,14 @@ export async function seedDatabase(): Promise<void> {
 
     // Refresh map config spawns and portals
     await refreshMapConfig();
+
+    // Verify spawn data exists in DB after seed
+    const allSpawns = await db.select().from(schema.mapSpawns);
+    if (allSpawns.length > 0) {
+      console.log(`[Seed] 📊 Total map spawns in DB: ${allSpawns.length}`);
+    } else {
+      console.warn('[Seed] ⚠️ ZERO map spawns in database after refresh!');
+    }
 
     console.log('[Seed] ✅ Database seeding completed successfully.');
   } catch (err) {

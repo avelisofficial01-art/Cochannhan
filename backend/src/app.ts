@@ -369,14 +369,16 @@ io.on('connection', async (socket) => {
         }
         socket.emit('map:portals', portalsWithTarget);
 
-        // Initialize map monsters once if not done yet
-        if (!initializedMaps.has(map.id)) {
-          const spawns = await db.select().from(mapSpawns).where(eq(mapSpawns.map_id, map.id));
+    // Initialize map monsters once if not done yet
+    if (!initializedMaps.has(map.id)) {
+      const spawns = await db.select().from(mapSpawns).where(eq(mapSpawns.map_id, map.id));
+      console.log(`[Map:Join] 🔍 Found ${spawns.length} spawn records for map "${map.name}" (id=${map.id})`);
           for (const spawn of spawns) {
-            if (spawn.spawn_type === 'monster' || spawn.spawn_type === 'boss') {
-              const [tmpl] = await db.select().from(monsterTemplates).where(eq(monsterTemplates.name, spawn.spawn_ref)).limit(1);
-              if (tmpl) {
-                const camelTemplate = {
+      if (spawn.spawn_type === 'monster' || spawn.spawn_type === 'boss') {
+        const [tmpl] = await db.select().from(monsterTemplates).where(eq(monsterTemplates.name, spawn.spawn_ref)).limit(1);
+        if (tmpl) {
+          console.log(`[Map:Join] 🐾 Spawning "${tmpl.name}" at (${spawn.x},${spawn.y}) — type=${spawn.spawn_type}`);
+          const camelTemplate = {
                   id: tmpl.id,
                   name: tmpl.name,
                   realm: tmpl.realm,
@@ -390,8 +392,10 @@ io.on('connection', async (socket) => {
                   mapId: map.id,
                   respawnTime: tmpl.respawn_time,
                 };
-                combatService.spawnMonster(camelTemplate, spawn.x, spawn.y);
-              }
+          combatService.spawnMonster(camelTemplate, spawn.x, spawn.y);
+        } else {
+          console.warn(`[Map:Join] ⚠️ Monster template NOT FOUND for spawn_ref="${spawn.spawn_ref}" (type=${spawn.spawn_type})`);
+        }
             }
           }
           initializedMaps.add(map.id);
@@ -400,8 +404,9 @@ io.on('connection', async (socket) => {
         const activeMonsters = combatService.getMonstersOnMap(map.id);
 
         // Emit monsters list to joiner
-        socket.emit('monster:spawn', activeMonsters.map(inst => ({
-          instanceId: inst.instanceId,
+    console.log(`[Map:Join] 📊 Emitting monster:spawn — ${activeMonsters.length} active monsters for map "${map.name}"`);
+    socket.emit('monster:spawn', activeMonsters.map(inst => ({
+      instanceId: inst.instanceId,
           templateId: inst.templateId,
           name: inst.template.name,
           currentHp: inst.currentHp,
