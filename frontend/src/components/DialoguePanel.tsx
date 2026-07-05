@@ -9,12 +9,12 @@ interface DialogueChoice {
 
 interface DialogueNode {
   id: string;
-  order_index: number;
+  orderIndex: number;
   text: string;
   speaker: string;
   choices: DialogueChoice[] | string | null;
-  condition_flag?: string;
-  set_flag?: string;
+  conditionFlag?: string | null;
+  setFlag?: string | null;
 }
 
 export const DialoguePanel: React.FC = () => {
@@ -34,6 +34,24 @@ export const DialoguePanel: React.FC = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
+
+        // 1. Fetch active story flags
+        const flagsRes = await fetch('/api/quest/flags/list', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const flagsJson = await flagsRes.json();
+        const activeFlags = new Set<string>();
+        if (flagsJson.success && flagsJson.data) {
+          flagsJson.data.forEach((f: { key: string; value: string }) => {
+            if (f.value === 'true') {
+              activeFlags.add(f.key);
+            }
+          });
+        }
+
+        // 2. Fetch dialogues for current NPC
         const res = await fetch(`/api/npc/${activeNpc.id}/dialogues`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -43,12 +61,66 @@ export const DialoguePanel: React.FC = () => {
         if (json.success && json.data && json.data.length > 0) {
           const fetchedNodes = json.data as DialogueNode[];
           setDialogues(fetchedNodes);
-          const startNode = fetchedNodes.find((d) => d.order_index === 0) || fetchedNodes[0];
-          setCurrentNode(startNode);
+
+          // 3. Determine the correct start node based on NPC name and story flags
+          let startNode: DialogueNode | undefined;
+
+          if (activeNpc.name === 'Trưởng làng') {
+            if (activeFlags.has('ch1_wolves_hunted') && !activeFlags.has('ch1_sent_to_elder')) {
+              startNode = fetchedNodes.find(d => d.id === 'dlg_village_chief_thanks' || d.orderIndex === 6);
+            } else if (!activeFlags.has('ch1_intro_done')) {
+              startNode = fetchedNodes.find(d => d.orderIndex === 0);
+            }
+          } else if (activeNpc.name === 'Trưởng lão') {
+            if (activeFlags.has('ch1_sent_to_elder') && !activeFlags.has('ch1_sent_to_blacksmith')) {
+              startNode = fetchedNodes.find(d => d.orderIndex === 0);
+            }
+          } else if (activeNpc.name === 'Thợ rèn') {
+            if (activeFlags.has('ch1_reached_peak') && !activeFlags.has('ch1_got_weapon')) {
+              startNode = fetchedNodes.find(d => d.id === 'dlg_blacksmith_reward' || d.orderIndex === 3);
+            } else if (activeFlags.has('ch1_sent_to_blacksmith') && !activeFlags.has('ch1_blacksmith_quest')) {
+              startNode = fetchedNodes.find(d => d.orderIndex === 0);
+            }
+          } else if (activeNpc.name === 'Bia Đá Cổ') {
+            if (!activeFlags.has('ch1_stele_read')) {
+              startNode = fetchedNodes.find(d => d.orderIndex === 0);
+            }
+          } else if (activeNpc.name === 'Bạch Lang Vương') {
+            if (!activeFlags.has('ch1_boss_confronted')) {
+              startNode = fetchedNodes.find(d => d.orderIndex === 0);
+            }
+          }
+
+          // Fallback resolution if NPC-specific rules didn't yield a starting node
+          if (!startNode) {
+            // Find a node that requires a condition that matches current active flags,
+            // then fallback to orderIndex 0, then first node
+            const matchingConditionNode = fetchedNodes.find(d => {
+              const cond = d.conditionFlag;
+              return cond && activeFlags.has(cond);
+            });
+            startNode = matchingConditionNode || fetchedNodes.find((d) => d.orderIndex === 0) || fetchedNodes[0];
+          }
+
+          // If the starting node sets a flag the player already has, show fallback instead to avoid repeating completed dialogues
+          const startNodeSetsFlag = startNode.setFlag;
+          const isStartNodeCompleted = startNodeSetsFlag && activeFlags.has(startNodeSetsFlag);
+
+          if (isStartNodeCompleted) {
+            setCurrentNode({
+              id: 'fallback',
+              orderIndex: 0,
+              text: `Chào đạo hữu! Ta là ${activeNpc.name}. Chúc ngươi tu tiên lộ thành công!`,
+              speaker: activeNpc.name,
+              choices: null,
+            });
+          } else {
+            setCurrentNode(startNode);
+          }
         } else {
           setCurrentNode({
             id: 'fallback',
-            order_index: 0,
+            orderIndex: 0,
             text: `Chào đạo hữu! Ta là ${activeNpc.name}. Chúc ngươi tu tiên lộ thành công!`,
             speaker: activeNpc.name,
             choices: null,
@@ -61,14 +133,14 @@ export const DialoguePanel: React.FC = () => {
       }
     };
 
-    fetchDialogues();
+    void fetchDialogues();
   }, [isDialogueOpen, activeNpc]);
 
   if (!isDialogueOpen || !activeNpc) return null;
 
   const handleChoice = async (choice: DialogueChoice) => {
-    if (currentNode?.set_flag) {
-      await setStoryFlagAndCheckQuests(currentNode.set_flag);
+    if (currentNode?.setFlag) {
+      await setStoryFlagAndCheckQuests(currentNode.setFlag);
     }
 
     if (choice.next_dialogue_id) {
@@ -83,8 +155,8 @@ export const DialoguePanel: React.FC = () => {
   };
 
   const handleClose = async () => {
-    if (currentNode && currentNode.set_flag) {
-      await setStoryFlagAndCheckQuests(currentNode.set_flag);
+    if (currentNode && currentNode.setFlag) {
+      await setStoryFlagAndCheckQuests(currentNode.setFlag);
     }
     closeDialogue();
   };

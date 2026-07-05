@@ -94,7 +94,8 @@ export const questController = {
   async setStoryFlag(req: Request, res: Response, next: NextFunction) {
     try {
       const playerId = getPlayerId(req);
-      const { key, value } = req.body;
+      const key = req.body.key || req.body.flagKey;
+      const value = req.body.value || req.body.flagValue;
       const flag = await questService.setStoryFlag(playerId, key, value);
       res.json({ success: true, data: flag });
     } catch (err) {

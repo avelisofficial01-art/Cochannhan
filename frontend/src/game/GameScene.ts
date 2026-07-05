@@ -664,14 +664,19 @@ export class GameScene extends Phaser.Scene {
       if (this.textures.exists(npcKey)) {
         npcSprite = this.add.image(npc.x, npc.y, npcKey);
         npcSprite.setDisplaySize(40, 40);
+        npcSprite.setInteractive({ useHandCursor: true });
       } else {
         // Fallback: colored circle always visible
         const circle = this.add.circle(npc.x, npc.y, 20, 0xffaa00, 0.9);
         circle.setStrokeStyle(2, 0xffffff, 1);
         npcSprite = circle;
+        npcSprite.setInteractive({
+          hitArea: new Phaser.Geom.Circle(20, 20, 20),
+          hitAreaCallback: Phaser.Geom.Circle.Contains,
+          useHandCursor: true,
+        });
       }
 
-      npcSprite.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Circle(20, 20, 30), hitAreaCallback: Phaser.Geom.Circle.Contains, draggable: false });
       npcSprite.setDepth(50);
 
       const nameLabel = this.add.text(npc.x, npc.y - 32, npc.name, {
@@ -838,9 +843,11 @@ export class GameScene extends Phaser.Scene {
   private checkAndPlayOpeningCutscene(): void {
     const activeQuests = useGameStore.getState().activeQuests as Array<{ name: string }>;
     const isAwakenActive = activeQuests.some(q => q.name === 'Tỉnh Giấc Mộng') || activeQuests.length === 0;
+    const played = localStorage.getItem('ch1_intro_cutscene_played') === 'true';
 
-    if (isAwakenActive && (this.mapId === 'lang_cothao' || this.mapId === 'bac_nguyen_village') && !this.introCutscenePlayed) {
+    if (isAwakenActive && (this.mapId === 'lang_cothao' || this.mapId === 'bac_nguyen_village') && !played && !this.introCutscenePlayed) {
       this.introCutscenePlayed = true;
+      localStorage.setItem('ch1_intro_cutscene_played', 'true');
       this.playOpeningCutscene();
     }
   }
