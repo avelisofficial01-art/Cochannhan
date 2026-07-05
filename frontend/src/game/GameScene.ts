@@ -64,6 +64,9 @@ export class GameScene extends Phaser.Scene {
   /** Throttle socket emits */
   private lastMoveEmitTime = 0;
 
+  /** Portal cooldown (ms) — prevents two-way portal loops */
+  private lastPortalTime = 0;
+
   /** Monsters rendered on screen */
   private monsterSprites: Map<
     string,
@@ -274,6 +277,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private checkPortalCollision(): void {
+    // Cooldown: skip portal check for 2s after map join to prevent two-way loop
+    if (this.time.now - this.lastPortalTime < 2000) return;
+
     const joinBridge = (window as unknown as Record<string, (input: unknown) => void>).__socketEmitMapJoin;
     if (!joinBridge) return;
 
@@ -785,6 +791,7 @@ export class GameScene extends Phaser.Scene {
     const spawnY = (rawSpawnY !== undefined && rawSpawnY !== null && !isNaN(rawSpawnY)) ? rawSpawnY : Math.round(data.height / 2);
     this.playerX = spawnX;
     this.playerY = spawnY;
+    this.lastPortalTime = this.time.now;
     if (this.playerSprite) {
       this.playerSprite.setPosition(spawnX, spawnY);
     }

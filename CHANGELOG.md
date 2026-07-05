@@ -1196,9 +1196,44 @@ Story routes (`/api/story/*`) trong `story.controller.ts` **thiếu `authenticat
 | File | Change |
 |------|--------|
 | `backend/src/story/story.controller.ts` | Import `authenticate` + `resolvePlayer`, thêm `router.use(authenticate, resolvePlayer)` |
-| `frontend/src/components/DialoguePanel.tsx` | Import `fetchWithAuth`, thay `fetch` + token thô → `fetchWithAuth` cho tất cả API calls |
+| `frontend/src/components/DialoguePanel.tsx` | Import `fetchWithAuth`, thay `fetch` + token thô → `fetchWithAuth` |
 
 ### Xác nhận
 - [x] Typecheck: 0 errors (shared + backend + frontend)
 - [x] Lint: 0 errors (chỉ warnings pre-existing)
+- [x] Build: `npm run build` thành công
+
+
+---
+
+## Sprint 18: HOTFIX QUEST ACCEPT 500 & PORTAL TWO-WAY LOOP — 2026-07-06
+
+### Mục tiêu
+1. Fix lỗi 500 khi accept quest (`POST /api/quest/accept`)
+2. Fix lỗi portal không chuyển map được (two-way loop vô hạn)
+
+### Root Cause
+
+#### Quest Accept 500
+`acceptQuestSchema` yêu cầu `questId: z.string().uuid()` nhưng quest template IDs trong config là custom strings như `q_ch1_awaken`, `q_ch1_wolves` → Zod parse thất bại → 500.
+
+#### Portal Two-Way Loop
+Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal entry point trên Map B. Nếu Map B có portal quay lại Map A tại vị trí đó, `checkPortalCollision` trigger ngay → quay lại Map A → lặp vô hạn.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S18.1 | Fix acceptQuestSchema | ✅ | `questId: z.string().uuid()` → `z.string().min(1)` |
+| S18.2 | Fix portal two-way loop | ✅ | Thêm `lastPortalTime` cooldown 2s sau map join |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/src/quest/quest.schema.ts` | `acceptQuestSchema.questId` từ `.uuid()` → `.min(1)` |
+| `frontend/src/game/GameScene.ts` | Thêm `lastPortalTime`, cooldown trong `checkPortalCollision`, reset trong `handleMapInit` |
+
+### Xác nhận
+- [x] Typecheck: 0 errors (shared + backend + frontend)
 - [x] Build: `npm run build` thành công

@@ -5,7 +5,7 @@ export const questTypeSchema = z.enum([
 ]);
 
 export const acceptQuestSchema = z.object({
-  questId: z.string().uuid(),
+  questId: z.string().min(1),
 });
 
 export const updateQuestProgressSchema = z.object({
