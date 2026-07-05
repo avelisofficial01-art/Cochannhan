@@ -5,6 +5,7 @@ import {
   npcSeeds,
   itemSeeds,
   monsterSeeds,
+  bacNguyenMonsterSeeds,
   guSeeds,
   bossSeeds,
   worldMapSeeds,
@@ -13,9 +14,6 @@ import {
   dialogueSeeds,
   chapter1QuestSeeds,
 } from '../config/index.js';
-
-// Convert monster seeds into compatible formats
-const bacNguyenMonsterSeeds = monsterSeeds;
 
 export async function seedDatabase(): Promise<void> {
   try {
@@ -277,7 +275,9 @@ export async function seedDatabase(): Promise<void> {
       console.log('[Seed] Seeding monsters...');
       const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId || '';
       
+      // Combine both monster sets (original + Sprint 6 bac_nguyen monsters)
       const allMonsterSeeds = [
+        ...monsterSeeds.map(m => ({ ...m, isBoss: false })),
         ...bacNguyenMonsterSeeds.map(m => ({ ...m, isBoss: false })),
         ...bossSeeds.map(b => ({ ...b, isBoss: true })),
       ];
@@ -306,9 +306,10 @@ export async function seedDatabase(): Promise<void> {
         monsterTemplateMap.set(m.name, m.id);
       }
       
-      // Also add Thiết Bì Cự Hùng if missing
+      // Check for any missing templates from both sets
       const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId || '';
       const allMonsterSeeds = [
+        ...monsterSeeds.map(m => ({ ...m, isBoss: false })),
         ...bacNguyenMonsterSeeds.map(m => ({ ...m, isBoss: false })),
         ...bossSeeds.map(b => ({ ...b, isBoss: true })),
       ];
