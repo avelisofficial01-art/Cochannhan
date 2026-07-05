@@ -488,7 +488,12 @@ async function refreshMapConfig(): Promise<void> {
 
   const mapUuidMap = new Map<string, string>();
   for (const m of allMaps) {
-    mapUuidMap.set(m.name, m.id);
+    const seed = worldMapSeeds.find((s) => s.name === m.name);
+    if (seed) {
+      mapUuidMap.set(seed.ref, m.id);
+    } else {
+      mapUuidMap.set(m.name, m.id);
+    }
   }
 
   const mapIds = Array.from(mapUuidMap.values());
