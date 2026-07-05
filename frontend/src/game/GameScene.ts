@@ -166,9 +166,15 @@ export class GameScene extends Phaser.Scene {
 
     /* ── Attack cooldown indicator ── */
     this.cooldownBg = this.add.graphics();
+    this.cooldownBg.setScrollFactor(0).setDepth(1000);
+    const cw = this.cameras.main.width;
+    const ch = this.cameras.main.height;
+    const barX = cw / 2 - 100;
+    const barY = ch - 25;
     this.cooldownBg.fillStyle(0x333333, 0.8);
-    this.cooldownBg.fillRect(300, 585, 200, 8);
+    this.cooldownBg.fillRect(barX, barY, 200, 8);
     this.cooldownBar = this.add.graphics();
+    this.cooldownBar.setScrollFactor(0).setDepth(1000);
     this.drawCooldownReady();
 
     /* ── Cooldown bar ready ── */
@@ -383,7 +389,9 @@ export class GameScene extends Phaser.Scene {
       const ratio = (this.attackCooldownMs - this.attackCooldownRemaining) / this.attackCooldownMs;
       this.cooldownBar.clear();
       this.cooldownBar.fillStyle(0xff8800, 1);
-      this.cooldownBar.fillRect(300, 585, 200 * ratio, 8);
+      const cbw = this.cameras.main.width;
+      const cbh = this.cameras.main.height;
+      this.cooldownBar.fillRect(cbw / 2 - 100, cbh - 25, 200 * ratio, 8);
 
       if (this.attackCooldownRemaining <= 0) {
         this.attackReady = true;
@@ -396,7 +404,9 @@ export class GameScene extends Phaser.Scene {
   private drawCooldownReady(): void {
     this.cooldownBar.clear();
     this.cooldownBar.fillStyle(0x00ff88, 1);
-    this.cooldownBar.fillRect(300, 585, 200, 8);
+    const cw2 = this.cameras.main.width;
+    const ch2 = this.cameras.main.height;
+    this.cooldownBar.fillRect(cw2 / 2 - 100, ch2 - 25, 200, 8);
   }
 
   /* ───────────────────────────────────────

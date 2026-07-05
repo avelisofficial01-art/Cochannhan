@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore.js';
+import { fetchWithAuth } from '../api/client.js';
 
 interface QuestObjective {
   type: string;
@@ -31,14 +32,8 @@ export const QuestTracker: React.FC = () => {
   useEffect(() => {
     const fetchActiveQuests = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
 
-        const res = await fetch('/api/quest/player/active', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetchWithAuth('/api/quest/player/active');
         const json = await res.json();
         if (json.success && json.data) {
           setActiveQuests(json.data as unknown[]);
@@ -50,12 +45,7 @@ export const QuestTracker: React.FC = () => {
 
     const fetchQuestTemplates = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('/api/quest', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetchWithAuth('/api/quest');
         const json = await res.json();
         if (json.success && json.data) {
           setQuestTemplates(json.data as QuestTemplate[]);
