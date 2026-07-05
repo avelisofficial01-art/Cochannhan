@@ -1172,3 +1172,33 @@ Tích hợp các hệ thống gameplay còn thiếu: hiển thị inventory (tú
 - [x] Typecheck: 0 errors (shared + backend + frontend)
 - [x] Lint: 0 errors (warnings unchanged)
 - [x] Build: `npm run build` thành công
+
+
+---
+
+## Sprint 17: HOTFIX STORY AUTH 500 & QUEST FLOW — 2026-07-06
+
+### Mục tiêu
+Fix lỗi 500 từ server khi set story flag, và đảm bảo quest flow hoạt động thông qua NPC dialogue.
+
+### Root Cause
+Story routes (`/api/story/*`) trong `story.controller.ts` **thiếu `authenticate` + `resolvePlayer` middleware** → `POST /api/story/flags` nhận `playerId` rỗng (undefined → '') → database query với playerId rỗng gây lỗi 500 → flag không set được → quest không accept → không có cốt truyện.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S17.1 | Thêm auth middleware vào story routes | ✅ | `story.controller.ts`: import + `router.use(authenticate, resolvePlayer)` |
+| S17.2 | Sửa DialoguePanel dùng fetchWithAuth | ✅ | Thay toàn bộ `fetch` + token thô bằng `fetchWithAuth` từ client API |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/src/story/story.controller.ts` | Import `authenticate` + `resolvePlayer`, thêm `router.use(authenticate, resolvePlayer)` |
+| `frontend/src/components/DialoguePanel.tsx` | Import `fetchWithAuth`, thay `fetch` + token thô → `fetchWithAuth` cho tất cả API calls |
+
+### Xác nhận
+- [x] Typecheck: 0 errors (shared + backend + frontend)
+- [x] Lint: 0 errors (chỉ warnings pre-existing)
+- [x] Build: `npm run build` thành công

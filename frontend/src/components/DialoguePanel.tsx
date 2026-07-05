@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore.js';
+import { fetchWithAuth } from '../api/client.js';
 
 interface DialogueChoice {
   text: string;
@@ -33,14 +34,8 @@ export const DialoguePanel: React.FC = () => {
     const fetchDialogues = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-
         // 1. Fetch active story flags
-        const flagsRes = await fetch('/api/quest/flags/list', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const flagsRes = await fetchWithAuth('/api/quest/flags/list');
         const flagsJson = await flagsRes.json();
         const activeFlags = new Set<string>();
         if (flagsJson.success && flagsJson.data) {
@@ -52,11 +47,7 @@ export const DialoguePanel: React.FC = () => {
         }
 
         // 2. Fetch dialogues for current NPC
-        const res = await fetch(`/api/npc/${activeNpc.id}/dialogues`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetchWithAuth(`/api/npc/${activeNpc.id}/dialogues`);
         const json = await res.json();
         if (json.success && json.data && json.data.length > 0) {
           const fetchedNodes = json.data as DialogueNode[];
@@ -163,39 +154,28 @@ export const DialoguePanel: React.FC = () => {
 
   const setStoryFlagAndCheckQuests = async (flagKey: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const flagRes = await fetch('/api/story/flags', {
+      const flagRes = await fetchWithAuth('/api/story/flags', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ flagKey: flagKey, flagValue: 'true' }),
       });
       await flagRes.json(); // confirm flag was set
-      const qTemplatesRes = await fetch('/api/quest', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const qTemplatesRes = await fetchWithAuth('/api/quest');
       const qTemplatesJson = await qTemplatesRes.json();
       if (qTemplatesJson.success && qTemplatesJson.data) {
         const templates = qTemplatesJson.data as Array<{ id: string; flagRequired: string }>;
         const unlockedQuests = templates.filter((q) => q.flagRequired === flagKey);
         
         for (const quest of unlockedQuests) {
-          await fetch('/api/quest/accept', {
+          await fetchWithAuth('/api/quest/accept', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ questId: quest.id }),
           });
         }
       }
 
-      const activeQuestsRes = await fetch('/api/quest/player/active', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const activeQuestsRes = await fetchWithAuth('/api/quest/player/active');
       const activeQuestsJson = await activeQuestsRes.json();
       if (activeQuestsJson.success && activeQuestsJson.data) {
         setActiveQuests(activeQuestsJson.data as unknown[]);

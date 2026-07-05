@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import type { Response } from 'express';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
+import { authenticate, resolvePlayer } from '../middleware/auth.js';
 import * as storyService from './story.service.js';
 
 const router = Router();
+
+// Apply auth middleware to all story routes
+router.use(authenticate, resolvePlayer);
 
 // GET /api/story/flags
 router.get('/flags', async (req: AuthenticatedRequest, res: Response) => {
