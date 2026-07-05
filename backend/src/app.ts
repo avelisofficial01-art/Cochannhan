@@ -441,12 +441,11 @@ io.on('connection', async (socket) => {
     socket.to(`map:${currentMapId}`).emit('player:left', { accountId });
   });
 
-  // ── Combat: Player Attack (server-authoritative) ─────────
-  socket.on('player:attack', async (data: { targetInstanceId: string }) => {
+  socket.on('player:attack', async (data: { targetInstanceId: string; skillId?: string }) => {
     if (!playerId || !data.targetInstanceId) return;
 
     // Execute server-authoritative combat
-    const result = await combatService.executePlayerAttack(playerId, data.targetInstanceId);
+    const result = await combatService.executePlayerAttack(playerId, data.targetInstanceId, data.skillId);
     if (!result) return;
 
     // Emit damage to attacker
@@ -455,6 +454,7 @@ io.on('connection', async (socket) => {
       isCritical: result.isCritical,
       targetX: 0, // will be filled from monster position by client
       targetY: 0,
+      damageType: result.damageType,
     });
 
     // If monster defeated, emit death to all players in map

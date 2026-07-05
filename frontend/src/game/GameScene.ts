@@ -4,6 +4,7 @@ import {
   getPlayerKey,
   getMonsterKey,
   getNpcKey,
+  getBgmKey,
 } from './AssetManager.js';
 import { useGameStore, type MonsterSprite } from '../store/gameStore.js';
 
@@ -42,6 +43,7 @@ export class GameScene extends Phaser.Scene {
   private spaceKey!: Phaser.Input.Keyboard.Key;
   private guKey!: Phaser.Input.Keyboard.Key;
   private eqKey!: Phaser.Input.Keyboard.Key;
+  private charKey!: Phaser.Input.Keyboard.Key;
   private craftKey!: Phaser.Input.Keyboard.Key;
   private playerX = 400;
   private playerY = 300;
@@ -142,7 +144,19 @@ export class GameScene extends Phaser.Scene {
       this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
       this.guKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G);
       this.eqKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-      this.craftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+      this.charKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+      this.craftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V);
+    }
+
+    /* ── Play Background Music (BGM) ── */
+    const bgmKey = getBgmKey();
+    if (!this.sound.get(bgmKey)) {
+      try {
+        const bgm = this.sound.add(bgmKey, { loop: true, volume: 0.25 });
+        bgm.play();
+      } catch (err) {
+        console.error('[GameScene] BGM play failed:', err);
+      }
     }
 
     /* ── Launch overlay UI scene ── */
@@ -190,8 +204,7 @@ export class GameScene extends Phaser.Scene {
     const deltaSec = delta / 1000;
     this.updatePlayerMovement(deltaSec);
     this.updateAttackCooldown(delta);
-    this.handleGuToggle();
-    this.handleEquipToggle();
+    this.handleCharToggle();
     this.handleCraftToggle();
     this.syncMonsters();
     this.updateFloatTexts(delta);
@@ -331,17 +344,14 @@ export class GameScene extends Phaser.Scene {
   /* ───────────────────────────────────────
    *  Panel toggles
    * ─────────────────────────────────────── */
-  private handleGuToggle(): void {
+  private handleCharToggle(): void {
     if (!this.playerControlsEnabled) return;
-    if (this.guKey && Phaser.Input.Keyboard.JustDown(this.guKey)) {
-      useGameStore.getState().toggleGuPanel();
-    }
-  }
-
-  private handleEquipToggle(): void {
-    if (!this.playerControlsEnabled) return;
-    if (this.eqKey && Phaser.Input.Keyboard.JustDown(this.eqKey)) {
-      useGameStore.getState().toggleEquipmentPanel();
+    if (
+      (this.charKey && Phaser.Input.Keyboard.JustDown(this.charKey)) ||
+      (this.guKey && Phaser.Input.Keyboard.JustDown(this.guKey)) ||
+      (this.eqKey && Phaser.Input.Keyboard.JustDown(this.eqKey))
+    ) {
+      useGameStore.getState().toggleCharacterPanel();
     }
   }
 
@@ -505,7 +515,7 @@ export class GameScene extends Phaser.Scene {
   /* ───────────────────────────────────────
    *  Damage numbers (floating text)
    * ─────────────────────────────────────── */
-  private showDamageNumber(result: { damage: number; isCritical: boolean; targetX: number; targetY: number }): void {
+  private showDamageNumber(result: { damage: number; isCritical: boolean; targetX: number; targetY: number; damageType?: string }): void {
     const color = result.isCritical ? '#ffaa00' : '#ffffff';
     const size = result.isCritical ? '16px' : '13px';
     const prefix = result.isCritical ? 'CRIT! ' : '';
@@ -528,12 +538,21 @@ export class GameScene extends Phaser.Scene {
       duration: 1000,
     });
 
-    this.playAttackSlashEffect(result.targetX, result.targetY);
+    this.playAttackSlashEffect(result.targetX, result.targetY, result.damageType);
   }
 
-  private playAttackSlashEffect(x: number, y: number): void {
+  private playAttackSlashEffect(x: number, y: number, damageType?: string): void {
     const slash = this.add.graphics();
-    slash.lineStyle(3, 0x00ffff, 0.95);
+    
+    // Choose color based on element!
+    let color = 0x00ffff; // Default cyan for physical
+    if (damageType === 'fire') color = 0xff3300; // Red/orange for fire
+    if (damageType === 'poison') color = 0x9933ff; // Purple for poison
+    if (damageType === 'blood') color = 0xff0055; // Crimson for blood
+    if (damageType === 'ice') color = 0x33ccff; // Ice blue
+    if (damageType === 'earth') color = 0xffaa00; // Earth amber
+
+    slash.lineStyle(3, color, 0.95);
     
     // Draw a neat curved arc representing a sword slash
     slash.beginPath();

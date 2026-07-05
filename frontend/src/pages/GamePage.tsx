@@ -7,8 +7,8 @@ import { UIScene } from '../game/UIScene.js';
 import { useSocket } from '../hooks/useSocket.js';
 import { useAuthStore } from '../store/auth.js';
 import { api } from '../api/client.js';
-import GuPanel from '../components/GuPanel.js';
-import EquipmentPanel from '../components/EquipmentPanel.js';
+import CharacterPanel from '../components/CharacterPanel.js';
+import GameHUD from '../components/GameHUD.js';
 import CraftPanel from '../components/CraftPanel.js';
 import { DialoguePanel } from '../components/DialoguePanel.js';
 import { QuestTracker } from '../components/QuestTracker.js';
@@ -117,8 +117,8 @@ export default function GamePage(): React.ReactElement {
 
       {/* Game area — fills remaining viewport */}
       <div className="relative w-full flex-1 bg-gu-darker overflow-hidden">
-        <GuPanel />
-        <EquipmentPanel />
+        <CharacterPanel />
+        <GameHUD />
         <CraftPanel />
         <DialoguePanel />
         <QuestTracker />
@@ -128,9 +128,9 @@ export default function GamePage(): React.ReactElement {
         />
       </div>
 
-      {/* Bottom hint — hidden on mobile (touch controls in UIScene) */}
+      {/* Bottom hint — hidden on mobile */}
       <footer className="w-full px-3 py-1 md:px-6 md:py-2 text-xs text-gray-500 text-center border-t border-gu-border hidden md:block">
-        Arrow keys to move | G = Gu | E = Equipment | C = Craft
+        Phím mũi tên để di chuyển | C: Nhân Vật | V: Chế Tạo | 1, 2, 3: Sử dụng kỹ năng Cổ Trùng
       </footer>
     </div>
   );

@@ -25,6 +25,7 @@ export interface CombatResult {
   isCritical: boolean;
   targetX: number;
   targetY: number;
+  damageType?: string;
 }
 
 export interface PlayerGuState {
@@ -40,6 +41,14 @@ export interface PlayerGuState {
   isEquipped: boolean;
   slotIndex: number | null;
   sprite: string | null;
+  skills?: Array<{
+    skillId: string;
+    name: string;
+    type: string;
+    description: string;
+    cooldown: number;
+    damageMultiplier: number;
+  }>;
 }
 
 interface GameState {
@@ -54,6 +63,7 @@ interface GameState {
   guSynergies: string[];
   isGuPanelOpen: boolean;
   isEquipmentPanelOpen: boolean;
+  isCharacterPanelOpen: boolean;
   isCraftPanelOpen: boolean;
   equipmentList: Array<{ id: string; name: string; type: string; slot: string; tier: string; baseHp: number; baseAtk: number; baseDef: number; baseCrit: number; requiredLevel: number; description: string; icon: string }>;
   equippedItems: Record<string, string | null>;
@@ -69,6 +79,7 @@ interface GameState {
   setEquippedItems: (items: Record<string, string | null>) => void;
   setRecipeList: (list: GameState['recipeList']) => void;
   toggleEquipmentPanel: () => void;
+  toggleCharacterPanel: () => void;
   toggleCraftPanel: () => void;
 
   setPosition: (x: number, y: number) => void;
@@ -101,6 +112,7 @@ export const useGameStore = create<GameState>((set) => ({
   guSynergies: [],
   isGuPanelOpen: false,
   isEquipmentPanelOpen: false,
+  isCharacterPanelOpen: false,
   isCraftPanelOpen: false,
   equipmentList: [],
   equippedItems: {},
@@ -136,6 +148,7 @@ export const useGameStore = create<GameState>((set) => ({
   setEquippedItems: (items): void => set({ equippedItems: items }),
   setRecipeList: (list): void => set({ recipeList: list }),
   toggleEquipmentPanel: (): void => set((state) => ({ isEquipmentPanelOpen: !state.isEquipmentPanelOpen })),
+  toggleCharacterPanel: (): void => set((state) => ({ isCharacterPanelOpen: !state.isCharacterPanelOpen })),
   toggleCraftPanel: (): void => set((state) => ({ isCraftPanelOpen: !state.isCraftPanelOpen })),
 
   openDialogue: (npc): void => set({ activeNpc: npc, isDialogueOpen: true, activeDialogue: null }),

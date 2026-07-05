@@ -10,11 +10,11 @@
 
 # Current Sprint
 
-**Sprint:** 8 — Critical Bug Fixes & H5 Gameplay Foundation
+**Sprint:** 9 — H5 Mobile UI Optimization & Active Combat Skills
 
 **Status:** ✅ Completed
 
-**Started:** 2026-07-04
+**Started:** 2026-07-05
 
 ---
 
@@ -31,12 +31,25 @@
 | Sprint 6 | Chapter 1 Complete | ✅ Completed |
 | Sprint 7 | Polish & Stabilize | ✅ Completed |
 | Sprint 8 | Critical Bug Fixes | ✅ Completed |
+| Sprint 9 | H5 UI & Active Skills | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 8 — Critical Bug Fixes & H5 Gameplay Foundation
+Current Module: ✅ Sprint 9 — H5 Mobile UI Optimization & Active Combat Skills
+
+---
+
+# Sprint 9 Checklist
+
+## H5 Mobile UI Optimization & Active Combat Skills (S9.1)
+- [x] Consolidate individual `GuPanel` and `EquipmentPanel` into a single unified **CharacterPanel.tsx** tabbed overlay
+- [x] Implement server-authoritative **Active Skills** execution in `combat.service.ts` with custom damage multipliers and elements
+- [x] Add **GameHUD.tsx** featuring active skill buttons (keys 1, 2, 3), cooldown circular sweep animations, and modern bottom navigation dock
+- [x] Integrate loopable **Background Music (BGM)** in `GameScene.ts` (handling autoplay interaction constraints)
+- [x] Implement custom neon-colored **elemental slash visual effects** in Phaser based on the damage element type casted
+- [x] Enforce clean TypeScript strict mode types (no `any`) and verify lint/typecheck passes
 
 ---
 

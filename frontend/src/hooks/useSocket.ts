@@ -112,12 +112,13 @@ export function useSocket(): { isConnected: boolean } {
       emitToGameScene('player:respawn', data);
     });
 
-    socket.on('combat:result', (data: { damage: number; isCritical: boolean; targetX?: number; targetY?: number }) => {
+    socket.on('combat:result', (data: { damage: number; isCritical: boolean; targetX?: number; targetY?: number; damageType?: string }) => {
       const result: CombatResult = {
         damage: data.damage,
         isCritical: data.isCritical,
         targetX: data.targetX ?? 0,
         targetY: data.targetY ?? 0,
+        damageType: data.damageType,
       };
       setCombatResult(result);
       // Auto-clear after 1.2s (animation duration)
@@ -204,10 +205,10 @@ export function useSocket(): { isConnected: boolean } {
   );
 
   const emitAttack = useCallback(
-    (instanceId: string): void => {
+    (instanceId: string, skillId?: string): void => {
       const socket = socketRef.current;
       if (!socket?.connected) return;
-      socket.emit('player:attack', { targetInstanceId: instanceId });
+      socket.emit('player:attack', { targetInstanceId: instanceId, skillId });
     },
     [],
   );

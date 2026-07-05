@@ -9,6 +9,9 @@ import * as combatRepo from './combat.repository.js';
 import * as playerService from '../player/player.service.js';
 import * as storyRepo from '../story/story.repository.js';
 import { questService } from '../quest/quest.service.js';
+import { db } from '../database/connection.js';
+import * as schema from '../database/schema/index.js';
+import { eq } from 'drizzle-orm';
 import {
   initBossState,
   checkBossPhase,
@@ -125,6 +128,7 @@ export function getMonstersOnMap(mapId: string): MonsterInstance[] {
 export async function executePlayerAttack(
   playerId: string,
   targetInstanceId: string,
+  skillId?: string,
 ): Promise<CombatResult | null> {
   // Get player
   const player = await playerService.getPlayerById(playerId);
@@ -153,15 +157,46 @@ export async function executePlayerAttack(
     baseDef: 5,
   });
 
+  let skillMultiplier = 1.0;
+  let skillName: string | null = null;
+  let damageType: DamageInput['damageType'] = 'physical';
+
+  if (skillId) {
+    const [skillRow] = await db
+      .select()
+      .from(schema.guSkills)
+      .where(eq(schema.guSkills.skill_id, skillId))
+      .limit(1);
+    if (skillRow) {
+      skillMultiplier = (skillRow.damage_multiplier ?? 100) / 100;
+      skillName = skillRow.name;
+
+      const [guTemplate] = await db
+        .select()
+        .from(schema.guTemplates)
+        .where(eq(schema.guTemplates.id, skillRow.gu_template_id))
+        .limit(1);
+      if (guTemplate && guTemplate.element) {
+        const lowerElement = guTemplate.element.toLowerCase();
+        const validTypes = [
+          'physical', 'fire', 'water', 'lightning', 'wind', 'earth', 'wood', 'ice', 'poison', 'blood', 'soul', 'space', 'time', 'light', 'dark'
+        ];
+        if (validTypes.includes(lowerElement)) {
+          damageType = lowerElement as DamageInput['damageType'];
+        }
+      }
+    }
+  }
+
   // Build damage input
   const damageInput: DamageInput = {
     baseAttack: playerCombatStats.atk,
     equipmentBonus: 0, // Sprint 4
     guBonus: 0,         // Sprint 5
-    skillMultiplier: 1.0,
+    skillMultiplier,
     critChance: playerCombatStats.crit,
     critMultiplier: playerCombatStats.critDamage,
-    damageType: 'physical',
+    damageType,
     targetDefense: target.template.def,
     elementBonus: 0,
     synergyBonus: 0,
@@ -208,7 +243,7 @@ export async function executePlayerAttack(
     playerId,
     monsterId: target.templateId,
     damage: result.finalDamage,
-    skill: null,
+    skill: skillName,
     isCritical: result.isCritical,
     damageType: result.damageType,
   });
