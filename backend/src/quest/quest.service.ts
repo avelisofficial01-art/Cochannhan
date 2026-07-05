@@ -117,7 +117,7 @@ export const questService = {
   ): Promise<PlayerQuest> {
     const existing = await questRepository.findPlayerQuest(playerId, questId);
     if (existing) {
-      throw new Error('Quest already accepted');
+      return mapPlayerQuest(existing as unknown as PlayerQuestRow);
     }
     const row = await questRepository.acceptQuest(playerId, questId);
     const result = mapPlayerQuest(row as unknown as PlayerQuestRow);
