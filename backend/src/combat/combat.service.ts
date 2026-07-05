@@ -11,7 +11,7 @@ import * as storyRepo from '../story/story.repository.js';
 import { questService } from '../quest/quest.service.js';
 import { db } from '../database/connection.js';
 import * as schema from '../database/schema/index.js';
-import { eq, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { inventoryService } from '../inventory/inventory.service.js';
 import {
   initBossState,
@@ -240,7 +240,7 @@ export async function executePlayerAttack(
             const itemName = entry.itemName ?? entry.itemId;
             if (itemName) {
               const [item] = await db.select().from(schema.itemTemplates)
-                .where(or(eq(schema.itemTemplates.name, itemName), eq(schema.itemTemplates.id, itemName)))
+                .where(eq(schema.itemTemplates.name, itemName))
                 .limit(1);
               if (item) {
                 rolledDrops.push({ itemId: item.id, itemName: item.name, quantity: qty });
