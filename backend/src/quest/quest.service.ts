@@ -315,7 +315,7 @@ export const questService = {
 
             if (targetName === 'Trưởng làng' && (key === 'ch1_intro_done' || key === 'ch1_sent_to_elder')) {
               shouldComplete = true;
-            } else if (targetName === 'Trưởng lão' && (key === 'ch1_sent_to_forest' || key === 'ch1_prophecy_heard')) {
+            } else if (targetName === 'Trưởng lão' && (key === 'ch1_sent_to_blacksmith' || key === 'ch1_sent_to_forest' || key === 'ch1_prophecy_heard')) {
               shouldComplete = true;
             } else if (targetName === 'Thợ rèn' && (key === 'ch1_sent_to_blacksmith' || key === 'ch1_got_weapon')) {
               shouldComplete = true;

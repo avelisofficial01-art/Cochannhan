@@ -661,11 +661,15 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 
 1. Fix lỗi "Tỉnh Giấc Mộng" quest (talk to Trưởng làng) không hoàn thành do setting story flag bỏ qua quest-advancement logic.
 2. Fix lỗi đối thoại lặp vô tận với các NPC (Trưởng làng, Trưởng lão, Thợ rèn, v.v.) sau khi đã hoàn thành dialogue chain.
+3. Fix lỗi kẹt quest "Lời Tiên Tri Cổ" (talk to Trưởng lão) không thể hoàn thành do thiếu event handler cho flag `ch1_sent_to_blacksmith`.
+4. Fix lỗi kẹt hội thoại nhắc nhở của Trưởng lão và Trưởng làng biến thành lời chào chung "Chúc ngươi tu tiên lộ thành công!".
 
 ## Root Cause
 
 - Endpoint `/api/story/flags` được gọi bởi frontend chỉ cập nhật cơ sở dữ liệu qua `storyRepo.setFlag`, bỏ qua `questService.setStoryFlag` (chứa logic tự động cập nhật tiến trình quest talk).
 - Logic tìm kiếm `startNode` trong `DialoguePanel.tsx` không phát hiện được chain đã hoàn thành nếu nút đầu tiên của chain không có `setFlag` thuộc tính, dẫn đến tự động lặp lại từ orderIndex 0.
+- `questService.setStoryFlag` thiếu nhánh xử lý flag `ch1_sent_to_blacksmith` để tự động hoàn thành talk objective của NPC Trưởng lão.
+- Các nút nhắc nhở constructed dynamic trong `DialoguePanel.tsx` có `id: 'fallback'` nhưng lại bị check `isStartNodeCompleted` dựa trên `setFlag` (vốn đã có trong activeFlags), dẫn tới bị override thành lời chào generic.
 
 ## Hoàn thành
 
@@ -673,13 +677,16 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 |----|----------|-----------|----------|
 | S20.1 | Kết nối story flag và quest backend | ✅ | Cập nhật `storyService.setFlag` để delegate qua `questService.setStoryFlag` nhằm chạy toàn bộ hiệu ứng phụ (advancement & auto-accept). |
 | S20.2 | Fix lặp hội thoại frontend | ✅ | Thêm logic phát hiện hội thoại đã hoàn thành bằng cách kiểm tra các flag kết quả và hiển thị fallback phù hợp cho Trưởng làng, Trưởng lão, Thợ rèn, Bia Đá Cổ, Bạch Lang Vương. |
+| S20.3 | Fix kẹt quest Lời Tiên Tri Cổ | ✅ | Bổ sung check flag `ch1_sent_to_blacksmith` để tự động tăng tiến độ quest của Trưởng lão. |
+| S20.4 | Fix kẹt hội thoại nhắc nhở NPC | ✅ | Sửa `isStartNodeCompleted` để bỏ qua kiểm tra hoàn thành cho các nút có `id: 'fallback'`. |
 
 ## Files đã sửa
 
 | File | Change |
 |------|--------|
 | `backend/src/story/story.service.ts` | Gọi `questService.setStoryFlag` trong `setFlag` |
-| `frontend/src/components/DialoguePanel.tsx` | Sửa logic chọn `startNode` với fallbacks phù hợp |
+| `frontend/src/components/DialoguePanel.tsx` | Sửa logic chọn `startNode` với fallbacks phù hợp và skip check completed cho fallback nodes |
+| `backend/src/quest/quest.service.ts` | Thêm flag `ch1_sent_to_blacksmith` để hoàn thành mục tiêu đối thoại với Trưởng lão |
 
 ## Xác nhận
 

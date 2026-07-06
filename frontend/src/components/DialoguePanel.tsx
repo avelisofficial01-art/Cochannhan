@@ -158,7 +158,7 @@ export const DialoguePanel: React.FC = () => {
 
           // If the starting node sets a flag the player already has, show fallback instead to avoid repeating completed dialogues
           const startNodeSetsFlag = startNode.setFlag;
-          const isStartNodeCompleted = startNodeSetsFlag && activeFlags.has(startNodeSetsFlag);
+          const isStartNodeCompleted = startNode.id !== 'fallback' && startNodeSetsFlag && activeFlags.has(startNodeSetsFlag);
 
           if (isStartNodeCompleted) {
             setCurrentNode({

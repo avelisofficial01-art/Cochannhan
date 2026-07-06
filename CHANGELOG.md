@@ -1275,6 +1275,8 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 
 1. Khắc phục lỗi quest đầu tiên ("Tỉnh Giấc Mộng" / nói chuyện với Trưởng làng) không thể tự động tăng tiến độ mục tiêu khi đối thoại kết thúc.
 2. Khắc phục lỗi lặp hội thoại vô hạn với Trưởng làng, Trưởng lão, Thợ rèn, v.v. sau khi người chơi đã hoàn thành mạch hội thoại.
+3. Khắc phục lỗi kẹt quest "Lời Tiên Tri Cổ" (đối thoại với Trưởng lão) không thể hoàn thành do thiếu key event handler cho flag `ch1_sent_to_blacksmith` trên backend.
+4. Sửa lỗi kẹt hội thoại nhắc nhở NPC bị thay thế bởi câu chào chung "Chúc ngươi tu tiên lộ thành công!".
 
 ### Hoàn thành
 
@@ -1282,13 +1284,17 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 |----|----------|-----------|----------|
 | S20.1 | Đồng bộ story flag với quest backend | ✅ | Gọi `questService.setStoryFlag` thay cho `storyRepo.setFlag` trực tiếp trong `storyService.setFlag`, tự động chạy side effects thúc đẩy mục tiêu quest dạng `talk`. |
 | S20.2 | Sửa lặp hội thoại frontend | ✅ | Thêm kiểm tra flag cốt truyện hoàn thành trong `DialoguePanel.tsx` trước khi chọn startNode để hiển thị fallback hướng dẫn quest thay vì lặp lại hội thoại giới thiệu. |
+| S20.3 | Fix kẹt quest Lời Tiên Tri Cổ | ✅ | Thêm `ch1_sent_to_blacksmith` vào trigger list của `questService.setStoryFlag` đối với mục tiêu Trưởng lão để tự động tăng tiến độ. |
+| S20.4 | Sửa lỗi ẩn câu thoại nhắc nhở NPC | ✅ | Cập nhật kiểm tra `isStartNodeCompleted` trong `DialoguePanel.tsx` để bỏ qua các node có `id === 'fallback'` (các node reminder động). |
 
 ### Files modified
 
 | File | Change |
 |------|--------|
 | `backend/src/story/story.service.ts` | Tích hợp `questService.setStoryFlag` vào hàm `setFlag` |
-| `frontend/src/components/DialoguePanel.tsx` | Cải tiến điều kiện `startNode` để tránh lặp hội thoại đầu game |
+| `frontend/src/components/DialoguePanel.tsx` | Cải tiến điều kiện `startNode` và sửa check `isStartNodeCompleted` để bỏ qua fallback reminder nodes |
+| `backend/src/quest/quest.service.ts` | Bổ sung check flag `ch1_sent_to_blacksmith` khi tương tác với Trưởng lão |
 
 ### Ghi chú
-- Sprint 20 hoàn thành, sửa triệt để lỗi không thể hoàn thành/nhận tiếp quest đầu tiên giúp luồng cốt truyện Chapter 1 chạy mượt mà từ lúc spawn đến boss Bạch Lang Vương.
+- Sprint 20 hoàn thành triệt để các lỗi liên quan đến kẹt quest chính tuyến "Lời Tiên Tri Cổ" và các lỗi tương tác đối thoại của NPC Trưởng lão.
+
