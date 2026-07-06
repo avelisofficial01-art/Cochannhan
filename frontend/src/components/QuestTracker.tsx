@@ -94,6 +94,8 @@ export const QuestTracker: React.FC = () => {
   };
 
   const activePlayerQuests = (activeQuests as PlayerQuest[]).filter(q => q.status === 'active');
+  console.log('[QuestTracker] Rendering. activePlayerQuests:', activePlayerQuests);
+  console.log('[QuestTracker] Rendering. questTemplates:', questTemplates);
 
   if (!activePlayerQuests || activePlayerQuests.length === 0) {
     return (
@@ -123,6 +125,7 @@ export const QuestTracker: React.FC = () => {
       </div>
       {!isCollapsed && activePlayerQuests.map((pq) => {
         const template = questTemplates.find((t) => t.id === pq.questId);
+        console.log(`[QuestTracker] Mapping active quest. PQ ID: ${pq.id}, questId: ${pq.questId}, Template:`, template);
         if (!template) return null;
 
         const objectives = template.objectives
