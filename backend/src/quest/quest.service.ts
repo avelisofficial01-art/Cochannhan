@@ -127,28 +127,54 @@ export const questService = {
 
   async getPlayerQuests(playerId: string): Promise<PlayerQuest[]> {
     console.log(`[QuestService] getPlayerQuests for playerId: ${playerId}`);
-    const rows = await questRepository.findPlayerQuests(playerId);
-    console.log(`[QuestService] Found existing quests: ${rows.length}`);
-    if (rows.length === 0) {
-      console.log(`[QuestService] No quests found for player. Querying 'Tỉnh Giấc Mộng' template...`);
-      const [awakenQuest] = await db
-        .select()
-        .from(schema.questTemplates)
-        .where(eq(schema.questTemplates.name, 'Tỉnh Giấc Mộng'))
-        .limit(1);
-      if (awakenQuest) {
-        console.log(`[QuestService] Found template 'Tỉnh Giấc Mộng' with ID: ${awakenQuest.id}. Auto-accepting...`);
-        const newPq = await questRepository.acceptQuest(playerId, awakenQuest.id);
-        if (newPq) {
-          console.log(`[QuestService] Auto-accepted 'Tỉnh Giấc Mộng' successfully. PlayerQuest ID: ${newPq.id}`);
-          return [mapPlayerQuest(newPq as unknown as PlayerQuestRow)];
-        } else {
-          console.error(`[QuestService] Failed to auto-accept 'Tỉnh Giấc Mộng' (acceptQuest returned null)`);
+    
+    // --- Database Self-Healing / Flag Sync ---
+    try {
+      const existingQuests = await questRepository.findPlayerQuests(playerId);
+      const flags = await questService.getStoryFlags(playerId);
+      const flagKeys = new Set(flags.map(f => f.key));
+
+      // 1. If any quest is completed, ensure its flag_complete is set in the storyFlags table
+      for (const pq of existingQuests) {
+        if (pq.status === 'completed') {
+          const quest = await questService.getQuest(pq.quest_id);
+          if (quest && quest.flagComplete && !flagKeys.has(quest.flagComplete)) {
+            console.log(`[QuestService] Self-healing: Syncing missing complete flag "${quest.flagComplete}" for quest "${quest.name}"`);
+            await questRepository.setStoryFlag(playerId, quest.flagComplete, 'true');
+            flagKeys.add(quest.flagComplete);
+          }
         }
-      } else {
-        console.error(`[QuestService] Quest template 'Tỉnh Giấc Mộng' NOT found in questTemplates table!`);
       }
+
+      // 2. Auto-accept any quest whose flag_required is present in player's storyFlags
+      const allTemplates = await questService.getAllQuests();
+      const existingQuestIds = new Set(existingQuests.map(q => q.quest_id));
+      let acceptedAny = false;
+
+      for (const tmpl of allTemplates) {
+        if (!existingQuestIds.has(tmpl.id)) {
+          if (tmpl.flagRequired && flagKeys.has(tmpl.flagRequired)) {
+            console.log(`[QuestService] Self-healing: Auto-accepting quest "${tmpl.name}" because flag "${tmpl.flagRequired}" is active.`);
+            await questRepository.acceptQuest(playerId, tmpl.id);
+            acceptedAny = true;
+          }
+        }
+      }
+
+      // 3. If the player has absolutely 0 quests, auto-accept the initial "Tỉnh Giấc Mộng" quest
+      if (existingQuests.length === 0 && !acceptedAny) {
+        const awakenQuest = allTemplates.find(q => q.name === 'Tỉnh Giấc Mộng');
+        if (awakenQuest) {
+          console.log(`[QuestService] Self-healing: Auto-accepting initial quest "Tỉnh Giấc Mộng"`);
+          await questRepository.acceptQuest(playerId, awakenQuest.id);
+        }
+      }
+    } catch (err) {
+      console.error('[QuestService] Self-healing failed:', err);
     }
+
+    const rows = await questRepository.findPlayerQuests(playerId);
+    console.log(`[QuestService] Found existing quests (after self-healing): ${rows.length}`);
     return rows.map((r) => mapPlayerQuest(r as unknown as PlayerQuestRow));
   },
 
