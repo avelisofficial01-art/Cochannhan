@@ -1306,3 +1306,44 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 ### Ghi chú
 - Sprint 20 hoàn thành xuất sắc, giải quyết toàn bộ các lỗi liên quan đến tương tác, nhận và trả quest của người chơi đầu game, cải thiện đáng kể UX trải nghiệm.
 
+---
+
+## Sprint 21: SHOP SYSTEM IMPLEMENTATION & DB SELF-HEALING HOTFIX — 2026-07-06
+
+### Mục tiêu
+
+1. Giải quyết triệt để lỗi không tự nhận nhiệm vụ tiếp theo ("Mối Đe Dọa Sói Tuyết") cho người chơi cũ bằng cơ chế tự sửa lỗi dữ liệu (Self-Healing) trên Backend.
+2. Hoàn thiện hệ thống Cửa hàng (Shop System) cho game, bao gồm cả Backend API, Database và giao diện Frontend.
+3. Liên kết giao dịch mua bán vật phẩm với hệ thống NPC (Thợ rèn, Thương nhân) thông qua hội thoại.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S21.1 | Cơ chế Self-Healing cho Quests | ✅ | Thêm tự động đồng bộ story flags từ các nhiệm vụ đã hoàn thành và tự động nhận các nhiệm vụ tiếp theo khi tải danh sách nhiệm vụ của người chơi. |
+| S21.2 | Database Schema Shop | ✅ | Định nghĩa các bảng `shops` và `shop_items` trong Drizzle ORM và tạo migration SQL đầy đủ. |
+| S21.3 | Seed Dữ liệu Cửa hàng | ✅ | Seed sẵn mặt hàng cho **Thợ rèn** (Kiếm Băng Hàn, Đá Linh Hồn) và **Thương nhân** (Bình Hồi Máu/Mana Nhỏ, Thảo Dược) trong file `seed.ts`. |
+| S21.4 | Backend Shop API | ✅ | Viết repository, service, controller và router cho Shop với đầy đủ các nghiệp vụ kiểm tra tài chính, giới hạn tồn kho, kiểm tra chỗ trống rương đồ (tối đa 24 ô). |
+| S21.5 | Tích hợp hội thoại mở Shop | ✅ | Hiển thị nút bấm nổi bật "🛒 Mở Cửa Hàng" trong DialoguePanel của các NPC sở hữu cửa hàng để người chơi mở giao dịch thuận tiện. |
+| S21.6 | UI Shop Panel | ✅ | Thiết kế bảng Cửa hàng Dark Glassmorphism tinh xảo, chia đôi giao diện: bên trái là danh sách đồ bán của NPC, bên phải là rương đồ người chơi kèm nút Mua/Bán trực tiếp. |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/src/quest/quest.service.ts` | Bổ sung logic tự sửa lỗi (Self-Healing) đồng bộ story flags và auto-accept nhiệm vụ chuỗi. |
+| `backend/src/database/schema/index.ts` | Khai báo bảng `shops` và `shop_items`. |
+| `backend/src/database/seed.ts` | Bổ sung logic seed dữ liệu cửa hàng và mặt hàng tương ứng của từng NPC. |
+| `backend/src/app.ts` | Đăng ký router `/api/shop` cho ứng dụng Express. |
+| `frontend/src/store/gameStore.ts` | Thêm trạng thái và hành động mở/đóng cửa hàng (`isShopOpen`, `activeShopNpc`, `toggleShop`). |
+| `frontend/src/components/DialoguePanel.tsx` | Hiển thị nút "🛒 Mở Cửa Hàng" đối với các NPC có thuộc tính `hasShop: 'true'`. |
+| `frontend/src/pages/GamePage.tsx` | Nhập và hiển thị component `ShopPanel`. |
+| `backend/src/database/migrations/*` | Tạo file SQL migration cho các bảng Shop. |
+| `backend/src/shop/*` | [NEW] Xây dựng module Shop trên Backend (repository, service, controller, route). |
+| `frontend/src/components/ShopPanel.tsx` | [NEW] Thiết kế giao diện giao diện mua bán cửa hàng. |
+
+### Ghi chú
+- Hệ thống Cửa hàng hoạt động hoàn toàn mượt mà, đồng bộ trực tiếp với rương đồ và số lượng linh thạch (vàng) hiện tại của người chơi.
+- Cơ chế tự sửa lỗi dữ liệu giúp khắc phục hoàn toàn tình trạng lỗi kẹt nhiệm vụ đối với cả tài khoản mới lẫn cũ.
+
+

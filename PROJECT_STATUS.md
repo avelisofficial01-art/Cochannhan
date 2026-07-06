@@ -10,7 +10,7 @@
 
 # Current Sprint
 
-**Sprint:** 20 — Hotfix: Quest progression talk objectives & dialogue loops
+**Sprint:** 21 — Shop System & DB Self-Healing Hotfix
 
 **Status:** ✅ Completed
 
@@ -43,12 +43,27 @@
 | Sprint 18 | Hotfix: Quest Accept 500 & Portal Two-Way Loop | ✅ Completed |
 | Sprint 19 | Hotfix: Dialogue active flags mismatch & cooldown position | ✅ Completed |
 | Sprint 20 | Hotfix: Quest progression talk objectives & dialogue loops | ✅ Completed |
+| Sprint 21 | Shop System & DB Self-Healing Hotfix | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 20 — Hotfix: Quest progression talk objectives & dialogue loops
+Current Module: ✅ Sprint 21 — Shop System & DB Self-Healing Hotfix
+
+# Sprint 21 Checklist
+
+## Shop System & DB Self-Healing Hotfix (S21.1)
+- [x] Backend database schema update: Declare `shops` and `shop_items` tables using Drizzle ORM
+- [x] SQL migration creation: Run Drizzle-Kit tool to output `0000_cool_thunderbolts.sql` migration snapshot
+- [x] Shop Repository implementation: Develop query handlers for joining tables and retrieving item template properties
+- [x] Shop Service implementation: Support buying and selling logic with capacity check, balance deduct, and stock update validations
+- [x] API routes integration: Expose authenticated GET `/api/shop/:npcId`, POST `/api/shop/buy`, and POST `/api/shop/sell` routes
+- [x] Dialogue Trigger implementation: Conditionally show a gold-styled "🛒 Mở Cửa Hàng" choice button in NPC Dialogue UI when `hasShop` is active
+- [x] Shop UI Layout development: Build a beautiful responsive split-view glassmorphism overlay modal displaying shop stocks and player inventory
+- [x] DB Self-Healing Integration: Sync story flags and auto-accept quest chains inside `getPlayerQuests` backend reader to heal stuck states
+- [x] Typecheck, compilation builds, and lints all pass with 0 errors
+
 
 # Sprint 15 Checklist
 
