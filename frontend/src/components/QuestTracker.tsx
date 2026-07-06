@@ -6,6 +6,7 @@ interface QuestObjective {
   type: string;
   target: string;
   count: number;
+  description?: string;
 }
 
 interface QuestTemplate {
@@ -65,6 +66,26 @@ export const QuestTracker: React.FC = () => {
     return () => clearInterval(interval);
   }, [setActiveQuests]);
 
+  const handleCompleteQuest = async (questId: string): Promise<void> => {
+    try {
+      const res = await fetchWithAuth('/api/quest/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const activeRes = await fetchWithAuth('/api/quest/player/active');
+        const activeJson = await activeRes.json();
+        if (activeJson.success && activeJson.data) {
+          setActiveQuests(activeJson.data as unknown[]);
+        }
+      }
+    } catch {
+      // Silent catch
+    }
+  };
+
   const activePlayerQuests = (activeQuests as PlayerQuest[]).filter(q => q.status === 'active');
 
   if (!activePlayerQuests || activePlayerQuests.length === 0) {
@@ -103,6 +124,11 @@ export const QuestTracker: React.FC = () => {
             : (template.objectives as QuestObjective[])
           : [];
 
+        const allDone = objectives.length > 0 && objectives.every((obj, idx) => {
+          const progress = pq.objectivesProgress?.[idx] || { current: 0 };
+          return progress.current >= obj.count;
+        });
+
         return (
           <div key={pq.id} style={styles.questItem}>
             <div style={styles.questName}>
@@ -119,6 +145,20 @@ export const QuestTracker: React.FC = () => {
               {objectives.map((obj, idx: number) => {
                 const progress = pq.objectivesProgress?.[idx] || { current: 0 };
                 const isComplete = progress.current >= obj.count;
+                
+                let objectiveLabel = '';
+                if (obj.type === 'kill') {
+                  objectiveLabel = `Tiêu diệt ${obj.target}`;
+                } else if (obj.type === 'talk') {
+                  objectiveLabel = `Trò chuyện với ${obj.target}`;
+                } else if (obj.type === 'reach') {
+                  objectiveLabel = `Đi đến ${obj.target}`;
+                } else if (obj.type === 'collect') {
+                  objectiveLabel = `Thu thập ${obj.target}`;
+                } else {
+                  objectiveLabel = obj.description || `Mục tiêu ${idx + 1}`;
+                }
+
                 return (
                   <div
                     key={idx}
@@ -128,11 +168,26 @@ export const QuestTracker: React.FC = () => {
                       textDecoration: isComplete ? 'line-through' : 'none',
                     }}
                   >
-                    • {obj.type === 'kill' ? 'Tiêu diệt' : 'Thu thập'} {obj.target}: {progress.current} / {obj.count}
+                    • {objectiveLabel}: {progress.current} / {obj.count}
                   </div>
                 );
               })}
             </div>
+
+            {allDone && (
+              <button
+                onClick={() => handleCompleteQuest(pq.questId)}
+                style={styles.claimButton}
+                onMouseOver={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f1c40f';
+                }}
+                onMouseOut={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4af37';
+                }}
+              >
+                Nhận Thưởng (Hoàn Thành)
+              </button>
+            )}
           </div>
         );
       })}
@@ -201,5 +256,19 @@ const styles: Record<string, React.CSSProperties> = {
   objectiveItem: {
     fontSize: '11px',
     lineHeight: '1.2',
+  },
+  claimButton: {
+    width: '100%',
+    padding: '4px 8px',
+    fontSize: '11px',
+    backgroundColor: '#d4af37',
+    border: 'none',
+    borderRadius: '4px',
+    color: '#0f0f19',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    textAlign: 'center',
+    marginTop: '6px',
+    transition: 'background-color 0.2s',
   },
 };

@@ -1277,6 +1277,9 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 2. Khắc phục lỗi lặp hội thoại vô hạn với Trưởng làng, Trưởng lão, Thợ rèn, v.v. sau khi người chơi đã hoàn thành mạch hội thoại.
 3. Khắc phục lỗi kẹt quest "Lời Tiên Tri Cổ" (đối thoại với Trưởng lão) không thể hoàn thành do thiếu key event handler cho flag `ch1_sent_to_blacksmith` trên backend.
 4. Sửa lỗi kẹt hội thoại nhắc nhở NPC bị thay thế bởi câu chào chung "Chúc ngươi tu tiên lộ thành công!".
+5. Khắc phục lỗi race condition của quest đầu tiên "Tỉnh Giấc Mộng" (yêu cầu flag `ch1_intro_done` để nhận, nhưng khi set flag trong dialogue thì quest chưa được nhận nên không kích hoạt update tiến trình nói chuyện).
+6. Khắc phục lỗi hiển thị Quest Tracker dịch sai/hardcode tất cả các loại mục tiêu thành "Thu thập".
+7. Thêm nút "Nhận Thưởng (Hoàn Thành)" trực tiếp trên Quest Tracker HUD khi hoàn tất mục tiêu.
 
 ### Hoàn thành
 
@@ -1286,6 +1289,9 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 | S20.2 | Sửa lặp hội thoại frontend | ✅ | Thêm kiểm tra flag cốt truyện hoàn thành trong `DialoguePanel.tsx` trước khi chọn startNode để hiển thị fallback hướng dẫn quest thay vì lặp lại hội thoại giới thiệu. |
 | S20.3 | Fix kẹt quest Lời Tiên Tri Cổ | ✅ | Thêm `ch1_sent_to_blacksmith` vào trigger list của `questService.setStoryFlag` đối với mục tiêu Trưởng lão để tự động tăng tiến độ. |
 | S20.4 | Sửa lỗi ẩn câu thoại nhắc nhở NPC | ✅ | Cập nhật kiểm tra `isStartNodeCompleted` trong `DialoguePanel.tsx` để bỏ qua các node có `id === 'fallback'` (các node reminder động). |
+| S20.5 | Loại bỏ flag yêu cầu quest đầu | ✅ | Đổi `flag_required` của quest `q_ch1_awaken` thành `null` trên config backend để quest active ngay khi tạo nhân vật. |
+| S20.6 | Bản dịch các loại objective trên Tracker | ✅ | Thêm check type objective trong `QuestTracker.tsx` để render nhãn hành động tương ứng (Tiêu diệt, Trò chuyện với, Đi đến, Thu thập). |
+| S20.7 | Nút Nhận thưởng nhanh trên HUD Tracker | ✅ | Tích hợp nút bấm hoàn thành nhiệm vụ và nhận thưởng trực tiếp trên HUD để người chơi dễ tương tác. |
 
 ### Files modified
 
@@ -1294,7 +1300,9 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 | `backend/src/story/story.service.ts` | Tích hợp `questService.setStoryFlag` vào hàm `setFlag` |
 | `frontend/src/components/DialoguePanel.tsx` | Cải tiến điều kiện `startNode` và sửa check `isStartNodeCompleted` để bỏ qua fallback reminder nodes |
 | `backend/src/quest/quest.service.ts` | Bổ sung check flag `ch1_sent_to_blacksmith` khi tương tác với Trưởng lão |
+| `backend/src/config/index.ts` | Đổi `flag_required` của quest `q_ch1_awaken` thành `null` |
+| `frontend/src/components/QuestTracker.tsx` | Cập nhật render label cho các loại objective và tích hợp nút nhận thưởng nhanh |
 
 ### Ghi chú
-- Sprint 20 hoàn thành triệt để các lỗi liên quan đến kẹt quest chính tuyến "Lời Tiên Tri Cổ" và các lỗi tương tác đối thoại của NPC Trưởng lão.
+- Sprint 20 hoàn thành xuất sắc, giải quyết toàn bộ các lỗi liên quan đến tương tác, nhận và trả quest của người chơi đầu game, cải thiện đáng kể UX trải nghiệm.
 

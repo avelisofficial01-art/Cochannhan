@@ -660,9 +660,12 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 ## Mục tiêu
 
 1. Fix lỗi "Tỉnh Giấc Mộng" quest (talk to Trưởng làng) không hoàn thành do setting story flag bỏ qua quest-advancement logic.
-2. Fix lỗi đối thoại lặp vô tận với các NPC (Trưởng làng, Trưởng lão, Thợ rèn, v.v.) sau khi đã hoàn thành dialogue chain.
+2. Fix lỗi đối thoại lặp vô chậm với các NPC (Trưởng làng, Trưởng lão, Thợ rèn, v.v.) sau khi đã hoàn thành dialogue chain.
 3. Fix lỗi kẹt quest "Lời Tiên Tri Cổ" (talk to Trưởng lão) không thể hoàn thành do thiếu event handler cho flag `ch1_sent_to_blacksmith`.
 4. Fix lỗi kẹt hội thoại nhắc nhở của Trưởng lão và Trưởng làng biến thành lời chào chung "Chúc ngươi tu tiên lộ thành công!".
+5. Sửa lỗi kẹt nhiệm vụ đầu tiên "Tỉnh Giấc Mộng" do race condition: quest yêu cầu flag `ch1_intro_done` để nhận, nhưng khi set flag này thì quest chưa được nhận, khiến tiến trình đối thoại bị kẹt ở `0/1`.
+6. Cải thiện hiển thị Quest Tracker (dịch đúng hành động: "Tiêu diệt", "Trò chuyện với", "Đi đến", "Thu thập" thay vì hardcode "Thu thập").
+7. Thêm nút "Nhận Thưởng (Hoàn Thành)" trực tiếp trên Quest Tracker HUD khi người chơi hoàn thành tất cả mục tiêu của một nhiệm vụ.
 
 ## Root Cause
 
@@ -670,6 +673,9 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 - Logic tìm kiếm `startNode` trong `DialoguePanel.tsx` không phát hiện được chain đã hoàn thành nếu nút đầu tiên của chain không có `setFlag` thuộc tính, dẫn đến tự động lặp lại từ orderIndex 0.
 - `questService.setStoryFlag` thiếu nhánh xử lý flag `ch1_sent_to_blacksmith` để tự động hoàn thành talk objective của NPC Trưởng lão.
 - Các nút nhắc nhở constructed dynamic trong `DialoguePanel.tsx` có `id: 'fallback'` nhưng lại bị check `isStartNodeCompleted` dựa trên `setFlag` (vốn đã có trong activeFlags), dẫn tới bị override thành lời chào generic.
+- Race condition nhiệm vụ đầu tiên: quest `q_ch1_awaken` yêu cầu flag `ch1_intro_done`. Việc set flag trong dialogue diễn ra trước khi frontend gọi accept quest, làm bỏ lỡ trigger update tiến trình nói chuyện.
+- UI Quest Tracker hardcode tiền tố "Thu thập" cho mọi loại objective.
+- Người chơi không biết cách trả quest vì game yêu cầu mở Character Panel (phím C), chuyển tab Quest để bấm trả thưởng.
 
 ## Hoàn thành
 
@@ -679,6 +685,9 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 | S20.2 | Fix lặp hội thoại frontend | ✅ | Thêm logic phát hiện hội thoại đã hoàn thành bằng cách kiểm tra các flag kết quả và hiển thị fallback phù hợp cho Trưởng làng, Trưởng lão, Thợ rèn, Bia Đá Cổ, Bạch Lang Vương. |
 | S20.3 | Fix kẹt quest Lời Tiên Tri Cổ | ✅ | Bổ sung check flag `ch1_sent_to_blacksmith` để tự động tăng tiến độ quest của Trưởng lão. |
 | S20.4 | Fix kẹt hội thoại nhắc nhở NPC | ✅ | Sửa `isStartNodeCompleted` để bỏ qua kiểm tra hoàn thành cho các nút có `id: 'fallback'`. |
+| S20.5 | Gỡ flag yêu cầu của quest đầu tiên | ✅ | Thay đổi `flag_required` của quest `q_ch1_awaken` từ `'ch1_intro_done'` thành `null` trên config backend để quest active ngay từ đầu game. |
+| S20.6 | Cải tiến text hiển thị Quest Tracker | ✅ | Thêm logic dịch hành động động mục tiêu (Tiêu diệt, Trò chuyện với, Đi đến, Thu thập). |
+| S20.7 | Thêm nút Hoàn Thành nhanh trên HUD | ✅ | Thêm nút "Nhận Thưởng (Hoàn Thành)" trực tiếp trên Quest Tracker HUD khi tất cả mục tiêu của quest đã xong. |
 
 ## Files đã sửa
 
@@ -687,6 +696,8 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 | `backend/src/story/story.service.ts` | Gọi `questService.setStoryFlag` trong `setFlag` |
 | `frontend/src/components/DialoguePanel.tsx` | Sửa logic chọn `startNode` với fallbacks phù hợp và skip check completed cho fallback nodes |
 | `backend/src/quest/quest.service.ts` | Thêm flag `ch1_sent_to_blacksmith` để hoàn thành mục tiêu đối thoại với Trưởng lão |
+| `backend/src/config/index.ts` | Đổi `flag_required` của quest `q_ch1_awaken` thành `null` |
+| `frontend/src/components/QuestTracker.tsx` | Cập nhật render label cho các loại objective và tích hợp nút nhận thưởng nhanh |
 
 ## Xác nhận
 
