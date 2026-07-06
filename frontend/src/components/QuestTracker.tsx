@@ -33,26 +33,33 @@ export const QuestTracker: React.FC = () => {
   useEffect(() => {
     const fetchActiveQuests = async () => {
       try {
-
+        console.log('[QuestTracker] Fetching active quests from /api/quest/player/active...');
         const res = await fetchWithAuth('/api/quest/player/active');
         const json = await res.json();
+        console.log('[QuestTracker] Received active quests response:', json);
         if (json.success && json.data) {
           setActiveQuests(json.data as unknown[]);
+        } else {
+          console.warn('[QuestTracker] Active quests fetch unsuccessful or no data:', json);
         }
-      } catch {
-        // Silent catch
+      } catch (err) {
+        console.error('[QuestTracker] fetchActiveQuests error:', err);
       }
     };
 
     const fetchQuestTemplates = async () => {
       try {
+        console.log('[QuestTracker] Fetching quest templates from /api/quest...');
         const res = await fetchWithAuth('/api/quest');
         const json = await res.json();
+        console.log('[QuestTracker] Received quest templates response:', json);
         if (json.success && json.data) {
           setQuestTemplates(json.data as QuestTemplate[]);
+        } else {
+          console.warn('[QuestTracker] Templates fetch unsuccessful or no data:', json);
         }
-      } catch {
-        // Silent catch
+      } catch (err) {
+        console.error('[QuestTracker] fetchQuestTemplates error:', err);
       }
     };
 

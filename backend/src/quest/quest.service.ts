@@ -126,18 +126,27 @@ export const questService = {
   },
 
   async getPlayerQuests(playerId: string): Promise<PlayerQuest[]> {
+    console.log(`[QuestService] getPlayerQuests for playerId: ${playerId}`);
     const rows = await questRepository.findPlayerQuests(playerId);
+    console.log(`[QuestService] Found existing quests: ${rows.length}`);
     if (rows.length === 0) {
+      console.log(`[QuestService] No quests found for player. Querying 'Tỉnh Giấc Mộng' template...`);
       const [awakenQuest] = await db
         .select()
         .from(schema.questTemplates)
         .where(eq(schema.questTemplates.name, 'Tỉnh Giấc Mộng'))
         .limit(1);
       if (awakenQuest) {
+        console.log(`[QuestService] Found template 'Tỉnh Giấc Mộng' with ID: ${awakenQuest.id}. Auto-accepting...`);
         const newPq = await questRepository.acceptQuest(playerId, awakenQuest.id);
         if (newPq) {
+          console.log(`[QuestService] Auto-accepted 'Tỉnh Giấc Mộng' successfully. PlayerQuest ID: ${newPq.id}`);
           return [mapPlayerQuest(newPq as unknown as PlayerQuestRow)];
+        } else {
+          console.error(`[QuestService] Failed to auto-accept 'Tỉnh Giấc Mộng' (acceptQuest returned null)`);
         }
+      } else {
+        console.error(`[QuestService] Quest template 'Tỉnh Giấc Mộng' NOT found in questTemplates table!`);
       }
     }
     return rows.map((r) => mapPlayerQuest(r as unknown as PlayerQuestRow));
