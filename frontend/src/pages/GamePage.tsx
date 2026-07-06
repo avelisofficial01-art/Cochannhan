@@ -12,6 +12,7 @@ import GameHUD from '../components/GameHUD.js';
 import CraftPanel from '../components/CraftPanel.js';
 import { DialoguePanel } from '../components/DialoguePanel.js';
 import { QuestTracker } from '../components/QuestTracker.js';
+import ShopPanel from '../components/ShopPanel.js';
 
 export default function GamePage(): React.ReactElement {
   const gameRef = useRef<Phaser.Game | null>(null);
@@ -90,6 +91,7 @@ export default function GamePage(): React.ReactElement {
         <CraftPanel />
         <DialoguePanel />
         <QuestTracker />
+        <ShopPanel />
       </div>
     </div>
   );

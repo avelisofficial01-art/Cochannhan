@@ -101,6 +101,9 @@ interface GameState {
   inventorySlots: Array<{ id: string; itemId: string; itemName: string; quantity: number; slot: number; itemType: string }>;
   profile: ProfileState | null;
   stats: StatsState | null;
+  isShopOpen: boolean;
+  activeShopNpc: { id: string; name: string } | null;
+  toggleShop: (open: boolean, npc?: { id: string; name: string }) => void;
   characterPanelTab: 'stats' | 'gu' | 'equip' | 'quest' | 'inventory';
 
   setEquipmentList: (list: GameState['equipmentList']) => void;
@@ -157,6 +160,8 @@ export const useGameStore = create<GameState>((set) => ({
   inventorySlots: [],
   profile: null,
   stats: null,
+  isShopOpen: false,
+  activeShopNpc: null,
   characterPanelTab: 'stats',
 
   setPosition: (x, y): void => set({ playerX: x, playerY: y }),
@@ -195,4 +200,5 @@ export const useGameStore = create<GameState>((set) => ({
   setProfile: (profile): void => set({ profile }),
   setStats: (stats): void => set({ stats }),
   setCharacterPanelTab: (tab): void => set({ characterPanelTab: tab }),
+  toggleShop: (open, npc): void => set({ isShopOpen: open, activeShopNpc: npc || null }),
 }));

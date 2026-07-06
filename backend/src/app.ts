@@ -24,6 +24,7 @@ import craftRouter from './craft/craft.route.js';
 import storyRouter from './story/story.controller.js';
 import cultivationRouter from './cultivation/cultivation.controller.js';
 import saveRouter from './save/save.controller.js';
+import shopRouter from './shop/shop.route.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { config } from './config/index.js';
 import jwt from 'jsonwebtoken';
@@ -95,6 +96,7 @@ app.use('/api/gu', guRouter);
 app.use('/api/equipment', equipmentRouter);
 app.use('/api/craft', craftRouter);
 app.use('/api/story', storyRouter);
+app.use('/api/shop', shopRouter);
 app.use('/api/cultivation', cultivationRouter);
 app.use('/api/save', saveRouter);
 

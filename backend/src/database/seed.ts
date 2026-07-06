@@ -492,6 +492,77 @@ export async function seedDatabase(): Promise<void> {
       }
     }
 
+    // 12. Seed Shop Data
+    console.log('[Seed] Seeding shops and shop items...');
+    await db.delete(schema.shopItems);
+    await db.delete(schema.shops);
+
+    const blacksmithNpcId = npcMap.get('Thợ rèn');
+    const merchantNpcId = npcMap.get('Thương nhân');
+
+    if (blacksmithNpcId) {
+      const [blacksmithShop] = await db.insert(schema.shops).values({
+        npc_id: blacksmithNpcId,
+        name: 'Tiệm Rèn Bắc Nguyên',
+      }).returning();
+      
+      const itemKiem = itemMap.get('Kiếm Băng Hàn');
+      const itemDa = itemMap.get('Đá Linh Hồn');
+
+      if (itemKiem) {
+        await db.insert(schema.shopItems).values({
+          shop_id: blacksmithShop.id,
+          item_id: itemKiem,
+          price: 300,
+          stock: null,
+        });
+      }
+      if (itemDa) {
+        await db.insert(schema.shopItems).values({
+          shop_id: blacksmithShop.id,
+          item_id: itemDa,
+          price: 20,
+          stock: null,
+        });
+      }
+    }
+
+    if (merchantNpcId) {
+      const [merchantShop] = await db.insert(schema.shops).values({
+        npc_id: merchantNpcId,
+        name: 'Tập Hóa Thương Nhân',
+      }).returning();
+
+      const itemHP = itemMap.get('Bình Hồi Máu Nhỏ');
+      const itemMP = itemMap.get('Bình Hồi Mana Nhỏ');
+      const itemHerb = itemMap.get('Thảo Dược');
+
+      if (itemHP) {
+        await db.insert(schema.shopItems).values({
+          shop_id: merchantShop.id,
+          item_id: itemHP,
+          price: 15,
+          stock: null,
+        });
+      }
+      if (itemMP) {
+        await db.insert(schema.shopItems).values({
+          shop_id: merchantShop.id,
+          item_id: itemMP,
+          price: 15,
+          stock: null,
+        });
+      }
+      if (itemHerb) {
+        await db.insert(schema.shopItems).values({
+          shop_id: merchantShop.id,
+          item_id: itemHerb,
+          price: 10,
+          stock: null,
+        });
+      }
+    }
+
     // Refresh map config spawns and portals
     await refreshMapConfig();
 
@@ -575,7 +646,6 @@ async function refreshMapConfig(): Promise<void> {
         to_map: toMapId,
         x: p.from_x,
         y: p.from_y,
-        condition: null,
       });
       portalCount++;
     }

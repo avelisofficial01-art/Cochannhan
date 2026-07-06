@@ -19,7 +19,7 @@ interface DialogueNode {
 }
 
 export const DialoguePanel: React.FC = () => {
-  const { activeNpc, isDialogueOpen, closeDialogue, setActiveQuests } = useGameStore();
+  const { activeNpc, isDialogueOpen, closeDialogue, setActiveQuests, toggleShop } = useGameStore();
   const [dialogues, setDialogues] = useState<DialogueNode[]>([]);
   const [currentNode, setCurrentNode] = useState<DialogueNode | null>(null);
   const [loading, setLoading] = useState(false);
@@ -269,8 +269,20 @@ export const DialoguePanel: React.FC = () => {
             {loading ? 'Đang tải hội thoại...' : currentNode?.text}
           </div>
         </div>
-
+        
         <div style={styles.choicesContainer}>
+          {!loading && activeNpc && (activeNpc.hasShop === true || String(activeNpc.hasShop) === 'true') && (
+            <button
+              style={{ ...styles.choiceButton, backgroundColor: '#c5a880', color: '#111', fontWeight: 'bold' }}
+              onClick={() => {
+                const npc = activeNpc;
+                closeDialogue();
+                toggleShop(true, { id: npc.id, name: npc.name });
+              }}
+            >
+              🛒 Mở Cửa Hàng
+            </button>
+          )}
           {!loading && choicesList && choicesList.length > 0 ? (
             choicesList.map((choice, index: number) => (
               <button

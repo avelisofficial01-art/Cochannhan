@@ -533,3 +533,31 @@ export const mapSpawns = pgTable('map_spawns', {
   y: integer('y').notNull(),
   respawn_time: integer('respawn_time').notNull().default(30), // seconds
 });
+
+// ============================================================
+// SHOP MODULE
+// ============================================================
+
+export const shops = pgTable('shops', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  npc_id: uuid('npc_id')
+    .notNull()
+    .unique()
+    .references(() => npcTemplates.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 200 }).notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const shopItems = pgTable('shop_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  shop_id: uuid('shop_id')
+    .notNull()
+    .references(() => shops.id, { onDelete: 'cascade' }),
+  item_id: uuid('item_id')
+    .notNull()
+    .references(() => itemTemplates.id, { onDelete: 'cascade' }),
+  price: integer('price').notNull().default(0),
+  stock: integer('stock'), // null means infinite stock
+  refresh_time: integer('refresh_time'), // in seconds, optional
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
