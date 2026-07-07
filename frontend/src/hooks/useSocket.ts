@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useGameStore, type MonsterSprite, type CombatResult } from '../store/gameStore.js';
+import { useGameStore, type MonsterSprite, type CombatResult, type ProfileState, type StatsState } from '../store/gameStore.js';
 import { useAuthStore } from '../store/auth.js';
 
 export function useSocket(): { isConnected: boolean } {
@@ -131,6 +131,14 @@ export function useSocket(): { isConnected: boolean } {
 
     socket.on('quest:updated', (activeQuests: unknown[]) => {
       useGameStore.getState().setActiveQuests(activeQuests);
+    });
+
+    socket.on('player:profile', (profile: ProfileState) => {
+      useGameStore.getState().setProfile(profile);
+    });
+
+    socket.on('player:stats', (stats: StatsState) => {
+      useGameStore.getState().setStats(stats);
     });
 
     // ── Map synchronization events ───────────────────

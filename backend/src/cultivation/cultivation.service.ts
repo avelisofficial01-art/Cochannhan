@@ -49,13 +49,14 @@ export async function breakthrough(playerId: string): Promise<BreakthroughResult
     };
   }
 
-  // Deduct gold (gold is integer)
+  // Deduct gold and update realm (gold is integer)
+  const newLevel = cult.realmLevel + 1;
   await playerRepository.update(playerId, {
     gold: Number(player.gold) - currentRealm.breakthroughGold,
+    realm: newLevel,
   });
 
   // Advance to next realm
-  const newLevel = cult.realmLevel + 1;
   await cultivationRepo.updateRealm(playerId, newLevel);
   await cultivationRepo.incrementBreakthroughCount(playerId);
 

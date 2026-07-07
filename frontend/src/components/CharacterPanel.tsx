@@ -8,6 +8,18 @@ const ELEMENT_COLORS: Record<string, string> = {
   'Thạch': 'text-amber-400 border-amber-700 bg-amber-900/20',
   'Huyết': 'text-rose-400 border-rose-700 bg-rose-900/20',
   'Độc': 'text-purple-400 border-purple-700 bg-purple-900/20',
+  'fire': 'text-red-400 border-red-700 bg-red-900/20',
+  'wind': 'text-cyan-400 border-cyan-700 bg-cyan-900/20',
+  'earth': 'text-amber-400 border-amber-700 bg-amber-900/20',
+  'blood': 'text-rose-400 border-rose-700 bg-rose-900/20',
+  'poison': 'text-purple-400 border-purple-700 bg-purple-900/20',
+  'light': 'text-yellow-400 border-yellow-700 bg-yellow-900/20',
+  'physical': 'text-gray-300 border-gray-600 bg-gray-900/20',
+  'ice': 'text-blue-300 border-blue-600 bg-blue-900/20',
+  'wood': 'text-green-400 border-green-700 bg-green-900/20',
+  'lightning': 'text-indigo-400 border-indigo-700 bg-indigo-900/20',
+  'space': 'text-pink-400 border-pink-700 bg-pink-900/20',
+  'time': 'text-teal-400 border-teal-700 bg-teal-900/20',
 };
 
 const ELEMENT_EMOJIS: Record<string, string> = {
@@ -16,6 +28,18 @@ const ELEMENT_EMOJIS: Record<string, string> = {
   'Thạch': '🪨',
   'Huyết': '🩸',
   'Độc': '☠️',
+  'fire': '🔥',
+  'wind': '🌪️',
+  'earth': '🪨',
+  'blood': '🩸',
+  'poison': '☠️',
+  'light': '✨',
+  'physical': '⚔️',
+  'ice': '❄️',
+  'wood': '🍃',
+  'lightning': '⚡',
+  'space': '🌀',
+  'time': '⏳',
 };
 
 const SLOT_LABELS: Record<string, string> = {
@@ -84,6 +108,7 @@ interface RawGuTemplate {
   element?: string;
   rank?: number;
   sprite?: string;
+  description?: string;
 }
 
 interface RawGuSkill {
@@ -106,6 +131,16 @@ interface RawPlayerGu {
   isEquipped?: string | boolean;
   slotIndex?: number | null;
   guTemplate?: RawGuTemplate;
+  stats?: {
+    hp?: number;
+    atk?: number;
+    def?: number;
+    crit?: number;
+    crit_damage?: number;
+    critDamage?: number;
+    move_speed?: number;
+    moveSpeed?: number;
+  };
   skills?: RawGuSkill[];
 }
 
@@ -229,6 +264,15 @@ export default function CharacterPanel(): React.ReactElement | null {
             isEquipped: String(g.isEquipped ?? 'false') === 'true',
             slotIndex: g.slotIndex != null ? Number(g.slotIndex) : null,
             sprite: g.guTemplate?.sprite ? String(g.guTemplate.sprite) : null,
+            description: String(g.guTemplate?.description ?? ''),
+            stats: g.stats ? {
+              hp: Number(g.stats.hp ?? 0),
+              atk: Number(g.stats.atk ?? 0),
+              def: Number(g.stats.def ?? 0),
+              crit: Number(g.stats.crit ?? 0),
+              critDamage: Number(g.stats.crit_damage ?? g.stats.critDamage ?? 0),
+              moveSpeed: Number(g.stats.moveSpeed ?? g.stats.move_speed ?? 0),
+            } : undefined,
             skills: Array.isArray(g.skills)
               ? g.skills.map((s: RawGuSkill) => ({
                   skillId: String(s.skillId ?? ''),
@@ -367,18 +411,18 @@ export default function CharacterPanel(): React.ReactElement | null {
   // Gu Actions
   const handleEquipGu = async (guId: string) => {
     if (!localStorage.getItem('token')) return;
-    // Find first available slot (0-5)
+    const maxSlots = stats?.realm ?? 1;
     const equipped = playerGuList.filter((g) => g.isEquipped);
     const slotsUsed = equipped.map((g) => g.slotIndex);
-    let targetSlot = 0;
-    for (let i = 0; i < 6; i++) {
+    let targetSlot = -1;
+    for (let i = 0; i < maxSlots; i++) {
       if (!slotsUsed.includes(i)) {
         targetSlot = i;
         break;
       }
     }
-    if (equipped.length >= 6) {
-      showToast('Tất cả 6 ô Cổ Trùng đều đã đầy!');
+    if (targetSlot === -1 || equipped.length >= maxSlots) {
+      showToast(`Tất cả ${maxSlots} ô Cổ Trùng của cảnh giới hiện tại đều đã đầy!`);
       return;
     }
 
@@ -387,13 +431,17 @@ export default function CharacterPanel(): React.ReactElement | null {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-              },
+        },
         body: JSON.stringify({ playerGuId: guId, slotIndex: targetSlot }),
       });
       const data = await res.json();
       if (data.success) {
         showToast('Trang bị Cổ Trùng thành công!');
         loadData();
+        const store = useGameStore.getState();
+        if (store.loadProfileAndStats) {
+          store.loadProfileAndStats();
+        }
         setSelectedGu(null);
       } else {
         showToast(data.message ?? 'Không thể trang bị Cổ Trùng');
@@ -410,16 +458,55 @@ export default function CharacterPanel(): React.ReactElement | null {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-              },
+        },
         body: JSON.stringify({ playerGuId: guId }),
       });
       const data = await res.json();
       if (data.success) {
         showToast('Tháo Cổ Trùng thành công!');
         loadData();
+        const store = useGameStore.getState();
+        if (store.loadProfileAndStats) {
+          store.loadProfileAndStats();
+        }
         setSelectedGu(null);
       } else {
         showToast(data.message ?? 'Không thể tháo Cổ Trùng');
+      }
+    } catch {
+      showToast('Lỗi kết nối máy chủ.');
+    }
+  };
+
+  const handleEnhanceGu = async (guId: string) => {
+    if (!localStorage.getItem('token')) return;
+    try {
+      const res = await fetchWithAuth('/api/gu/enhance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ playerGuId: guId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Cường hóa thành công +${data.newEnhancement}!`);
+        loadData();
+        const store = useGameStore.getState();
+        if (store.loadProfileAndStats) {
+          store.loadProfileAndStats();
+        }
+        setSelectedGu((prev) => {
+          if (prev && prev.id === guId) {
+            return {
+              ...prev,
+              enhancement: data.newEnhancement ?? prev.enhancement + 1,
+            };
+          }
+          return prev;
+        });
+      } else {
+        showToast(data.message ?? 'Cường hóa thất bại.');
       }
     } catch {
       showToast('Lỗi kết nối máy chủ.');
@@ -698,11 +785,15 @@ export default function CharacterPanel(): React.ReactElement | null {
           <div className="space-y-4">
             {/* Equipped grid */}
             <div>
-              <h3 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Đang sử dụng (6 Ô)</h3>
-              <div className="grid grid-cols-6 gap-2">
-                {Array.from({ length: 6 }).map((_, i) => {
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase mb-2">
+                Đang sử dụng ({stats?.realm ?? 1} Ô — {REALM_NAMES[stats?.realm ?? 1] || 'Nhất Chuyển'})
+              </h3>
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: stats?.realm ?? 1 }).map((_, i) => {
                   const gu = playerGuList.find((g) => g.isEquipped && g.slotIndex === i);
-                  const colorClass = gu ? ELEMENT_COLORS[gu.element] || 'text-gray-400 border-gray-700 bg-gray-900/20' : 'border-gray-880 bg-gu-darker/30';
+                  const colorClass = gu
+                    ? ELEMENT_COLORS[gu.element.toLowerCase()] || ELEMENT_COLORS[gu.element] || 'text-gray-400 border-gray-700 bg-gray-900/20'
+                    : 'border-gray-800 bg-gu-darker/30';
                   return (
                     <div
                       key={i}
@@ -711,8 +802,12 @@ export default function CharacterPanel(): React.ReactElement | null {
                     >
                       {gu ? (
                         <>
-                          <span className="font-bold">{ELEMENT_EMOJIS[gu.element] || '🪲'}</span>
-                          <span className="text-[9px] opacity-75 truncate max-w-full px-1">{gu.name}</span>
+                          <span className="font-bold">
+                            {ELEMENT_EMOJIS[gu.element.toLowerCase()] || ELEMENT_EMOJIS[gu.element] || '🪲'}
+                          </span>
+                          <span className="text-[9px] opacity-75 truncate max-w-full px-1">
+                            {gu.name} {gu.enhancement > 0 ? `+${gu.enhancement}` : ''}
+                          </span>
                         </>
                       ) : (
                         <span className="text-gray-700 text-sm font-light">∅</span>
@@ -737,27 +832,83 @@ export default function CharacterPanel(): React.ReactElement | null {
 
             {/* Detail section */}
             {selectedGu ? (
-              <div className="bg-gu-darker/60 rounded-xl border border-gu-border p-3 space-y-3">
+              <div className="bg-gu-darker/60 rounded-xl border border-gu-border p-3 space-y-3 relative">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="text-xs font-bold text-gu-accent">{selectedGu.name}</h4>
+                    <h4 className="text-xs font-bold text-gu-accent">
+                      {selectedGu.name} {selectedGu.enhancement > 0 ? `+${selectedGu.enhancement}` : ''}
+                    </h4>
                     <span className="text-[9px] text-gray-400">
-                      Hệ: {selectedGu.element} | Cấp: {selectedGu.level}
+                      Hệ: {selectedGu.element} | Cấp: {selectedGu.level} | Phẩm: {REALM_NAMES[selectedGu.rank] || 'Nhất Chuyển'}
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleUnequipGu(selectedGu.id)}
-                    className="px-2.5 py-1 text-[10px] bg-red-950/60 border border-red-700/70 text-red-300 rounded hover:bg-red-900/40 transition-colors"
-                  >
-                    Tháo Ra
-                  </button>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => handleEnhanceGu(selectedGu.id)}
+                      className="px-2 py-0.5 text-[9px] bg-yellow-950/80 border border-yellow-600 text-yellow-300 rounded hover:bg-yellow-900/60 transition-colors"
+                    >
+                      Cường Hóa
+                    </button>
+                    {selectedGu.isEquipped ? (
+                      <button
+                        onClick={() => handleUnequipGu(selectedGu.id)}
+                        className="px-2 py-0.5 text-[9px] bg-red-950/80 border border-red-600 text-red-300 rounded hover:bg-red-900/60 transition-colors"
+                      >
+                        Tháo Ra
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleEquipGu(selectedGu.id)}
+                        className="px-2 py-0.5 text-[9px] bg-green-950/80 border border-green-600 text-green-300 rounded hover:bg-green-900/60 transition-colors"
+                      >
+                        Sử dụng
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setSelectedGu(null)}
+                      className="px-2 py-0.5 text-[9px] bg-gray-800 border border-gray-600 text-gray-300 rounded hover:bg-gray-700 transition-colors"
+                    >
+                      Đóng
+                    </button>
+                  </div>
                 </div>
+
+                {selectedGu.description && (
+                  <p className="text-[10px] text-gray-400 border-t border-gu-border/30 pt-2 italic leading-relaxed">
+                    "{selectedGu.description}"
+                  </p>
+                )}
+
+                {/* Display Stats */}
+                {selectedGu.stats && (
+                  <div className="border-t border-gu-border/30 pt-2 text-[10px] space-y-1">
+                    <span className="font-bold text-gray-400 block mb-1">Thuộc tính cộng thêm:</span>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-gray-300">
+                      {Math.round((selectedGu.stats.hp ?? 0) * (1 + selectedGu.enhancement * 0.1)) > 0 && (
+                        <div>• Sinh Mệnh: <span className="text-green-400 font-medium">+{Math.round((selectedGu.stats.hp ?? 0) * (1 + selectedGu.enhancement * 0.1))}</span></div>
+                      )}
+                      {Math.round((selectedGu.stats.atk ?? 0) * (1 + selectedGu.enhancement * 0.1)) > 0 && (
+                        <div>• Tấn Công: <span className="text-red-400 font-medium">+{Math.round((selectedGu.stats.atk ?? 0) * (1 + selectedGu.enhancement * 0.1))}</span></div>
+                      )}
+                      {Math.round((selectedGu.stats.def ?? 0) * (1 + selectedGu.enhancement * 0.1)) > 0 && (
+                        <div>• Phòng Ngự: <span className="text-blue-400 font-medium">+{Math.round((selectedGu.stats.def ?? 0) * (1 + selectedGu.enhancement * 0.1))}</span></div>
+                      )}
+                      {Math.round((selectedGu.stats.crit ?? 0) * (1 + selectedGu.enhancement * 0.1)) > 0 && (
+                        <div>• Bạo Kích: <span className="text-purple-400 font-medium">+{Math.round((selectedGu.stats.crit ?? 0) * (1 + selectedGu.enhancement * 0.1))}%</span></div>
+                      )}
+                      {Math.round((selectedGu.stats.moveSpeed ?? 0) * (1 + selectedGu.enhancement * 0.1)) > 0 && (
+                        <div>• Tốc Chạy: <span className="text-orange-400 font-medium">+{Math.round((selectedGu.stats.moveSpeed ?? 0) * (1 + selectedGu.enhancement * 0.1))}</span></div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {selectedGu.skills && selectedGu.skills.length > 0 && (
                   <div className="border-t border-gu-border/30 pt-2 text-[10px]">
-                    <span className="font-bold text-yellow-400 block mb-0.5">Kỹ năng chủ động:</span>
+                    <span className="font-bold text-yellow-400 block mb-0.5">Kỹ năng Cổ trùng:</span>
                     {selectedGu.skills.map((s, idx: number) => (
-                      <div key={idx}>
-                        <span className="font-medium text-cyan-300">{s.name}</span>: {s.description} (Hồi chiêu: {s.cooldown}s)
+                      <div key={idx} className="text-gray-300">
+                        <span className="font-medium text-cyan-300">{s.name}</span>: {s.description} {s.cooldown > 0 && `(Hồi chiêu: ${s.cooldown}s)`}
                       </div>
                     ))}
                   </div>
@@ -774,7 +925,7 @@ export default function CharacterPanel(): React.ReactElement | null {
                     {playerGuList
                       .filter((g) => !g.isEquipped)
                       .map((gu) => {
-                        const colorClass = ELEMENT_COLORS[gu.element] || 'border-gray-800 bg-gu-darker/30';
+                        const colorClass = ELEMENT_COLORS[gu.element.toLowerCase()] || ELEMENT_COLORS[gu.element] || 'border-gray-800 bg-gu-darker/30';
                         return (
                           <div
                             key={gu.id}
@@ -782,18 +933,20 @@ export default function CharacterPanel(): React.ReactElement | null {
                             className={`rounded-lg border p-2 text-xs cursor-pointer hover:border-gu-accent transition-colors flex flex-col justify-between ${colorClass}`}
                           >
                             <div className="flex justify-between items-start">
-                              <span className="font-medium truncate">{gu.name}</span>
+                              <span className="font-medium truncate">{gu.name} {gu.enhancement > 0 ? `+${gu.enhancement}` : ''}</span>
                               <span className="text-[8px] opacity-60">Lv.{gu.level}</span>
                             </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEquipGu(gu.id);
-                              }}
-                              className="w-full mt-2 py-0.5 bg-gu-accent text-gu-dark text-[9px] font-bold rounded hover:bg-yellow-300"
-                            >
-                              Sử dụng
-                            </button>
+                            <div className="flex gap-1 mt-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEquipGu(gu.id);
+                                }}
+                                className="flex-1 py-0.5 bg-gu-accent text-gu-dark text-[9px] font-bold rounded hover:bg-yellow-300"
+                              >
+                                Sử dụng
+                              </button>
+                            </div>
                           </div>
                         );
                       })}

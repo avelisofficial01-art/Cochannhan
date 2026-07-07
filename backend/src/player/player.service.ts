@@ -4,6 +4,7 @@ import type { CreatePlayerInput } from './player.schema.js';
 import type { PlayerProfile, PlayerStatsResponse } from '@co-dao/shared';
 import { ERROR_CODES } from '@co-dao/shared';
 import { calculatePlayerStats } from '@co-dao/shared';
+import { getPlayerGuList } from '../gu/gu.service.js';
 
 function toProfile(row: {
   id: string;
@@ -37,6 +38,30 @@ export async function getStats(accountId: string): Promise<PlayerStatsResponse |
 
   const stats = await playerRepository.findStatsByPlayerId(player.id);
 
+  // Load and sum equipped Gu stats
+  let guHp = 0;
+  let guAtk = 0;
+  let guDef = 0;
+  let guCrit = 0;
+  let guMoveSpeed = 0;
+
+  try {
+    const guList = await getPlayerGuList(player.id);
+    const equipped = guList.filter((g) => String(g.isEquipped) === 'true');
+    for (const gu of equipped) {
+      if (gu.stats) {
+        const mult = 1 + (gu.enhancement ?? 0) * 0.1; // +10% per enhancement level
+        guHp += Math.round((gu.stats.hp ?? 0) * mult);
+        guAtk += Math.round((gu.stats.atk ?? 0) * mult);
+        guDef += Math.round((gu.stats.def ?? 0) * mult);
+        guCrit += Math.round((gu.stats.crit ?? 0) * mult);
+        guMoveSpeed += Math.round((gu.stats.moveSpeed ?? 0) * mult);
+      }
+    }
+  } catch {
+    // ignore
+  }
+
   return calculatePlayerStats({
     realm: player.realm,
     baseHp: player.hp,
@@ -47,6 +72,11 @@ export async function getStats(accountId: string): Promise<PlayerStatsResponse |
     critBonus: stats?.crit_bonus ?? 0,
     moveSpeed: stats?.move_speed ?? 300,
     daoId: player.dao_id,
+    guHp,
+    guAtk,
+    guDef,
+    guCrit,
+    guMoveSpeed,
   });
 }
 

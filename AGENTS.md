@@ -2,252 +2,166 @@
 
 # Gu World Development Rules
 
-## Project
+---
 
-Đây là dự án game RPG Web lấy cảm hứng từ Cổ Chân Nhân.
+# Project
 
-Mục tiêu là xây dựng một game có kiến trúc rõ ràng, dễ mở rộng và toàn bộ gameplay được điều khiển bằng dữ liệu (Data Driven).
+This project is a long-term online RPG inspired by Reverend Insanity (Cổ Chân Nhân).
+
+The objective is to build a scalable, maintainable, data-driven MMORPG that can continue expanding for years.
+
+Every implementation should support the long-term vision instead of only satisfying the current sprint.
 
 ---
 
 # Source of Truth
 
-When making any implementation, always use the following priority:
+When making any implementation, always follow this priority:
 
 1. AGENTS.md
-2. PROJECT_STATUS.md
-3. GAME_BUILD_PLAN.md
-4. docs/01_PROJECT_SPEC.md
-5. docs/02_SYSTEM_BIBLE.md
-6. docs/03_DATABASE_DESIGN.md
-7. docs/04_BACKEND_ARCHITECTURE.md
-8. docs/05_API_SPEC.md
-9. content/01_WORLD.md
-10. content/02_FACTIONS.md
-11. content/04_MAIN_STORY.md
-12. content/07_GU_BIBLE.md
+2. docs/GAME_VISION.md
+3. PROJECT_STATUS.md
+4. GAME_BUILD_PLAN.md
+5. docs/01_PROJECT_SPEC.md
+6. docs/02_SYSTEM_BIBLE.md
+7. docs/03_DATABASE_DESIGN.md
+8. docs/04_BACKEND_ARCHITECTURE.md
+9. docs/05_API_SPEC.md
+10. content/01_WORLD.md
+11. content/02_FACTIONS.md
+12. content/04_MAIN_STORY.md
+13. content/07_GU_BIBLE.md
 
 If implementation conflicts with documentation:
 
-- Never silently change the documentation.
+- Never silently change documentation.
 - Implement according to the documentation.
-- If documentation is outdated, update it together with the implementation.
+- If documentation becomes outdated, update it together with the implementation.
+
+GAME_VISION.md defines the long-term direction of the project.
+
+Never implement features that contradict GAME_VISION.md.
 
 ---
 
 # AI Rules
 
-Không tự ý:
+Never:
 
-- thay đổi gameplay
-- thay đổi lore
-- thay đổi cốt truyện
-- đổi database schema
-- đổi API
-- đổi tên file
-- đổi tên thư mục
+- change gameplay rules
+- change lore
+- change story
+- change database schema directly
+- change APIs without updating API_SPEC
+- rename files
+- rename folders
+- rewrite architecture without instruction
 
-Nếu phát hiện bất hợp lý phải báo lại thay vì tự sửa.
+If something appears inconsistent:
+
+Stop and report it instead of making assumptions.
+
+---
+
+# Design Philosophy
+
+The project must always favor:
+
+- scalability
+- maintainability
+- modularity
+- multiplayer compatibility
+- server authority
+- data-driven design
+
+Avoid temporary shortcuts whenever possible.
+
+When multiple implementations are possible, choose the one that best supports future expansion.
 
 ---
 
 # Coding Principles
 
 - TypeScript Strict Mode
-- Clean Architecture
 - SOLID
+- Clean Architecture
 - DRY
 - KISS
-- Server Authority
+- Dependency Injection
 - Data Driven Design
+- Server Authority
 
-Không Hardcode gameplay.
+Never hardcode gameplay.
 
-Gameplay phải lấy từ Database hoặc Config.
+Code executes rules.
 
----
-
-# Database
-
-Không sửa trực tiếp Schema.
-
-Chỉ tạo Migration.
-
-Không xóa dữ liệu.
-
-Không sửa ID.
+Database and configuration define rules.
 
 ---
 
-# API
+# Architecture Rules
 
-Không đổi Request hoặc Response.
+Reuse existing systems whenever possible.
 
-Nếu cần thay đổi phải cập nhật API_SPEC trước.
+Prefer extending existing modules instead of creating parallel systems.
 
----
+Do not duplicate logic.
 
-# Combat
+Keep modules cohesive.
 
-Combat phải tuân theo:
+Keep public APIs stable.
 
-docs/02_SYSTEM_BIBLE.md
-
-content/07_GU_BIBLE.md
-
-Không tự thêm skill.
-
-Không tự thêm hiệu ứng.
+Never rewrite architecture without explicit instruction.
 
 ---
 
-# Story
+# Gameplay Architecture
 
-Story phải tuân theo:
+Gameplay systems must be generic.
 
-content/01_WORLD.md
+Never write one-off systems for:
 
-content/02_FACTIONS.md
+- quests
+- NPCs
+- monsters
+- bosses
+- maps
+- Gu
+- equipment
+- crafting
+- dungeons
 
-Không tự thêm NPC.
-
-Không tự thêm Boss.
-
-Không tự viết lore mới.
-
----
-
-# Before coding
-
-Nếu làm Backend
-
-đọc:
-
-docs/02_SYSTEM_BIBLE.md
-
-docs/03_DATABASE_DESIGN.md
-
-docs/04_BACKEND_ARCHITECTURE.md
-
-docs/05_API_SPEC.md
+Adding new content should require new data instead of engine changes.
 
 ---
 
-Nếu làm Combat
+# Database Rules
 
-đọc:
+Never modify schema directly.
 
-docs/02_SYSTEM_BIBLE.md
+Always create migrations.
 
-content/07_GU_BIBLE.md
+Never modify IDs.
 
----
+Never delete production data.
 
-Nếu làm Database
-
-đọc:
-
-docs/03_DATABASE_DESIGN.md
-
-docs/05_API_SPEC.md
+Game balance must come from database or configuration.
 
 ---
 
-Nếu làm Story
+# API Rules
 
-đọc:
+Do not change Request/Response contracts.
 
-content/01_WORLD.md
+If an API changes:
 
-content/02_FACTIONS.md
-
----
-
-# Commit Rules
-
-Mỗi lần chỉ thực hiện MỘT chức năng.
-
-Ví dụ:
-
-✔ Inventory
-
-✔ Combat
-
-✔ Quest
-
-Không sửa nhiều module trong cùng một lần nếu không được yêu cầu.
+Update API_SPEC first.
 
 ---
-
-# Khi thiếu thông tin
-
-Không được đoán.
-
-Không tự thiết kế.
-
-Hãy dừng và yêu cầu người dùng bổ sung.
-
----
-
-# Code Quality
-
-Không dùng any.
-
-Không để TODO.
-
-Không để console.log.
-
-Không để code chết.
-
-Luôn xử lý Error.
-
-Viết code dễ đọc.
-
-Ưu tiên maintainability hơn tối ưu sớm.
-
----
-
-# Goal
-
-Mục tiêu cuối cùng là xây dựng một game có kiến trúc ổn định, dễ mở rộng và bám sát toàn bộ tài liệu trong thư mục docs và content.
-
-# Mandatory Workflow
-
-Every session MUST follow this order:
-
-1. Read PROJECT_STATUS.md
-2. Read GAME_BUILD_PLAN.md
-3. Read CHANGELOG.md
-4. Read required docs
-5. Complete current sprint
-6. Build
-7. Run lint
-8. Run typecheck
-9. Run tests
-10. Update documentation
-11. Stop
-
-
-# Definition of Done
-
-Một task chỉ được coi là hoàn thành khi:
-
-- Code compile thành công
-- Không có TypeScript Error
-- Không có ESLint Error
-- Test pass
-- Build pass
-- Docker pass
-- API hoạt động
-- Documentation được cập nhật
-- PROJECT_STATUS.md được cập nhật
-- CHANGELOG.md được cập nhật
-
-Nếu chưa đạt đủ điều kiện thì KHÔNG được đánh dấu Completed.
 
 # Asset Rules
 
-Assets are located in:
+Assets are located inside:
 
 assets/
 
@@ -257,86 +171,129 @@ Rules:
 - Never rename asset files.
 - Never move assets unless requested.
 - Never hardcode asset paths.
-- Asset paths must be defined in AssetConfig.
-- Gameplay code must access assets only through AssetManager.
+- Asset paths belong inside AssetConfig.
+- Gameplay accesses assets only through AssetManager.
 
-If an asset is missing:
+If assets are missing:
 
-- use the configured placeholder
-- continue implementing gameplay
+- use configured placeholders
+- continue development
 - never stop the sprint
+- never generate replacement artwork
 
-# Asset Policy
+---
 
-The current project uses placeholder assets.
+# Rendering Rules
 
-Never stop development because an asset is missing.
+Gameplay is rendered only with Phaser (or the future official game renderer).
 
-If an asset is unavailable:
+React (or future launcher UI) is responsible only for:
 
-- use placeholder assets
-- keep filenames configurable
-- never hardcode asset paths
-- never generate replacement art
-- continue implementing gameplay
-
-## Rendering Architecture (Mandatory)
-
-This is a browser H5 RPG built with PhaserJS.
-
-React is only responsible for:
 - Login
+- Launcher
 - Menus
 - Settings
+- Inventory UI
+- Shop UI
 - Modals
 - Outside-game UI
 
-All gameplay must be rendered by PhaserJS.
+Never render gameplay using:
 
-Never implement gameplay using:
-- HTML div
+- HTML positioning
 - CSS Grid
-- DOM positioning
-- Colored placeholder squares
+- Placeholder divs
+- Colored rectangles
 
-If game assets exist, they MUST be loaded and rendered through Phaser Loader.
+Gameplay must use real assets whenever available.
 
-The documentation is always the source of truth.
+Every playable build should display:
 
-If existing code conflicts with the documentation, refactor the code instead of modifying the documentation.
+- maps
+- player
+- NPCs
+- monsters
+- portals
+- effects
+- UI
 
-Every sprint must end with a playable game.
+---
 
-The game must always display:
-- A real map
-- A real player sprite
-- Real assets from the assets folder
+# Combat Rules
 
-A sprint is NOT considered complete if gameplay is rendered only with HTML placeholders.
+Combat follows:
 
-# Architecture Rules
+docs/02_SYSTEM_BIBLE.md
 
-Never rewrite the project architecture without explicit instruction.
+content/07_GU_BIBLE.md
 
-Reuse existing modules before creating new ones.
+Never invent:
 
-Prefer extending existing systems over creating parallel systems.
+- skills
+- buffs
+- debuffs
+- combat mechanics
 
-Do not duplicate logic.
+without updating documentation.
 
-Keep modules small and cohesive.
+---
 
-# Data Driven Rules
+# Story Rules
 
-Game balancing must never be hardcoded.
+Story follows:
 
-Combat values, drops, NPCs, quests, maps, monsters, Gu, equipment and progression must come from configuration or database.
+content/01_WORLD.md
 
-Code should only execute the rules, never define them.
+content/02_FACTIONS.md
+
+content/04_MAIN_STORY.md
+
+Never contradict established lore.
+
+Never shorten story progression.
+
+Never replace story with placeholder dialogue.
+
+Each story chapter should include:
+
+- Opening cutscene
+- Exploration
+- NPC interactions
+- Multi-step dialogue
+- Main quests
+- Optional side content
+- Combat encounters
+- Boss battle
+- Ending cutscene
+- Transition to the next chapter
+
+Story should adapt to gameplay.
+
+Gameplay should never reduce story quality.
+
+---
+
+# Game Design Rules
+
+All gameplay systems must align with GAME_VISION.md.
+
+Never introduce systems that:
+
+- reduce build diversity
+- create mandatory meta builds
+- bypass Gu progression
+- bypass equipment progression
+- trivialize PvP
+- trivialize economy
+- invalidate previous progression
+
+New systems should increase player choice rather than simply increasing player power.
+
+---
 
 # Documentation Rules
 
-Whenever a completed task changes the project behaviour:
+Whenever project behaviour changes:
 
 Update:
 
@@ -345,51 +302,130 @@ Update:
 
 If architecture changes:
 
-Update the corresponding document inside docs/.
+Update corresponding documentation.
+
+If gameplay changes:
+
+Update SYSTEM_BIBLE.
 
 If story changes:
 
-Update MAIN_STORY.md.
+Update MAIN_STORY.
 
-Documentation must stay synchronized with the code.
+Documentation must remain synchronized with code.
+
+---
 
 # Sprint Rules
 
-Work on only ONE current task.
+Work on only ONE task.
 
-Do not start the next task before the current one is fully completed.
+Do not partially implement multiple systems.
 
-Do not partially implement multiple systems in one sprint.
+Complete the current objective before starting another.
+
+---
 
 # Debug Rules
 
-Never guess the cause of a bug.
+Never guess.
 
-When fixing a bug:
+Debugging workflow:
 
-1. Identify the root cause.
-2. Verify the root cause.
-3. Apply the minimal fix.
+1. Identify root cause.
+2. Verify root cause.
+3. Apply minimal fix.
 4. Build.
-5. Verify the bug is fixed.
+5. Test.
+6. Verify fix.
 
-Do not rewrite unrelated systems while debugging.
+Never rewrite unrelated systems while debugging.
 
-# Story
+---
 
-Story must follow:
+# Performance Rules
 
-- content/01_WORLD.md
-- content/02_FACTIONS.md
-- content/04_MAIN_STORY.md
+Keep the project maintainable.
 
-Never contradict the established story.
+Remove:
 
-New NPCs, bosses, quests and locations must be consistent with MAIN_STORY.md.
+- dead code
+- duplicate logic
+- unused imports
+- obsolete files
+
+Avoid unnecessary complexity.
+
+Optimize only after correctness.
+
+---
+
+# Code Quality
+
+Never:
+
+- use any
+- leave TODO
+- leave FIXME
+- leave console.log
+- leave dead code
+
+Always:
+
+- handle errors
+- write readable code
+- keep modules small
+- prefer maintainability
+
+---
+
+# Mandatory Workflow
+
+Every session:
+
+1. Read AGENTS.md.
+2. Read GAME_VISION.md.
+3. Read PROJECT_STATUS.md.
+4. Read GAME_BUILD_PLAN.md.
+5. Read CHANGELOG.md.
+6. Read required documentation.
+7. Determine current sprint.
+8. Determine current objective.
+9. Complete ONLY the current objective.
+10. Build.
+11. Run lint.
+12. Run typecheck.
+13. Run tests.
+14. Fix issues.
+15. Update PROJECT_STATUS.md.
+16. Update CHANGELOG.md.
+17. Stop.
+
+---
+
+# Definition of Done
+
+A task is complete only if:
+
+- Build succeeds.
+- TypeScript passes.
+- Lint passes.
+- Tests pass.
+- Deployment pipeline succeeds.
+- APIs function correctly.
+- Documentation is updated.
+- PROJECT_STATUS.md updated.
+- CHANGELOG.md updated.
+
+Otherwise:
+
+DO NOT mark the task as completed.
+
+---
 
 # Final Rule
 
-When in doubt:
+When uncertain:
 
 Read the documentation again.
 
@@ -398,26 +434,3 @@ Never invent requirements.
 Never assume missing information.
 
 Ask the user instead.
-
-# Story Implementation Rules
-
-The game must implement the story as playable gameplay.
-
-Never skip story progression.
-
-Every story chapter must include:
-
-- Opening cutscene
-- Exploration
-- NPC interactions
-- Multi-step dialogue
-- Story quests
-- Side objectives where appropriate
-- Combat encounters
-- Boss battle
-- Ending cutscene
-- Transition to the next chapter
-
-Dialogue must feel like a complete RPG, not placeholder text.
-
-A chapter is NOT complete if it only contains one NPC conversation and one quest.

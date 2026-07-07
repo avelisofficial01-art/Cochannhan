@@ -270,41 +270,70 @@ Mỗi ô đều có giá trị chiến thuật.
 
 Người chơi không thể mang tất cả Cổ Trùng, vì vậy phải xây dựng Build phù hợp.
 
-6. DAO SYSTEM
+6. THẬP TUYỆT THỂ SYSTEM (Body Constitution)
+
+Thập Tuyệt Thể thay thế khái niệm Tộc (Race) cũ.
+
+Đây là lựa chọn duy nhất khi tạo nhân vật. Không thể thay đổi.
+
+Mỗi Thể không chỉ là bộ chỉ số mà là CƠ CHẾ GAMEPLAY KHÁC NHAU HOÀN TOÀN.
+
+---
+
+DANH SÁCH 10 THỂ
+
+| ID | Tên | Cơ chế chính | Stat đặc biệt | Passive |
+|----|-----|-------------|--------------|---------|
+| 1 | Xuân Thu Nguyệt Lão Thể | Hồi phục liên tục, x3 khi HP<30% | +HP Regen, +Max HP | Trường Xuân Bất Tử: bất tử 2s khi HP=1 (cd 120s) |
+| 2 | Tiên Mộng Cốc Thể | Cứ 5 đòn tự Stun địch | +Mana, +CDR | Mộng Huyễn: 15% né hoàn toàn khi bị đánh |
+| 3 | Vu Gia Thể | Stack Curse → xuyên giáp khi ≥3 Curse | +Element DMG (Độc/Huyết), +Status Duration | Lão Vu Thứ Khẩu: xuyên giáp 100% khi địch có ≥3 Curse |
+| 4 | Vạn Biến Thể | Đổi hình thái 30s (Hỏa/Thủy/Phong) | +All Stats nhỏ, +1 element ngẫu nhiên | Vô Cực Biến: khi đổi hình thái hồi 20% HP + xóa 1 debuff |
+| 5 | Thiên Khuyết Thể | ATK x2 khi HP<50%, Bạo Tẩu khi HP<20% | +ATK, +Crit Rate, +Crit DMG | Khuyết Đạo: HP<20% → ATK Speed x2, Dodge +30% |
+| 6 | Đồng Thai Thể | Dùng Active Skill → triệu Phân Thân 5s | +Summon Power, +ATK Speed | Song Đồng: Phân Thân clone 50% Gu Skill |
+| 7 | Nhân Quả Thể | Tích 10 Nhân → bùng nổ Quả tổng sát thương | +Skill Multiplier, +Accuracy | Nhân Quả Luân Hồi: chết khi có ≥5 Nhân → hồi sinh 30% HP (1 lần/map) |
+| 8 | Cốc Thần Thể | Drop +50%, "Phú Quý" khi nhặt ≥100 vàng → +20% all stats | +Drop Rate, +Gold, +Craft Speed | Thần Khố: +2 slot Gu lưu trữ (không chiến đấu) |
+| 9 | Huyết Chiến Thể | Nhận sát thương → tích Huyết Hận (max 10 lớp, tăng ATK+Crit) | +Life Steal, +Counter DMG | Huyết Chiến Vô Hoàn: duy trì combat >3s → hồi 1% HP/s |
+| 10 | Không Thể (Vô Thể) | Không có stat cố định. Học thêm Passive từ Thể khác qua Quest ẩn | +1% All Stats | Vô Cực: mỗi Quest Legendary → nhận ngẫu nhiên 1 skill Thể khác (tối đa 3) |
+
+---
+
+THIẾT KẾ DATABASE
+
+Bảng: body_constitutions
+- id (int 1-10)
+- name (string)
+- description (string)
+- passive_id (ref → passive_skills)
+- base_stat_modifiers (JSON)
+- mechanic_config (JSON) — thông số cơ chế (vd: "stack_count": 10, "hp_threshold": 0.3)
+
+Cột trong bảng players:
+- constitution_id (FK → body_constitutions)
+
+---
+
+QUY TẮC THIẾT KẾ
+
+Thể không quyết định sức mạnh tuyệt đối.
+Thể tạo ra cách chơi khác nhau.
+Một số Gu đạt tối đa sức mạnh khi người dùng có Thể tương thích (Constitution Synergy).
+Không Thể (Thể 10) là Thể khó nhất nhưng linh hoạt nhất.
+
+---
+
+6b. DAO SYSTEM
 
 Dao (Đạo) không phải Class.
 
-Player
+Player không bị khóa.
 
-không bị khóa.
+Có thể đổi Dao. Nhưng chi phí rất lớn.
 
-Có thể đổi Dao.
-
-Nhưng
-
-chi phí rất lớn.
-
-Ví dụ
-
-Fire Dao
-
-↓
-
-Lightning Dao
-
-Cần
-
-Quest
-
-NPC
-
-Rare Item
+Ví dụ: Fire Dao → Lightning Dao cần Quest + NPC + Rare Item.
 
 Không cho phép đổi tự do để giữ ý nghĩa của lựa chọn ban đầu.
 
-Tác dụng của Dao
-
-Dao ảnh hưởng đến:
+Tác dụng của Dao:
 
 Cộng hưởng với một số Cổ Trùng.
 Mở kỹ năng riêng.

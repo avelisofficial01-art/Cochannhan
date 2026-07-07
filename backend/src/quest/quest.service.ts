@@ -269,11 +269,21 @@ export const questService = {
           }
         }
 
-        await playerRepository.update(playerId, {
+        const updatedPlayer = await playerRepository.update(playerId, {
           gold: player.gold + goldReward,
           spirit_stone: player.spirit_stone + spiritStoneReward,
           exp: player.exp + expReward,
         });
+        const profile = {
+          id: updatedPlayer.id,
+          name: updatedPlayer.name,
+          realm: updatedPlayer.realm,
+          daoId: updatedPlayer.dao_id,
+          gold: updatedPlayer.gold ?? 0,
+          spiritStone: updatedPlayer.spirit_stone ?? 0,
+          exp: updatedPlayer.exp ?? 0,
+        };
+        eventBus.emit('player:profile:updated', { playerId, profile });
       }
     }
 
@@ -333,6 +343,33 @@ export const questService = {
   ): Promise<QuestStoryFlag> {
     const row = await questRepository.setStoryFlag(playerId, key, value);
 
+    // Sync realm level breakthrough for Chapter transitions
+    if (key === 'ch1_complete') {
+      const player = await playerRepository.findById(playerId);
+      if (player && player.realm < 2) {
+        await playerRepository.update(playerId, { realm: 2 });
+        try {
+          const { updateRealm } = await import('../cultivation/cultivation.repository.js');
+          await updateRealm(playerId, 2);
+        } catch (err) {
+          console.error('[QuestService] Failed to sync cultivation realm to 2:', err);
+        }
+        console.log(`[QuestService] Player ${player.name} advanced to Nhị Chuyển (Realm 2) on ch1_complete`);
+      }
+    } else if (key === 'ch2_complete') {
+      const player = await playerRepository.findById(playerId);
+      if (player && player.realm < 3) {
+        await playerRepository.update(playerId, { realm: 3 });
+        try {
+          const { updateRealm } = await import('../cultivation/cultivation.repository.js');
+          await updateRealm(playerId, 3);
+        } catch (err) {
+          console.error('[QuestService] Failed to sync cultivation realm to 3:', err);
+        }
+        console.log(`[QuestService] Player ${player.name} advanced to Tam Chuyển (Realm 3) on ch2_complete`);
+      }
+    }
+
     // --- Auto-advance talk objectives when flag is set ---
     try {
       const activeQuests = await questService.getPlayerQuests(playerId);
@@ -358,6 +395,10 @@ export const questService = {
               shouldComplete = true;
             } else if (targetName === 'Bạch Lang Vương' && key === 'ch1_complete') {
               shouldComplete = true;
+            } else if (targetName === 'Lão Độc Sư' && (key === 'ch2_intro_done' || key === 'ch2_sent_to_boss' || key === 'ch2_arrived')) {
+              shouldComplete = true;
+            } else if (targetName === 'Vạn Độc Cổ Vương' && (key === 'ch2_boss_confronted' || key === 'ch2_complete')) {
+              shouldComplete = true;
             }
 
             if (shouldComplete) {
@@ -372,6 +413,12 @@ export const questService = {
     } catch (err) {
       console.error('[Quest Story Flag] Failed to auto-advance talk objective:', err);
     }
+
+    // --- Auto-accept next quests unlocked by this flag ---
+    await questService.autoAcceptQuestsByFlag(playerId, key);
+
+    // Always emit update to ensure client state matches
+    void questService.emitQuestUpdate(playerId);
 
     return mapStoryFlag(row as unknown as StoryFlagRow);
   },

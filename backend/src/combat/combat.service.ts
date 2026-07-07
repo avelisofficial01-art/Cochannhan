@@ -14,6 +14,7 @@ import * as schema from '../database/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { inventoryService } from '../inventory/inventory.service.js';
 import { playerRepository } from '../player/player.repository.js';
+import { eventBus } from '../utils/event-bus.js';
 import {
   initBossState,
   checkBossPhase,
@@ -41,13 +42,46 @@ export function registerMonsterChangeCallback(cb: MonsterChangeCallback): void {
   monsterChangeCallback = cb;
 }
 
+/**
+ * Calculate respawn delay (ms) based on monster realm.
+ * Weaker monsters respawn faster; stronger monsters and bosses take longer.
+ */
+function getRespawnDelay(template: MonsterTemplate): number {
+  if (template.respawnTime && template.respawnTime > 0) {
+    return template.respawnTime * 1000;
+  }
+  // Fallback based on realm number (higher realm = longer respawn)
+  const realmNum = typeof template.realm === 'number' ? template.realm : 1;
+  if (realmNum >= 7) return 300_000; // 5 min — boss / very high realm
+  if (realmNum >= 5) return 180_000; // 3 min
+  if (realmNum >= 3) return 120_000; // 2 min
+  if (realmNum >= 2) return 90_000;  // 90s
+  return 60_000; // default 60s for realm 1 weak monsters
+}
+
+/**
+ * Pending respawn entries grouped by mapId.
+ * Key = `${mapId}::${templateId}::${x}::${y}`
+ */
+const pendingRespawns = new Set<string>();
+
 export function scheduleRespawn(template: MonsterTemplate, x: number, y: number): void {
-  const respawnMs = (template.respawnTime || 30) * 1000;
-  console.log(`[Combat] Scheduling respawn for ${template.name} in ${template.respawnTime || 30}s at (${x}, ${y})`);
+  const key = `${template.mapId}::${template.id}::${x}::${y}`;
+  if (pendingRespawns.has(key)) {
+    // Already scheduled — don't double-queue
+    return;
+  }
+  pendingRespawns.add(key);
+
+  const respawnMs = getRespawnDelay(template);
+  const respawnSec = Math.round(respawnMs / 1000);
+  console.log(`[Combat] Respawn queued: "${template.name}" in ${respawnSec}s at (${x}, ${y}) [map=${template.mapId}]`);
+
   setTimeout(() => {
+    pendingRespawns.delete(key);
     try {
       const instance = spawnMonster(template, x, y);
-      console.log(`[Combat] Respawned ${template.name} (instanceId: ${instance.instanceId})`);
+      console.log(`[Combat] ✅ Respawned "${template.name}" (instanceId: ${instance.instanceId})`);
       if (monsterChangeCallback) {
         monsterChangeCallback(template.mapId);
       }
@@ -272,8 +306,19 @@ export async function executePlayerAttack(
       const currentPlayer = await playerRepository.findById(playerId);
       if (currentPlayer) {
         const newGold = (currentPlayer.gold ?? 0) + goldEarned;
-        await playerRepository.update(playerId, { gold: newGold });
+        const updated = await playerRepository.update(playerId, { gold: newGold });
         goldReward = goldEarned;
+
+        const profile = {
+          id: updated.id,
+          name: updated.name,
+          realm: updated.realm,
+          daoId: updated.dao_id,
+          gold: updated.gold ?? 0,
+          spiritStone: updated.spirit_stone ?? 0,
+          exp: updated.exp ?? 0,
+        };
+        eventBus.emit('player:profile:updated', { playerId, profile });
       }
     } catch (err) {
       console.error(`[Combat] Failed to award gold to player ${playerId}:`, err);

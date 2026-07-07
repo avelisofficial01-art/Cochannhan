@@ -15,9 +15,14 @@ export async function getRedisClient(): Promise<ReturnType<typeof createClient> 
   }
 
   if (!redisClient) {
-    redisClient = createClient({ url: config.redis.url });
+    redisClient = createClient({
+      url: config.redis.url,
+      socket: {
+        reconnectStrategy: () => false
+      }
+    });
     redisClient.on('error', (err) => {
-      console.error('Redis connection error:', err.message);
+      console.warn('Redis connection warning:', err.message);
     });
     try {
       await redisClient.connect();

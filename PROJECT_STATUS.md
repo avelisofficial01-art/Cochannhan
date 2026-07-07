@@ -10,11 +10,11 @@
 
 # Current Sprint
 
-**Sprint:** 21 — Shop System & DB Self-Healing Hotfix
+**Sprint:** 27 — Thập Tuyệt Thể System
 
 **Status:** ✅ Completed
 
-**Started:** 2026-07-06
+**Started:** 2026-07-07
 
 ---
 
@@ -22,6 +22,9 @@
 
 | Sprint | Name | Status |
 |---------|------|--------|
+| Sprint 27 | Thập Tuyệt Thể System | ✅ Completed |
+| Sprint 26 | Chapter 2: Nam Cương | ✅ Completed |
+| Sprint 25 | Complete Gu System | ✅ Completed |
 | Sprint 0 | Foundation | ✅ Completed |
 | Sprint 1 | Core Infrastructure | ✅ Completed |
 | Sprint 2 | NPC & Quest | ✅ Completed |
@@ -44,12 +47,88 @@
 | Sprint 19 | Hotfix: Dialogue active flags mismatch & cooldown position | ✅ Completed |
 | Sprint 20 | Hotfix: Quest progression talk objectives & dialogue loops | ✅ Completed |
 | Sprint 21 | Shop System & DB Self-Healing Hotfix | ✅ Completed |
+| Sprint 22 | Bandwidth Optimization and HTTP Caching | ✅ Completed |
+| Sprint 23 | Native Windows Local Development | ✅ Completed |
+| Sprint 24 | Combat Targeting & Attack Button Refactor | ✅ Completed |
+| Sprint 25 | Complete Gu System | ✅ Completed |
 
 ---
 
 # Current Task
 
-Current Module: ✅ Sprint 21 — Shop System & DB Self-Healing Hotfix
+Current Module: ✅ Sprint 27 — Thập Tuyệt Thể System
+
+# Sprint 27 Checklist
+
+## Thập Tuyệt Thể System (S27)
+- [x] Schema: bảng `body_constitutions` với id, name, description, stat_bonuses, passive_ability, passive_description, realm_scaling, rarity
+- [x] Schema: cột `constitution_id` (FK nullable) trong bảng `players`
+- [x] SeedData: 10 Thập Tuyệt Thể với cơ chế passive riêng biệt
+- [x] Seed: `seed.ts` tự động insert 10 Thể khi khởi động
+- [x] Backend API: `GET /api/constitution`, `GET /api/constitution/me`, `POST /api/constitution/choose`
+- [x] Frontend: `CharacterCreationPanel.tsx` — 2 bước chọn tên + Thể
+- [x] Frontend: `GamePage.tsx` — nếu chưa có nhân vật hiển thị panel tạo nhân vật
+- [x] Build + typecheck pass
+
+# Sprint 26 Checklist
+
+## Chapter 2: Nam Cương (S26.1)
+- [x] Add 4 new maps (Trấn Độc Trì, Rừng Độc, Đầm Lầy Cổ, Hang Vạn Độc) to seed data and database seeding
+- [x] Add 4 new NPCs (Lão Độc Sư, Thương Nhân Độc Vật, Kiếm Sư Tán Tu, and Boss Vạn Độc Cổ Vương)
+- [x] Add 5 new monsters (Độc Xà, Độc Chu, Cổ Trùng Hoang Dã, Độc Phong, and Vạn Độc Cổ Vương boss)
+- [x] Add 4 new items (Độc Thảo, Nọc Độc, Cổ Hoang Tinh, Luyện Cổ Đan) and map drop rewards
+- [x] Create a 4-quest chain (`q_ch2_arrive`, `q_ch2_poison_hunt`, `q_ch2_essence`, `q_ch2_boss`) with story flags
+- [x] Enforce Realm 3 requirement at portal transit (Lộ trình cổng di chuyển Rừng Tuyết -> Trấn Độc Trì)
+- [x] Implement server-side verification and block on joining Chapter 2 maps if below Realm 3
+- [x] Set up Realm breakthrough automatically on completing Chapter 1 (Realm 2) and Chapter 2 (Realm 3)
+- [x] Add Phaser cinematics for Chapter 2 opening cutscene and ending cutscene with boss dialogue triggers
+- [x] Clean up extra bracket compile syntax errors in frontend `GameScene.ts`
+- [x] Make database seeding self-healing and incremental for newly added maps and templates
+- [x] Compile builds, ensure lints satisfy rules, and typechecks pass
+
+# Sprint 25 Checklist
+
+## Complete Gu System (S25.1)
+- [x] Add 31 sample Gu templates from Reverend Insanity spanning Rank 1 to 9
+- [x] Fix unequipGu controller validation schema in `backend/src/gu/gu.controller.ts`
+- [x] Implement dynamic max slots check in `backend/src/gu/gu.service.ts` based on player realm
+- [x] Update shared `calculatePlayerStats` in `shared/src/stat-calculator.ts` to accept Gu stats
+- [x] Calculate equipped Gu stats in `backend/src/player/player.service.ts` (scaling with enhancement level)
+- [x] Refactor `CharacterPanel.tsx` in frontend to support dynamic slot sizing, Gu detailed stats card, and Cường Hóa (Enhance) button triggering real-time stats updates
+- [x] Refactor `GuPanel.tsx` in frontend to support dynamic slots and element color fallbacks
+- [x] Re-run database seeding to populate the 31 Gu templates
+- [x] Separate seed data from backend config/index.ts into a dedicated seedData.ts file
+- [x] Verification: Confirm build compiles, strict typechecks pass, and linter is satisfied
+
+# Sprint 24 Checklist
+
+## Combat Targeting & Attack Button Refactor (S24.1)
+- [x] Basic Attack Button availability: Render the red circular `⚔` attack button in `UIScene.ts` unconditionally for both desktop and mobile players
+- [x] Auto-targeting range increase: Increase the auto-targeting range limit in `GameScene.ts` `handleAttack()` from `100` pixels to `300` pixels (targeting any visible monster on screen)
+- [x] Quality check: Verify build succeeds, strict typechecks pass, and linter rules are satisfied
+
+# Sprint 23 Checklist
+
+## Native Windows Local Development (S23.1)
+- [x] Local environment config: Create `.env` configuration file inside `backend/` pointing to local PostgreSQL
+- [x] Database Seeding Correction: Resolve string-to-UUID parsing error for NPC maps by adding default UUID fallback in `seed.ts`
+- [x] Graceful Redis bypass: Configure Node Redis client with `reconnectStrategy: () => false` to stop endless background reconnect warning spam when Redis is offline
+- [x] Native execution verification: Launch backend and frontend natively on Windows without Docker or WSL
+- [x] Compilation & quality checks: Verify build compiles, lint passes, and strict typecheck succeeds
+
+# Sprint 22 Checklist
+
+## Bandwidth Optimization & HTTP Caching (S22.1)
+- [x] Backend gzip payload compression: Integrate Express `compression` middleware
+- [x] Aggressive HTTP Caching: Set `immutable` caching (1 year) on Express static serving for compiled bundle and Phaser assets
+- [x] Socket.IO default tuning: Increase ping interval to 25s and timeout to 60s to reduce idle keepalive bandwidth by 5x
+- [x] Broadcast throttling: Lower server-side monster position broadcasts to 10Hz (every 100ms) to save 50% movement bandwidth
+- [x] Backend auto-accept: Complete quest auto-acceptance on story flag setting, eliminating client-side polling loops and template requests
+- [x] Frontend transparent cache: Cache static template GET APIs (`/api/quest`, `/api/equipment/templates`, etc.) to limit network calls to once per session
+- [x] Zustand action optimization: Create `loadProfileAndStats` global action and slow periodic HUD updates to 60s fallback
+- [x] Socket-driven profile sync: Sync profile parameters immediately on quest completion and combat loot, bypassing need for aggressive polling
+- [x] Client rate throttling: Reduce client movement socket emissions from 20Hz to 10Hz, saving 50% upload bandwidth
+- [x] Verification: Compile builds, clean strict typecheck, and ensure all Phaser visuals remain fully operational
 
 # Sprint 21 Checklist
 

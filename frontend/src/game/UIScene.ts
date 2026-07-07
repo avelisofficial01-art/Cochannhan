@@ -19,12 +19,12 @@ export class UIScene extends Phaser.Scene {
 
   create(): void {
     this.isMobile = this.sys.game.device.input.touch;
+    const { width, height } = this.cameras.main;
 
     if (this.isMobile) {
-      const { width, height } = this.cameras.main;
       this.joystick = new VirtualJoystick(this, 100, height - 100, 40);
-      this.createAttackButton(width - 80, height - 100);
     }
+    this.createAttackButton(width - 80, height - 100);
   }
 
   /* ── Attack button (bottom-right) ── */

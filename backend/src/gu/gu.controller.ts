@@ -91,7 +91,7 @@ export async function unequipGu(req: AuthenticatedRequest, res: Response): Promi
       return;
     }
 
-    const parsed = equipSchema.safeParse(req.body);
+    const parsed = enhanceSchema.safeParse(req.body);
     if (!parsed.success) {
       error(res, 'VALIDATION_ERROR', parsed.error.issues[0]?.message ?? 'Invalid input', 400);
       return;

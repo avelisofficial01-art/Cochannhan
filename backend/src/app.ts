@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
@@ -24,6 +25,7 @@ import craftRouter from './craft/craft.route.js';
 import storyRouter from './story/story.controller.js';
 import cultivationRouter from './cultivation/cultivation.controller.js';
 import saveRouter from './save/save.controller.js';
+import constitutionRouter from './constitution/constitution.route.js';
 import shopRouter from './shop/shop.route.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { config } from './config/index.js';
@@ -37,8 +39,8 @@ const httpServer = createServer(app);
 // Socket.IO
 const io = new SocketIOServer(httpServer, {
   cors: { origin: config.corsOrigins, credentials: true },
-  pingInterval: 5000,
-  pingTimeout: 15000,
+  pingInterval: 25000,
+  pingTimeout: 60000,
 });
 
 // Security
@@ -55,6 +57,7 @@ app.use(
   })
 );
 app.use(cors({ origin: config.corsOrigins, credentials: true }));
+app.use(compression());
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
@@ -62,6 +65,10 @@ app.use(express.json({ limit: '1mb' }));
 // Rate limiting (basic in-memory for dev)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 app.use('/api/auth/login', (req, res, next) => {
+  if (config.nodeEnv === 'development') {
+    next();
+    return;
+  }
   const ip = req.ip ?? 'unknown';
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
@@ -99,6 +106,7 @@ app.use('/api/story', storyRouter);
 app.use('/api/shop', shopRouter);
 app.use('/api/cultivation', cultivationRouter);
 app.use('/api/save', saveRouter);
+app.use('/api/constitution', constitutionRouter);
 
 // Health check
 app.get('/api/health', async (_req, res) => {
@@ -252,7 +260,27 @@ if (config.nodeEnv === 'production') {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   const frontendDist = path.join(__dirname, '../../frontend/dist');
-  app.use(express.static(frontendDist));
+  app.use(express.static(frontendDist, {
+    maxAge: '1d',
+    setHeaders: (res, filePath) => {
+      const relativePath = path.relative(frontendDist, filePath);
+      const isAsset = relativePath.startsWith('assets' + path.sep) ||
+                      relativePath.startsWith('audio' + path.sep) ||
+                      relativePath.startsWith('maps' + path.sep) ||
+                      relativePath.startsWith('characters' + path.sep) ||
+                      relativePath.startsWith('ui' + path.sep) ||
+                      relativePath.startsWith('monsters' + path.sep) ||
+                      relativePath.startsWith('bosses' + path.sep) ||
+                      relativePath.startsWith('equipment' + path.sep) ||
+                      relativePath.startsWith('skillbooks' + path.sep);
+
+      if (isAsset) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      }
+    }
+  }));
   app.get('*', (_req, res) => {
     res.sendFile(path.join(frontendDist, 'index.html'));
   });
@@ -294,6 +322,15 @@ combatService.registerMonsterChangeCallback((mapId) => {
 // Listen to quest:updated event and broadcast to player socket room
 eventBus.on('quest:updated', ({ playerId, activeQuests }) => {
   io.to(`player:${playerId}`).emit('quest:updated', activeQuests);
+});
+
+// Listen to player:profile:updated and player:stats:updated events
+eventBus.on('player:profile:updated', ({ playerId, profile }) => {
+  io.to(`player:${playerId}`).emit('player:profile', profile);
+});
+
+eventBus.on('player:stats:updated', ({ playerId, stats }) => {
+  io.to(`player:${playerId}`).emit('player:stats', stats);
 });
 
 io.on('connection', async (socket) => {
@@ -381,6 +418,51 @@ io.on('connection', async (socket) => {
 
     // ACK ngay lập tức để client biết handler đang chạy
     socket.emit('map:join:ack', { received: true, targetMapId });
+
+    // Realm gate check for Southern Border (Nam Cương requires Realm >= 3)
+    try {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isUuid = uuidRegex.test(targetMapId);
+
+      let [checkMap] = await db
+        .select()
+        .from(worldMaps)
+        .where(
+          isUuid
+            ? or(eq(worldMaps.id, targetMapId), eq(worldMaps.name, targetMapId))
+            : eq(worldMaps.name, targetMapId)
+        )
+        .limit(1);
+
+      if (!checkMap && (targetMapId === 'bac_nguyen_village' || targetMapId === 'lang_cothao')) {
+        [checkMap] = await db
+          .select()
+          .from(worldMaps)
+          .where(eq(worldMaps.name, 'Làng Cổ Thảo'))
+          .limit(1);
+      }
+
+      if (checkMap && checkMap.region === 'nam_cuong') {
+        let playerRealm = 1;
+        if (playerId) {
+          const [playerRow] = await db
+            .select()
+            .from(players)
+            .where(eq(players.id, playerId))
+            .limit(1);
+          if (playerRow) {
+            playerRealm = playerRow.realm;
+          }
+        }
+        if (playerRealm < 3) {
+          console.warn(`[Socket] 🚫 Player "${playerName || playerId}" blocked from map "${checkMap.name}" due to realm gate (realm=${playerRealm})`);
+          socket.emit('error', { message: 'Tu vi chưa đủ Tam Chuyển, không thể tiến vào Nam Cương!' });
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('[Socket] Realm gate check failed:', err);
+    }
 
     // Leave old map room and notify others
     if (currentMapId && currentMapId !== targetMapId) {
@@ -817,12 +899,14 @@ setInterval(async () => {
             monster.x = nextX;
             monster.y = nextY;
 
-            // Broadcast monster movement update to all players on map
-            io.to(`map:${mapId}`).emit('monster:move', {
-              instanceId: monster.instanceId,
-              x: monster.x,
-              y: monster.y,
-            });
+            // Broadcast monster movement update to all players on map (throttled to 10Hz)
+            if (currentTick % 2 === 0) {
+              io.to(`map:${mapId}`).emit('monster:move', {
+                instanceId: monster.instanceId,
+                x: monster.x,
+                y: monster.y,
+              });
+            }
           }
         }
       }

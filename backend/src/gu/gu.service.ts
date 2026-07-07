@@ -1,5 +1,6 @@
 import * as guRepo from './gu.repository.js';
 import type { GuTemplate, PlayerGu, GuSynergy } from '@co-dao/shared';
+import { playerRepository } from '../player/player.repository.js';
 
 // ── Template ──
 export async function getAllTemplates(): Promise<GuTemplate[]> {
@@ -33,15 +34,22 @@ export async function equipGu(
   playerId: string,
   playerGuId: string,
   slotIndex: number,
-  maxSlots: number,
+  _maxSlots: number,
 ): Promise<{ success: boolean; code?: string; message?: string }> {
   const pgu = await guRepo.getPlayerGuById(playerGuId);
   if (!pgu || pgu.playerId !== playerId) {
     return { success: false, code: 'GU_NOT_FOUND', message: 'Cổ Trùng không tồn tại' };
   }
 
+  const player = await playerRepository.findById(playerId);
+  if (!player) {
+    return { success: false, code: 'PLAYER_NOT_FOUND', message: 'Người chơi không tồn tại' };
+  }
+
+  const maxSlots = player.realm;
+
   if (slotIndex < 0 || slotIndex >= maxSlots) {
-    return { success: false, code: 'GU_SLOT_FULL', message: `Số slot tối đa là ${maxSlots}` };
+    return { success: false, code: 'GU_SLOT_FULL', message: `Số ô trang bị tối đa cho ${player.realm} Chuyển là ${maxSlots}` };
   }
 
   // Check if the Gu is already equipped
@@ -51,8 +59,8 @@ export async function equipGu(
 
   // Check realm requirement
   const template = await guRepo.getGuTemplateById(pgu.guTemplateId);
-  if (template && template.rank > maxSlots) {
-    return { success: false, code: 'REALM_TOO_LOW', message: 'Chuyển chưa đủ để trang bị Cổ Trùng này' };
+  if (template && template.rank > player.realm) {
+    return { success: false, code: 'REALM_TOO_LOW', message: `Yêu cầu cảnh giới đạt ${template.rank} Chuyển mới có thể trang bị Cổ Trùng ${template.name}` };
   }
 
   await guRepo.equipPlayerGu(playerGuId, slotIndex);

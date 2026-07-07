@@ -19,7 +19,7 @@ interface DialogueNode {
 }
 
 export const DialoguePanel: React.FC = () => {
-  const { activeNpc, isDialogueOpen, closeDialogue, setActiveQuests, toggleShop } = useGameStore();
+  const { activeNpc, isDialogueOpen, closeDialogue, toggleShop } = useGameStore();
   const [dialogues, setDialogues] = useState<DialogueNode[]>([]);
   const [currentNode, setCurrentNode] = useState<DialogueNode | null>(null);
   const [loading, setLoading] = useState(false);
@@ -217,32 +217,11 @@ export const DialoguePanel: React.FC = () => {
 
   const setStoryFlagAndCheckQuests = async (flagKey: string) => {
     try {
-      const flagRes = await fetchWithAuth('/api/story/flags', {
+      await fetchWithAuth('/api/story/flags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ flagKey: flagKey, flagValue: 'true' }),
       });
-      await flagRes.json(); // confirm flag was set
-      const qTemplatesRes = await fetchWithAuth('/api/quest');
-      const qTemplatesJson = await qTemplatesRes.json();
-      if (qTemplatesJson.success && qTemplatesJson.data) {
-        const templates = qTemplatesJson.data as Array<{ id: string; flagRequired: string }>;
-        const unlockedQuests = templates.filter((q) => q.flagRequired === flagKey);
-        
-        for (const quest of unlockedQuests) {
-          await fetchWithAuth('/api/quest/accept', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ questId: quest.id }),
-          });
-        }
-      }
-
-      const activeQuestsRes = await fetchWithAuth('/api/quest/player/active');
-      const activeQuestsJson = await activeQuestsRes.json();
-      if (activeQuestsJson.success && activeQuestsJson.data) {
-        setActiveQuests(activeQuestsJson.data as unknown[]);
-      }
     } catch (err) {
       console.error('[DialoguePanel] setStoryFlagAndCheckQuests failed:', err);
     }

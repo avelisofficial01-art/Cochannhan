@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { fetchWithAuth } from '../api/client.js';
 
 interface PlayerPosition {
   accountId: string;
@@ -43,6 +44,15 @@ export interface PlayerGuState {
   isEquipped: boolean;
   slotIndex: number | null;
   sprite: string | null;
+  description?: string;
+  stats?: {
+    hp: number;
+    atk: number;
+    def: number;
+    crit: number;
+    critDamage: number;
+    moveSpeed: number;
+  };
   skills?: Array<{
     skillId: string;
     name: string;
@@ -133,6 +143,7 @@ interface GameState {
   setStats: (stats: StatsState | null) => void;
   setInventorySlots: (slots: Array<{ id: string; itemId: string; itemName: string; quantity: number; slot: number; itemType: string }>) => void;
   setCharacterPanelTab: (tab: 'stats' | 'gu' | 'equip' | 'quest' | 'inventory') => void;
+  loadProfileAndStats: () => Promise<void>;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -201,4 +212,17 @@ export const useGameStore = create<GameState>((set) => ({
   setStats: (stats): void => set({ stats }),
   setCharacterPanelTab: (tab): void => set({ characterPanelTab: tab }),
   toggleShop: (open, npc): void => set({ isShopOpen: open, activeShopNpc: npc || null }),
+  loadProfileAndStats: async (): Promise<void> => {
+    try {
+      const pRes = await fetchWithAuth('/api/player/profile');
+      const pData = await pRes.json();
+      if (pData.success) set({ profile: pData.data });
+
+      const sRes = await fetchWithAuth('/api/player/stats');
+      const sData = await sRes.json();
+      if (sData.success) set({ stats: sData.data });
+    } catch {
+      // ignore
+    }
+  },
 }));

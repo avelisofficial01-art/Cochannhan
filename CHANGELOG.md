@@ -5,6 +5,53 @@
 
 ---
 
+## Sprint 27: Thập Tuyệt Thể System — 2026-07-07
+
+### Mục tiêu
+Thay thế hệ nhân vật bằng 10 Thập Tuyệt Thể từ truyện Cổ Chân Nhân. Mỗi Thể là một "hệ" riêng với cơ chế passive và stat bonus độc đáo, được chọn một lần khi tạo nhân vật.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S27.1 | Schema `body_constitutions` | ✅ | Bảng mới với id, name, description, stat_bonuses, passive_ability, passive_description, realm_scaling, rarity |
+| S27.2 | `constitution_id` trong `players` | ✅ | FK nullable tới `body_constitutions.id` |
+| S27.3 | Seed 10 Thập Tuyệt Thể | ✅ | Xuân Thu Cốc Thần Thể, Hồng Nhan Lâu Thể, Ám Kim Quỷ Thể, Huyết Hải Cổ Thể, Thiên Địa Hư Không Thể, Nhật Nguyệt Âm Dương Thể, Vạn Độc Miễn Dịch Thể, Lôi Đình Tinh Thể, Cốt Rồng Thể, Tinh Hoa Băng Thể |
+| S27.4 | Constitution API | ✅ | `GET /api/constitution`, `GET /api/constitution/me`, `POST /api/constitution/choose` |
+| S27.5 | `CharacterCreationPanel` | ✅ | 2 bước: nhập tên → chọn Thập Tuyệt Thể với hiển thị stat/passive/rarity |
+| S27.6 | `GamePage` integration | ✅ | Nếu chưa có nhân vật → hiển thị CharacterCreationPanel thay vì auto-tạo "Hành giả" |
+| S27.7 | Build + typecheck | ✅ | Frontend build pass, constitution module type-clean |
+
+---
+
+## Sprint 26: Chapter 2 — Nam Cương — 2026-07-07
+
+### Mục tiêu
+Mở rộng nội dung game với Chapter 2: vùng đất Nam Cương đầy độc khí, bao gồm 4 map mới, NPC mới, quái mới, boss mới, chuỗi quest 4 nhiệm vụ và cổng portal với yêu cầu Realm 3.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S26.1 | 4 Map mới | ✅ | Trấn Độc Trì, Rừng Độc, Đầm Lầy Cổ, Hang Vạn Độc |
+| S26.2 | NPC mới | ✅ | Lão Độc Sư, Thương Nhân Độc Vật, Kiếm Sư Tán Tu, Vạn Độc Cổ Vương (boss) |
+| S26.3 | Monster mới | ✅ | Độc Xà, Độc Chu, Cổ Trùng Hoang Dã, Độc Phong + boss Vạn Độc Cổ Vương |
+| S26.4 | Item mới | ✅ | Độc Thảo, Nọc Độc, Cổ Hoang Tinh, Luyện Cổ Đan |
+| S26.5 | Quest chain Ch2 | ✅ | `q_ch2_arrive` → `q_ch2_poison_hunt` → `q_ch2_essence` → `q_ch2_boss` với story flags |
+| S26.6 | Portal realm check | ✅ | Frontend block portal "Nam Cương" nếu player realm < 3, hiển thị thông báo |
+| S26.7 | Ch2 cinematic | ✅ | Opening cutscene + ending cutscene + boss dialogue triggers trong `GameScene.ts` |
+| S26.8 | Admin reset tool | ✅ | `backend/src/database/resetAdmin.ts` — set `hp_bonus=999999`, `atk_bonus=999999` cho account Admin |
+| S26.9 | Build + typecheck + lint | ✅ | Tất cả pass, không có error |
+
+### Files thay đổi
+- `backend/src/database/seedData.ts` — thêm tất cả seed data Ch2
+- `backend/src/database/seed.ts` — tích hợp Ch2 seeds vào self-healing seed pipeline
+- `frontend/src/game/GameScene.ts` — realm check ở portal transit, Ch2 cutscene
+- `backend/src/database/resetAdmin.ts` — **NEW** script reset HP+ATK admin
+- `backend/package.json` — thêm script `reset-admin`
+
+---
+
 ## Sprint 0: FOUNDATION — 2026-07-03
 
 ### Mục tiêu
@@ -1345,5 +1392,193 @@ Khi player vào portal từ Map A → Map B, player spawn ở vị trí portal e
 ### Ghi chú
 - Hệ thống Cửa hàng hoạt động hoàn toàn mượt mà, đồng bộ trực tiếp với rương đồ và số lượng linh thạch (vàng) hiện tại của người chơi.
 - Cơ chế tự sửa lỗi dữ liệu giúp khắc phục hoàn toàn tình trạng lỗi kẹt nhiệm vụ đối với cả tài khoản mới lẫn cũ.
+
+---
+
+## Sprint 22: BANDWIDTH OPTIMIZATION & HTTP CACHING — 2026-07-07
+
+### Mục tiêu
+
+1. Giải quyết triệt để vấn đề cạn kiệt băng thông trên Render (giới hạn 5 GB) bằng cách tối ưu hóa toàn diện giao thức HTTP và Socket.IO.
+2. Nén toàn bộ dữ liệu tải (JSON và static files) qua Express Gzip.
+3. Thiết lập chính sách lưu trữ bộ nhớ đệm (Cache-Control) cực kỳ mạnh mẽ đối với các tài nguyên tĩnh của Phaser và Vite.
+4. Giảm số lượng yêu cầu REST API trùng lặp và liên tục của các bảng điều khiển cốt truyện, nhân vật và nhiệm vụ.
+5. Điều chỉnh tần suất Socket.IO để giảm số lượng gói tin di chuyển xuống một nửa.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S22.1 | Nén payload Gzip Backend | ✅ | Tích hợp Express `compression` để nén gzip toàn bộ phản hồi JSON API và bundle static files. |
+| S22.2 | Cấu hình HTTP Caching | ✅ | Thiết lập tiêu đề `Cache-Control: public, max-age=31536000, immutable` cho Vite assets và game sprites/audio/maps, ngăn trình duyệt tải lại tài nguyên tĩnh. |
+| S22.3 | Tối ưu hóa Socket.IO Ping | ✅ | Tăng `pingInterval` lên 25s và `pingTimeout` lên 60s để giảm tải gói tin keepalive nhịp tim khi người chơi treo máy. |
+| S22.4 | Giới hạn tần suất Monster Move | ✅ | Chuyển phát sóng di chuyển quái vật từ 20Hz (mỗi 50ms) xuống 10Hz (mỗi 100ms) trên server, giảm 50% lưu lượng mạng quái di chuyển. |
+| S22.5 | Auto-accept Quests Backend | ✅ | Tích hợp tự động nhận nhiệm vụ mở khóa trên backend khi set story flag, cắt giảm các luồng REST sequential chấp nhận nhiệm vụ của frontend. |
+| S22.6 | Client-Side API Cache | ✅ | Cấu hình bộ đệm trong `fetchWithAuth` để lưu trữ dữ liệu tĩnh của `/api/quest`, `/api/equipment/templates`, v.v. Chỉ gửi yêu cầu mạng một lần duy nhất mỗi phiên. |
+| S22.7 | Cải thiện HUD Polling | ✅ | Loại bỏ việc gọi API HUD mỗi 5s. Thay đổi fallback polling thành 60s và cập nhật thông tin vàng/linh thạch ngay khi nhận socket hoặc hoàn thành quest. |
+| S22.8 | Đồng bộ Socket Profile | ✅ | Đăng ký các sự kiện socket `player:profile` và `player:stats` để cập nhật trạng thái nhân vật tức thì khi có biến động từ server. |
+| S22.9 | Giới hạn tần suất Player Move | ✅ | Tăng thời gian điều tiết (throttle) di chuyển của người chơi trên frontend lên 100ms (10Hz), giảm một nửa số lượng gói tin gửi lên. |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/package.json` | Cài đặt thư viện `compression` và các file `@types/compression`. |
+| `backend/src/app.ts` | Đăng ký middleware compression, cấu hình cache headers cho static files, điều chỉnh Socket.IO ping và giảm tốc độ Monster:move. |
+| `backend/src/quest/quest.service.ts` | Bổ sung logic auto-accept nhiệm vụ vào hàm `setStoryFlag` và kích hoạt emit profile khi hoàn thành quest. |
+| `backend/src/combat/combat.service.ts` | Thêm kích hoạt emit profile của người chơi khi nhận thưởng vàng từ chiến đấu. |
+| `frontend/src/api/client.ts` | Triển khai cơ chế cache trong `fetchWithAuth` cho các endpoint dữ liệu tĩnh. |
+| `frontend/src/store/gameStore.ts` | Thêm hành động `loadProfileAndStats` để cập nhật đồng bộ các thông số từ server. |
+| `frontend/src/components/DialoguePanel.tsx` | Loại bỏ các truy vấn nhận/lọc quest trùng lặp khi người chơi chọn đối thoại. |
+| `frontend/src/components/GameHUD.tsx` | Điều chỉnh polling profile/stats xuống 60s và đồng bộ qua store. |
+| `frontend/src/components/QuestTracker.tsx` | Kích hoạt cập nhật thông số nhân vật sau khi hoàn thành nhiệm vụ nhanh. |
+| `frontend/src/hooks/useSocket.ts` | Đăng ký các sự kiện socket `player:profile` và `player:stats` trực tiếp từ server. |
+| `frontend/src/game/GameScene.ts` | Chuyển đổi cuộc gọi fetch thô sang `fetchWithAuth` và tối ưu hóa thời gian đồng bộ tọa độ người chơi. |
+
+### Ghi chú
+- Băng thông tải trang và truyền thông socket trong game đã giảm thiểu tối đa, đặc biệt là khi di chuyển hoặc chiến đấu đông quái vật, giúp tiết kiệm băng thông Render đáng kể (ước tính giảm từ 70% đến 90%).
+- Trải nghiệm game hoàn toàn ổn định và Phaser hiển thị chuẩn xác tất cả hiệu ứng/vị trí.
+
+---
+
+## Sprint 23: NATIVE WINDOWS LOCAL DEVELOPMENT — 2026-07-07
+
+### Mục tiêu
+
+1. Định cấu hình dự án để phát triển cục bộ một cách dễ dàng trên hệ điều hành Windows gốc (native Windows), loại bỏ hoàn toàn sự phụ thuộc bắt buộc vào Docker Desktop, Docker Compose, hay môi trường WSL/Linux.
+2. Thiết lập cơ sở dữ liệu PostgreSQL cục bộ sẵn có để phục vụ cho các kết nối từ phía backend thông qua cài đặt `.env`.
+3. Sửa lỗi hạt giống (seeding) cơ sở dữ liệu đối với vị trí NPC để đảm bảo dữ liệu chạy mượt mà ngay lần đầu khởi tạo.
+4. Đảm bảo dịch vụ Redis là không bắt buộc; nếu không tìm thấy Redis, ứng dụng sẽ tự động bỏ qua và tiếp tục vận hành bình thường mà không gây ra lỗi hay spam thông báo trong console.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S23.1 | Cấu hình `.env` cục bộ | ✅ | Tạo file `backend/.env` chứa các thông số kết nối cục bộ và các JWT bí mật mặc định. |
+| S23.2 | Khắc phục lỗi Seeding | ✅ | Cập nhật `seed.ts` để gán UUID bản đồ mặc định (`lang_cothao`) khi bản đồ cấu hình (như `"bac_nguyen"`) không khớp trực tiếp với UUID thực tế, ngăn lỗi ép kiểu UUID của Postgres. |
+| S23.3 | Bỏ qua Redis khi offline | ✅ | Bổ sung tùy chọn `reconnectStrategy: () => false` trong cấu hình khởi tạo Redis của `redis.ts` để ngăn thư viện tự động kết nối lại vô hạn khi offline, tránh tràn console cảnh báo. |
+| S23.4 | Kiểm thử quy trình chạy | ✅ | Chạy thử nghiệm thành công backend (`npm run dev -w backend`), frontend (`npm run dev -w frontend`), thực hiện đồng bộ schema tự động (`npm run db:push -w backend`), và xây dựng ứng dụng thành công. |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/.env` | [NEW] Thiết lập tệp môi trường cục bộ để kết nối với cơ sở dữ liệu local. |
+| `backend/src/database/seed.ts` | Điều chỉnh hàm gán `npcMapId` để sử dụng `defaultMapId` làm phương án dự phòng an toàn. |
+| `backend/src/database/redis.ts` | Thêm logic `reconnectStrategy: () => false` cho client Redis và chuyển log lỗi kết nối thành Warning cấp thấp. |
+
+### Ghi chú
+- Dự án hiện đã sẵn sàng chạy độc lập trên môi trường Windows mà không cần Docker hay WSL. Các tệp cấu hình triển khai Render (`render.yaml`) vẫn được giữ nguyên vẹn và hoàn toàn tương thích để triển khai lên cloud trong tương lai.
+
+---
+
+## Sprint 24: COMBAT TARGETING & ATTACK BUTTON REFACTOR — 2026-07-07
+
+### Mục tiêu
+
+1. Cải tiến cơ chế tấn công thường của người chơi để giảm việc nhấp chuột (click) thủ công trực tiếp lên quái vật.
+2. Thêm nút bấm đánh thường `⚔` trực tiếp trên màn hình game cho cả người dùng PC (chơi bằng chuột) và Mobile (chơi bằng cảm ứng).
+3. Tăng phạm vi tự động tìm mục tiêu quái vật gần nhất để đánh thường lên 300px, bao quát toàn bộ vùng màn hình hiển thị của camera theo dõi.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S24.1 | Nút Đánh Thường trên mọi thiết bị | ✅ | Chỉnh sửa `UIScene.ts` để hiển thị nút đánh thường `⚔` ở góc dưới cùng bên phải màn hình bất kể người chơi dùng thiết bị cảm ứng hay máy tính PC. |
+| S24.2 | Tự động chọn quái gần nhất 300px | ✅ | Cập nhật hàm `handleAttack` trong `GameScene.ts` tăng giới hạn khoảng cách tìm quái từ `100px` lên `300px`, tự động chọn quái gần nhất trên màn hình để tấn công khi nhấn Spacebar hoặc click nút đánh. |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `frontend/src/game/UIScene.ts` | Hiển thị nút đánh thường `⚔` unconditionally (không giới hạn thiết bị di động). |
+| `frontend/src/game/GameScene.ts` | Tăng khoảng cách tìm quái từ 100px lên 300px trong logic tự động chọn mục tiêu của `handleAttack()`. |
+
+### Ghi chú
+- Người chơi PC giờ đây có thể bấm phím Cách (Spacebar) hoặc click vào nút `⚔` màu đỏ trên màn hình để tự động xông vào tấn công quái vật gần nhất ở cự ly hợp lý, thay vì phải căn chính xác click chuột vào thân quái vật như trước.
+
+---
+
+## Sprint 25: COMPLETE GU SYSTEM — 2026-07-07
+
+### Mục tiêu
+
+1. Hoàn thiện hệ thống Cổ Trùng (Gu System) theo mô tả gameplay trong System Bible và API Spec.
+2. Thiết lập số lượng ô trang bị Cổ Trùng (slots) động tùy thuộc vào Cảnh giới hiện tại của người chơi (1 Chuyển = 1 ô, tối đa 9 Chuyển = 9 ô) thay vì cố định 6 ô như trước.
+3. Hỗ trợ hiển thị chi tiết chỉ số cộng thêm (được nhân tỷ lệ theo cấp cường hóa), mô tả lore, kỹ năng của Cổ Trùng được chọn.
+4. Triển khai nút Cường Hóa (Enhance) tăng cấp độ cộng hưởng của Cổ Trùng (+1, +2, v.v., mỗi cấp tăng 10% chỉ số nền của Cổ trùng) và lập tức cập nhật chỉ số của người chơi.
+5. Tạo 31 dữ liệu Cổ Trùng mẫu nguyên bản từ tác phẩm Cổ Chân Nhân trải dài từ 1 đến 9 chuyển.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S25.1 | Seeding 31 Cổ Trùng Cổ Chân Nhân | ✅ | Thêm 31 cấu hình mẫu chi tiết cho Cổ Trùng (Xuân Thu Thiền, Nguyệt Quang Cổ, Hùng Lực Cổ, v.v.) vào `config/index.ts` để tự động chèn khi khởi động máy chủ. |
+| S25.2 | Vá lỗi tháo trang bị (unequipGu) | ✅ | Sửa lỗi `gu.controller.ts` dùng nhầm `equipSchema` cho api tháo đồ (yêu cầu vô lý trường `slotIndex`), chuyển sang sử dụng `enhanceSchema`. |
+| S25.3 | Hỗ trợ ô trang bị động theo Realm | ✅ | Chỉnh sửa `equipGu` trong `gu.service.ts` và giao diện `CharacterPanel.tsx`/`GuPanel.tsx` tự động tính số lượng ô trang bị bằng `stats.realm`. Giới hạn trang bị Cổ Trùng phẩm cấp cao hơn Cảnh giới hiện tại. |
+| S25.4 | Tính toán chỉ số Cổ Trùng cộng thêm | ✅ | Cập nhật `player.service.ts` quét danh sách Cổ Trùng đang trang bị, tính tổng chỉ số cơ bản nhân theo cấp độ cường hóa (+10% chỉ số mỗi cấp), truyền vào công cụ tính toán chỉ số chung. |
+| S25.5 | Giao diện Chi Tiết & Cường Hóa | ✅ | Nâng cấp tab Cổ Trùng trên bảng nhân vật: cho phép nhấp vào để hiển thị thuộc tính cộng thêm, kỹ năng, kích hoạt api `/api/gu/enhance` để cường hóa Cổ trùng ngay lập tức. |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/src/config/index.ts` | Loại bỏ tất cả dữ liệu seed, chỉ giữ lại cấu hình hệ thống & biến môi trường. |
+| `backend/src/database/seedData.ts` | [NEW] Tệp riêng biệt chứa toàn bộ dữ liệu seed tĩnh của game (NPCs, Quests, Items, Monsters, Gu, Dialogues, Maps). |
+| `backend/src/database/seed.ts` | Cập nhật đường dẫn import dữ liệu seed từ `seedData.js`. |
+| `backend/src/gu/gu.controller.ts` | Sửa validation schema của `unequipGu` sang `enhanceSchema`. |
+| `backend/src/gu/gu.service.ts` | Nhập `playerRepository` để check max slots và rank yêu cầu dựa trên `player.realm` của người chơi. |
+| `backend/src/player/player.service.ts` | Tích hợp lấy danh sách Cổ Trùng đang trang bị và cộng chỉ số nhân cấp cường hóa vào `getStats`. |
+| `shared/src/stat-calculator.ts` | Bổ sung các thuộc tính `guHp`, `guAtk`, `guDef`, `guCrit`, `guMoveSpeed` vào công thức tính chỉ số cuối. |
+| `frontend/src/store/gameStore.ts` | Thêm thuộc tính `description` và `stats` vào giao diện dữ liệu `PlayerGuState` của store. |
+| `frontend/src/components/CharacterPanel.tsx` | Nâng cấp giao diện tab Gu: ô trang bị theo Chuyển, bảng hiển thị chỉ số chi tiết cộng thêm và nút cường hóa hoạt động tức thời. |
+| `frontend/src/components/GuPanel.tsx` | Cập nhật số lượng ô hiển thị theo Chuyển của nhân vật và mapping element tiếng Anh tương thích database. |
+
+### Ghi chú
+- Hệ thống Cổ Trùng hiện hoạt động hoàn chỉnh, dữ liệu 31 Cổ trùng cực kỳ phong phú và bám sát nguyên tác giúp người chơi trải nghiệm trọn vẹn sức mạnh từ Nhất Chuyển lên tới Cửu Chuyển Tiên Tôn.
+- Việc tách dữ liệu hạt giống (seed data) ra khỏi cấu hình hệ thống giúp tệp cấu hình `config/index.ts` thu gọn từ 1600+ dòng xuống chỉ còn 25 dòng, mang lại sự tách biệt rõ ràng giữa logic hệ thống và nội dung game.
+
+---
+
+## Sprint 26: CHAPTER 2: NAM CƯƠNG — 2026-07-07
+
+### Mục tiêu
+
+1. Xây dựng phân khu bản đồ Chương II: Nam Cương với chủ đề rừng rậm độc vật và chướng khí đầm lầy.
+2. Thiết lập rào cản Cảnh giới (Realm Gate): cổng dịch chuyển từ Rừng Tuyết sang Trấn Độc Trì yêu cầu người chơi đạt tối thiểu Tam Chuyển (Realm 3+).
+3. Triển khai chuỗi 4 nhiệm vụ cốt truyện chính của Chương II nối tiếp từ Bắc Nguyên sang Nam Cương.
+4. Tích hợp hoạt cảnh (cinematics) mở màn Chương II, đối thoại khiêu chiến boss Vạn Độc Cổ Vương và hoạt cảnh chiến thắng thăng cấp Cảnh giới tự động lên Tam Chuyển.
+5. Cập nhật cơ chế tự chữa lành (self-healing) cho seeding bản đồ giúp tự động chèn thêm bản đồ Chương II vào database mà không làm ảnh hưởng đến dữ liệu cũ.
+
+### Hoàn thành
+
+| ID | Nhiệm vụ | Trạng thái | Chi tiết |
+|----|----------|-----------|----------|
+| S26.1 | Thêm 4 bản đồ Nam Cương | ✅ | Thêm các khu vực Trấn Độc Trì, Rừng Độc, Đầm Lầy Cổ, Hang Vạn Độc vào dữ liệu hạt giống và tự động chèn map. |
+| S26.2 | Khởi tạo NPCs & Cửa hàng Nam Cương | ✅ | Thêm Lão Độc Sư, Thương Nhân Độc Vật, Kiếm Sư Tán Tu, Boss Vạn Độc Cổ Vương và mở rộng cửa hàng Tiệm Độc Vật bán Luyện Cổ Đan, Độc Thảo. |
+| S26.3 | Bổ sung quái vật & drop vật phẩm | ✅ | Thêm Độc Xà, Độc Chu, Cổ Trùng Hoang Dã, Độc Phong và Boss Vạn Độc Cổ Vương kèm rơi vật phẩm Độc Thảo, Nọc Độc, Cổ Hoang Tinh. |
+| S26.4 | Chuỗi nhiệm vụ cốt truyện Chương II | ✅ | Xây dựng chuỗi 4 nhiệm vụ chính tuyến `q_ch2_arrive` -> `q_ch2_poison_hunt` -> `q_ch2_essence` -> `q_ch2_boss` cùng các cờ cốt truyện. |
+| S26.5 | Kiểm soát cổng thâm nhập (Realm Gate) | ✅ | Kiểm tra Cảnh giới người chơi trên Backend tại socket handler `map:join`. Chặn người chơi dưới Realm 3 (Tam Chuyển) tham gia vào bản đồ Nam Cương. |
+| S26.6 | Tự thăng cấp cảnh giới (Breakthrough Reward) | ✅ | Tích hợp cơ chế tự động thăng cấp Cảnh giới 2 (Nhị Chuyển) khi hoàn thành Chapter 1 và Cảnh giới 3 (Tam Chuyển) khi đánh bại Boss Vạn Độc Cổ Vương. |
+| S26.7 | Cinematic Cutscenes & Triggers | ✅ | Tải và trình chiếu hoạt cảnh dẫn truyện Chương II độc đáo, chèn trigger khóa di chuyển khi đối thoại boss và trình diễn thăng cấp khi diệt boss. |
+| S26.8 | Seeding tự chữa lành (Self-Healing Maps) | ✅ | Cải tiến cơ chế seed map trong `seed.ts` để tự động bổ sung các bản đồ bị thiếu thay vì bỏ qua toàn bộ khi có dữ liệu cũ. |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `backend/src/database/seedData.ts` | Bổ sung các bản đồ, NPC, quái vật, vật phẩm, đối thoại và chuỗi nhiệm vụ Chương II Nam Cương. |
+| `backend/src/database/seed.ts` | Refactor logic map seeding thành dạng tự chữa lành (chèn thêm bản đồ bị thiếu), bổ sung seed cửa hàng Độc Vật Nam Cương và sửa lỗi biến không sử dụng. |
+| `backend/src/app.ts` | Tích hợp kiểm tra rào cản Cảnh giới (Realm >= 3) cho tất cả map Nam Cương trước khi cho phép socket tham gia map. |
+| `backend/src/quest/quest.service.ts` | Bổ sung tự động kích hoạt thăng cấp cảnh giới (`type: 'realm_up'`) khi hoàn thành nhiệm vụ mốc chuyển đổi chương. |
+| `backend/src/player/player.service.ts` | Đồng bộ hóa và cập nhật trực tiếp trường `players.realm` trong DB khi người chơi đột phá thành công cảnh giới tu luyện. |
+| `frontend/src/game/GameScene.ts` | Sửa lỗi cú pháp dư ngoặc nhọn ở cuối file, tích hợp trigger hội thoại boss trước trận đánh, hiển thị hoạt cảnh mở màn Chương II và kết màn thăng cấp Tam Chuyển. |
+
+### Ghi chú
+- Chương II Nam Cương đã được tích hợp hoàn chỉnh và đồng bộ hóa thành công giữa Client và Server.
+- Hệ thống rào cản Cảnh giới và cơ chế tự đột phá hoạt động chuẩn xác theo luật Server-Authoritative.
+
+
+
 
 

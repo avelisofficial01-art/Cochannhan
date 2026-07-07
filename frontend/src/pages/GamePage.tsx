@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import { BootScene } from '../game/BootScene.js';
 import { PreloadScene } from '../game/PreloadScene.js';
@@ -13,11 +13,13 @@ import CraftPanel from '../components/CraftPanel.js';
 import { DialoguePanel } from '../components/DialoguePanel.js';
 import { QuestTracker } from '../components/QuestTracker.js';
 import ShopPanel from '../components/ShopPanel.js';
+import CharacterCreationPanel from '../components/CharacterCreationPanel.js';
 
 export default function GamePage(): React.ReactElement {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { player, setPlayer } = useAuthStore();
+  const [needsCreation, setNeedsCreation] = useState(false);
   useSocket();
 
   useEffect(() => {
@@ -29,14 +31,8 @@ export default function GamePage(): React.ReactElement {
           }
         })
         .catch(() => {
-          // If profile returns 404, auto-create player
-          api.createPlayer('Hành giả')
-            .then((res) => {
-              if (res.data?.player) {
-                setPlayer({ id: res.data.player.id, name: res.data.player.name });
-              }
-            })
-            .catch(() => {});
+          // No player yet — show character creation
+          setNeedsCreation(true);
         });
     }
   }, [player, setPlayer]);
@@ -76,6 +72,17 @@ export default function GamePage(): React.ReactElement {
     };
   }, []);
 
+
+  if (needsCreation) {
+    return (
+      <CharacterCreationPanel
+        onCreated={(id, name) => {
+          setPlayer({ id, name });
+          setNeedsCreation(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="h-dvh bg-gu-darker relative overflow-hidden" style={{ touchAction: 'manipulation' }}>

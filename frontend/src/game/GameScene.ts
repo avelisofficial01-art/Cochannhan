@@ -7,6 +7,7 @@ import {
   getBgmKey,
 } from './AssetManager.js';
 import { useGameStore, type MonsterSprite } from '../store/gameStore.js';
+import { fetchWithAuth } from '../api/client.js';
 
 /**
  * Floating damage text that appears briefly then fades out.
@@ -91,6 +92,7 @@ export class GameScene extends Phaser.Scene {
   private playerControlsEnabled = true;
   private introCutscenePlayed = false;
   private bossDialogueTriggered = false;
+  private ch2BossDialogueTriggered = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -266,9 +268,9 @@ export class GameScene extends Phaser.Scene {
         this.drawHpBar(this.playerHpBar, this.playerX, this.playerY - 20, this.playerCurrentHp, this.playerMaxHp);
       }
 
-      // Throttle movement updates to 50ms (20Hz)
+      // Throttle movement updates to 100ms (10Hz)
       const now = this.time.now;
-      if (now - this.lastMoveEmitTime >= 50) {
+      if (now - this.lastMoveEmitTime >= 100) {
         const bridge = (window as unknown as Record<string, (mapId: string, x: number, y: number) => void>)
           .__socketEmitMove;
         if (bridge) {
@@ -294,6 +296,21 @@ export class GameScene extends Phaser.Scene {
       const dy = this.playerY - p.data.from_y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 32) {
+        // Chapter 2 portal realm check: "Nam Cương" portal requires realm >= 3
+        const portalName = p.data.portal_name ?? '';
+        if (portalName.includes('Nam Cương')) {
+          const playerRealm = useGameStore.getState().profile?.realm ?? 1;
+          if (playerRealm < 3) {
+            this.showFloatingText(
+              this.playerX,
+              this.playerY - 20,
+              'Cần đạt Tam Chuyển mới có thể vào Nam Cương!',
+              '#ffaa00',
+            );
+            break;
+          }
+        }
+
         // Teleport through portal
         this.playerX = p.data.to_x;
         this.playerY = p.data.to_y;
@@ -325,7 +342,7 @@ export class GameScene extends Phaser.Scene {
       const dx = m.x - this.playerX;
       const dy = m.y - this.playerY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 100 && dist < nearestDist) {
+      if (dist < 300 && dist < nearestDist) {
         nearestDist = dist;
         nearest = m;
       }
@@ -982,66 +999,88 @@ export class GameScene extends Phaser.Scene {
   private handleMonsterDead(data: { instanceId: string; name: string }): void {
     if (data.name === 'Bạch Lang Vương') {
       this.playEndingCutscene();
+    } else if (data.name === 'Vạn Độc Cổ Vương') {
+      this.playCh2EndingCutscene();
     }
   }
 
   private checkBossProximity(): void {
-    if (this.bossDialogueTriggered) return;
-
-    // Find boss monster
     const monsters = useGameStore.getState().monsters;
-    const boss = monsters.find(m => m.name === 'Bạch Lang Vương');
-    if (boss) {
-      const dx = this.playerX - boss.x;
-      const dy = this.playerY - boss.y;
+    
+    // Chapter 1 boss
+    const boss1 = monsters.find(m => m.name === 'Bạch Lang Vương');
+    if (boss1 && !this.bossDialogueTriggered) {
+      const dx = this.playerX - boss1.x;
+      const dy = this.playerY - boss1.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 200) {
         this.bossDialogueTriggered = true;
-        this.playerControlsEnabled = false;
+        this.triggerBossDialogue('Bạch Lang Vương');
+      }
+    }
 
-        console.log('[GameScene] 🐺 Near Bạch Lang Vương. Triggering pre-fight dialogue.');
-
-        // Find Bạch Lang Vương NPC template to start conversation
-        const token = localStorage.getItem('token');
-        fetch('/api/npc', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        .then(res => res.json())
-        .then(json => {
-          if (json.success && json.data) {
-            const bossNpc = json.data.find((n: { name: string }) => n.name === 'Bạch Lang Vương');
-            if (bossNpc) {
-              useGameStore.getState().openDialogue({
-                id: bossNpc.id,
-                name: bossNpc.name,
-                sprite: bossNpc.sprite,
-                hasShop: false
-              });
-            }
-          }
-        })
-        .catch(() => {});
-
-        // Wait until dialogue is closed, then re-enable controls
-        const checkClosed = setInterval(() => {
-          if (!useGameStore.getState().isDialogueOpen) {
-            clearInterval(checkClosed);
-            this.playerControlsEnabled = true;
-          }
-        }, 200);
+    // Chapter 2 boss
+    const boss2 = monsters.find(m => m.name === 'Vạn Độc Cổ Vương');
+    if (boss2 && !this.ch2BossDialogueTriggered) {
+      const dx = this.playerX - boss2.x;
+      const dy = this.playerY - boss2.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 200) {
+        this.ch2BossDialogueTriggered = true;
+        this.triggerBossDialogue('Vạn Độc Cổ Vương');
       }
     }
   }
 
+  private triggerBossDialogue(bossName: string): void {
+    this.playerControlsEnabled = false;
+    console.log(`[GameScene] 🐉 Near ${bossName}. Triggering pre-fight dialogue.`);
+
+    fetchWithAuth('/api/npc')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data) {
+          const bossNpc = json.data.find((n: { name: string }) => n.name === bossName);
+          if (bossNpc) {
+            useGameStore.getState().openDialogue({
+              id: bossNpc.id,
+              name: bossNpc.name,
+              sprite: bossNpc.sprite,
+              hasShop: false
+            });
+          }
+        }
+      })
+      .catch(() => {});
+
+    // Wait until dialogue is closed, then re-enable controls
+    const checkClosed = setInterval(() => {
+      if (!useGameStore.getState().isDialogueOpen) {
+        clearInterval(checkClosed);
+        this.playerControlsEnabled = true;
+      }
+    }, 200);
+  }
+
   private checkAndPlayOpeningCutscene(): void {
     const activeQuests = useGameStore.getState().activeQuests as Array<{ name: string }>;
+    
+    // Chapter 1 Intro
     const isAwakenActive = activeQuests.some(q => q.name === 'Tỉnh Giấc Mộng') || activeQuests.length === 0;
-    const played = localStorage.getItem('ch1_intro_cutscene_played') === 'true';
-
-    if (isAwakenActive && (this.mapId === 'lang_cothao' || this.mapId === 'bac_nguyen_village') && !played && !this.introCutscenePlayed) {
+    const playedCh1 = localStorage.getItem('ch1_intro_cutscene_played') === 'true';
+    if (isAwakenActive && (this.mapId === 'lang_cothao' || this.mapId === 'bac_nguyen_village') && !playedCh1 && !this.introCutscenePlayed) {
       this.introCutscenePlayed = true;
       localStorage.setItem('ch1_intro_cutscene_played', 'true');
       this.playOpeningCutscene();
+      return;
+    }
+
+    // Chapter 2 Intro
+    const isArriveActive = activeQuests.some(q => q.name === 'Độc Địa Nam Phương');
+    const playedCh2 = localStorage.getItem('ch2_intro_cutscene_played') === 'true';
+    if (isArriveActive && (this.mapId === 'tran_doc_tri' || this.mapId === 'Trấn Độc Trì') && !playedCh2) {
+      localStorage.setItem('ch2_intro_cutscene_played', 'true');
+      this.playCh2OpeningCutscene();
     }
   }
 
@@ -1084,6 +1123,51 @@ export class GameScene extends Phaser.Scene {
 
     this.input.once('pointerdown', () => {
       this.cameras.main.flash(800, 255, 255, 255);
+      titleText.destroy();
+      text.destroy();
+      overlay.destroy();
+      this.playerControlsEnabled = true;
+    });
+  }
+
+  private playCh2OpeningCutscene(): void {
+    this.playerControlsEnabled = false;
+
+    // Draw solid black overlay
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.95);
+    overlay.fillRect(0, 0, this.mapWidth, this.mapHeight);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(2000);
+
+    // Title
+    const titleText = this.add.text(400, 180, "CHƯƠNG II: NAM CƯƠNG TRÙNG ĐỘC", {
+      fontFamily: 'Georgia, serif',
+      fontSize: '20px',
+      color: '#00ff88',
+      align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+    // Dramatic scrolling text
+    const text = this.add.text(400, 320,
+      "Vượt qua Hàn Phong môn hộ, trước mắt ngươi là cảnh tượng hoàn toàn khác...\n" +
+      "Rừng rậm nguyên sinh rậm rạp, đầm lầy mù sương u tối.\n" +
+      "Đây là Nam Cương — thánh địa của độc trùng, cũng là độc địa hiểm ác nhất.\n\n" +
+      "Không khí tràn ngập chướng khí độc vật,\n" +
+      "tiếng gầm rú của mãnh thú và côn trùng độc truyền ra từ sâu trong rừng.\n" +
+      "Vạn Độc Môn đang ẩn khuất tại đây, cùng với bí mật của Luyện Cổ pháp...\n\n" +
+      "[ Nhấp chuột để bắt đầu Chương II ]",
+      {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '13px',
+        color: '#ffffff',
+        align: 'center',
+        lineSpacing: 8
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+    this.input.once('pointerdown', () => {
+      this.cameras.main.flash(800, 0, 255, 136);
       titleText.destroy();
       text.destroy();
       overlay.destroy();
@@ -1135,14 +1219,68 @@ export class GameScene extends Phaser.Scene {
       this.playerControlsEnabled = true;
 
       // Set story flag ch1_complete on server
-      const token = localStorage.getItem('token');
-      fetch('/api/quest/flags/set', {
+      fetchWithAuth('/api/story/flags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ flagKey: 'ch1_complete', flagValue: 'true' }),
+      }).then(() => {
+        window.location.reload();
+      }).catch(() => {});
+    });
+  }
+
+  private playCh2EndingCutscene(): void {
+    this.playerControlsEnabled = false;
+
+    // Draw full black overlay
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.95);
+    overlay.fillRect(0, 0, this.mapWidth, this.mapHeight);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(2000);
+
+    // Defeated title
+    const titleText = this.add.text(400, 180, "VẠN ĐỘC CỔ VƯƠNG BỊ TIÊU DIỆT", {
+      fontFamily: 'Georgia, serif',
+      fontSize: '22px',
+      color: '#a855f7',
+      align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+    // Breakthrough text
+    const text = this.add.text(400, 330,
+      "Vạn Độc Cổ Vương rống lên đau đớn rồi tan rã thành chướng khí tím.\n" +
+      "Mật Độc Tinh Hoa tinh khiết nhất chảy vào cơ thể ngươi,\n" +
+      "được hấp thụ triệt để bởi Sinh Cổ nằm trong Không Khiếu...\n\n" +
+      "Không Khiếu được tẩm bổ cực đại, chân nguyên chuyển hóa chất lượng vượt bậc!\n" +
+      "Cơ thể ngươi hoàn toàn miễn dịch với độc chướng Nam Cương!\n\n" +
+      "Chúc mừng ngươi phá cảnh thành công:\n" +
+      "--- ĐỘT PHÁ LÊN TAM CHUYỂN CẢNH GIỚI! ---\n\n" +
+      "[ Nhấp chuột để hoàn thành Chương II ]",
+      {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '13px',
+        color: '#ffcc00',
+        align: 'center',
+        lineSpacing: 8
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+    this.input.once('pointerdown', () => {
+      titleText.destroy();
+      text.destroy();
+      overlay.destroy();
+      this.playerControlsEnabled = true;
+
+      // Set story flag ch2_complete on server
+      fetchWithAuth('/api/story/flags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ flagKey: 'ch2_complete', flagValue: 'true' }),
       }).then(() => {
         window.location.reload();
       }).catch(() => {});

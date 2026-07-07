@@ -77,7 +77,7 @@ async function request<T>(
     headers,
   });
 
-  if (response.status === 401) {
+  if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
     const refreshed = await ensureFreshToken();
     if (refreshed) {
       // Retry once with the new token
@@ -124,6 +124,8 @@ async function request<T>(
 
 // ── fetchWithAuth — for components that call API directly ─────────
 
+const staticCache = new Map<string, Response>();
+
 /**
  * A drop-in replacement for `fetch` that auto-attaches the auth
  * Bearer header and transparently refreshes the token on 401.
@@ -132,6 +134,21 @@ export async function fetchWithAuth(
   url: string,
   options: RequestInit = {},
 ): Promise<Response> {
+  const isCacheable = (options.method === undefined || options.method === 'GET') &&
+    (url.endsWith('/api/quest') ||
+     url.endsWith('/api/equipment/templates') ||
+     url.endsWith('/api/inventory/items') ||
+     url.endsWith('/api/npc') ||
+     url.endsWith('/api/gu/templates') ||
+     url.endsWith('/api/craft/recipes'));
+
+  if (isCacheable) {
+    const cached = staticCache.get(url);
+    if (cached) {
+      return cached.clone();
+    }
+  }
+
   const token = localStorage.getItem('token');
   const headers: Record<string, string> = {
     ...((options.headers as Record<string, string>) ?? {}),
@@ -161,6 +178,10 @@ export async function fetchWithAuth(
         window.location.href = '/login';
         throw new Error('Unauthorized');
       }
+
+      if (isCacheable && retryResponse.ok) {
+        staticCache.set(url, retryResponse.clone());
+      }
       return retryResponse;
     }
 
@@ -169,6 +190,10 @@ export async function fetchWithAuth(
     localStorage.removeItem('refreshToken');
     window.location.href = '/login';
     throw new Error('Unauthorized');
+  }
+
+  if (isCacheable && response.ok) {
+    staticCache.set(url, response.clone());
   }
 
   return response;

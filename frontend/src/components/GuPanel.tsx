@@ -9,6 +9,18 @@ const ELEMENT_COLORS: Record<string, string> = {
   'Thạch': 'text-amber-400 border-amber-700 bg-amber-900/20',
   'Huyết': 'text-rose-400 border-rose-700 bg-rose-900/20',
   'Độc': 'text-purple-400 border-purple-700 bg-purple-900/20',
+  'fire': 'text-red-400 border-red-700 bg-red-900/20',
+  'wind': 'text-cyan-400 border-cyan-700 bg-cyan-900/20',
+  'earth': 'text-amber-400 border-amber-700 bg-amber-900/20',
+  'blood': 'text-rose-400 border-rose-700 bg-rose-900/20',
+  'poison': 'text-purple-400 border-purple-700 bg-purple-900/20',
+  'light': 'text-yellow-400 border-yellow-700 bg-yellow-900/20',
+  'physical': 'text-gray-300 border-gray-600 bg-gray-900/20',
+  'ice': 'text-blue-300 border-blue-600 bg-blue-900/20',
+  'wood': 'text-green-400 border-green-700 bg-green-900/20',
+  'lightning': 'text-indigo-400 border-indigo-700 bg-indigo-900/20',
+  'space': 'text-pink-400 border-pink-700 bg-pink-900/20',
+  'time': 'text-teal-400 border-teal-700 bg-teal-900/20',
 };
 
 const RANK_NAMES: Record<number, string> = {
@@ -33,7 +45,7 @@ async function fetchGu(token: string): Promise<{ data?: Array<Record<string, unk
 }
 
 export default function GuPanel(): React.ReactElement {
-  const { playerGuList, guSynergies, isGuPanelOpen, toggleGuPanel, setPlayerGuList } = useGameStore();
+  const { playerGuList, guSynergies, isGuPanelOpen, toggleGuPanel, setPlayerGuList, stats } = useGameStore();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -56,6 +68,15 @@ export default function GuPanel(): React.ReactElement {
             isEquipped: String(g.isEquipped ?? 'false') === 'true',
             slotIndex: g.slotIndex != null ? Number(g.slotIndex) : null,
             sprite: String((g.guTemplate as Record<string, unknown>)?.sprite ?? ''),
+            description: String((g.guTemplate as Record<string, unknown>)?.description ?? ''),
+            stats: (g.stats as Record<string, unknown>) ? {
+              hp: Number((g.stats as Record<string, unknown>).hp ?? 0),
+              atk: Number((g.stats as Record<string, unknown>).atk ?? 0),
+              def: Number((g.stats as Record<string, unknown>).def ?? 0),
+              crit: Number((g.stats as Record<string, unknown>).crit ?? 0),
+              critDamage: Number((g.stats as Record<string, unknown>).crit_damage ?? (g.stats as Record<string, unknown>).critDamage ?? 0),
+              moveSpeed: Number((g.stats as Record<string, unknown>).move_speed ?? (g.stats as Record<string, unknown>).moveSpeed ?? 0),
+            } : undefined,
           })),
         );
       })
@@ -76,6 +97,7 @@ export default function GuPanel(): React.ReactElement {
     );
   }
 
+  const maxSlots = stats?.realm ?? 1;
   const equipped = playerGuList.filter((g) => g.isEquipped);
   const unequipped = playerGuList.filter((g) => !g.isEquipped);
 
@@ -94,11 +116,11 @@ export default function GuPanel(): React.ReactElement {
 
       {/* Equipped Slots */}
       <div className="px-3 py-3 border-b border-gu-border">
-        <h3 className="text-xs text-gray-400 mb-2">Đã trang bị ({equipped.length}/6)</h3>
+        <h3 className="text-xs text-gray-400 mb-2">Đã trang bị ({equipped.length}/{maxSlots})</h3>
         <div className="grid grid-cols-3 gap-2">
-          {Array.from({ length: 6 }).map((_, i) => {
+          {Array.from({ length: maxSlots }).map((_, i) => {
             const gu = equipped.find((g) => g.slotIndex === i);
-            const colorClass = gu ? ELEMENT_COLORS[gu.element] || 'text-gray-400 border-gray-700 bg-gray-900/20' : '';
+            const colorClass = gu ? ELEMENT_COLORS[gu.element.toLowerCase()] || ELEMENT_COLORS[gu.element] || 'text-gray-400 border-gray-700 bg-gray-900/20' : '';
             return (
               <div
                 key={i}
@@ -136,7 +158,7 @@ export default function GuPanel(): React.ReactElement {
         ) : (
           <div className="space-y-2">
             {unequipped.map((gu) => {
-              const colorClass = ELEMENT_COLORS[gu.element] || 'border-gray-700';
+              const colorClass = ELEMENT_COLORS[gu.element.toLowerCase()] || ELEMENT_COLORS[gu.element] || 'border-gray-700';
               const rankName = RANK_NAMES[gu.rank] ?? `Rank ${gu.rank}`;
               return (
                 <div
@@ -144,7 +166,7 @@ export default function GuPanel(): React.ReactElement {
                   className={`rounded border p-2 text-xs ${colorClass}`}
                 >
                   <div className="flex justify-between items-start">
-                    <span className="font-medium">{gu.name}</span>
+                    <span className="font-medium">{gu.name} {gu.enhancement > 0 ? `+${gu.enhancement}` : ''}</span>
                     <span className="text-[10px] opacity-70">Lv.{gu.level}</span>
                   </div>
                   <div className="flex justify-between text-[10px] opacity-60 mt-1">
@@ -159,8 +181,8 @@ export default function GuPanel(): React.ReactElement {
       </div>
 
       {/* Footer hint */}
-      <div className="px-3 py-2 text-[10px] text-gray-600 border-t border-gu-border">
-        Nhấn G để đóng/mở | Equip/Enhance sắp ra mắt
+      <div className="px-3 py-2 text-[10px] text-gray-600 border-t border-gu-border text-center">
+        Nhấn G để đóng/mở | Mở bảng nhân vật (C) để tháo lắp & cường hóa
       </div>
     </div>
   );

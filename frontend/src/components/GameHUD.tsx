@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchWithAuth } from '../api/client.js';
-import { useGameStore, type MonsterSprite, type ProfileState, type StatsState } from '../store/gameStore.js';
+import { useGameStore, type MonsterSprite } from '../store/gameStore.js';
 
 interface HUDActiveSkill {
   skillId: string;
@@ -49,8 +48,6 @@ export default function GameHUD(): React.ReactElement {
     toggleCraftPanel,
     activeQuests,
     profile,
-    setProfile,
-    setStats,
     characterPanelTab,
     setCharacterPanelTab,
     isCharacterPanelOpen,
@@ -61,25 +58,12 @@ export default function GameHUD(): React.ReactElement {
   const [cooldowns, setCooldowns] = useState<Record<string, { total: number; remaining: number }>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const loadProfileAndStats = (): void => {
-    fetchWithAuth('/api/player/profile')
-      .then((res) => res.json())
-      .then((d: { success: boolean; data: ProfileState }) => {
-        if (d.success) setProfile(d.data);
-      })
-      .catch(() => {});
-
-    fetchWithAuth('/api/player/stats')
-      .then((res) => res.json())
-      .then((d: { success: boolean; data: StatsState }) => {
-        if (d.success) setStats(d.data);
-      })
-      .catch(() => {});
-  };
-
   useEffect(() => {
-    loadProfileAndStats();
-    const interval = setInterval(loadProfileAndStats, 5000);
+    const store = useGameStore.getState();
+    void store.loadProfileAndStats();
+    const interval = setInterval(() => {
+      void store.loadProfileAndStats();
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 

@@ -39,7 +39,7 @@ async function seedAdmin() {
     console.log('   Skipping account creation.\n');
   }
 
-  const accountId = existingAccount?.id ?? (async () => {
+  const accountId = existingAccount?.id ?? await (async () => {
     // ── 2. Create account ──
     const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
     const [acc] = await db

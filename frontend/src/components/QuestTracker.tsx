@@ -87,6 +87,7 @@ export const QuestTracker: React.FC = () => {
         if (activeJson.success && activeJson.data) {
           setActiveQuests(activeJson.data as unknown[]);
         }
+        void useGameStore.getState().loadProfileAndStats();
       }
     } catch {
       // Silent catch
