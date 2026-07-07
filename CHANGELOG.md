@@ -8,6 +8,32 @@
 ## Sprint 27: Thập Tuyệt Thể System — 2026-07-07
 
 ### Mục tiêu
+Thay thế 10 Thể tùy ý bằng đúng 10 Thập Tuyệt Thể theo lore thật của Cổ Chân Nhân (GAME_VISION.md). Mỗi Thể có cơ chế gameplay hoàn toàn khác nhau, điểm yếu riêng biệt, passive độc đáo.
+
+### Danh sách 10 Thập Tuyệt Thể (theo đúng lore)
+| # | Tên | Cơ chế | Passive | Điểm yếu |
+|---|-----|---------|---------|----------|
+| 1 | Xuân Thu Nguyệt Lão Thể | Hồi phục, HP không thể chết trong 2 giây | Trường Xuân Bất Tử | Attack thấp, không có Crit |
+| 2 | Tiên Mộng Cốc Thể | Stun mỗi 5 đòn, ảo ảnh né đòn 15% | Mộng Huyễn | HP thấp, DEF thấp |
+| 3 | Vu Gia Thể | Curse chồng chất, xuyên giáp khi đủ 3 Curse | Lão Vu Thứ Khẩu | Phức tạp, yếu khi không đủ Curse |
+| 4 | Vạn Biến Thể | Đổi hình thái mỗi 30s, hồi HP + xóa debuff | Vô Cực Biến | Không ổn định, khó tối ưu |
+| 5 | Thiên Khuyết Thể | ATK x2 khi HP <50%, Bạo Tẩu khi <20% | Khuyết Đạo | HP rất thấp, chết nhanh |
+| 6 | Đồng Thai Thể | Phân Thân mỗi khi dùng Active Skill | Song Đồng | Phức tạp, tốn mana |
+| 7 | Nhân Quả Thể | Tích lũy Nhân → bùng nổ Quả, hồi sinh 1 lần | Nhân Quả Luân Hồi | Sát thương thường thấp |
+| 8 | Cốc Thần Thể | +50% drop rate, kinh tế mạnh nhất | Thần Khố | Chiến đấu yếu nhất |
+| 9 | Huyết Chiến Thể | Huyết Hận từ nhận đòn, hồi HP khi chiến đấu dài | Huyết Chiến Vô Hoàn | Phải nhận đòn để mạnh |
+| 10 | Không Thể (Vô Thể) | Học passive từ Thể khác qua Quest ẩn | Vô Cực | Yếu nhất ban đầu |
+
+### Hoàn thành
+| ID | Nhiệm vụ | Trạng thái |
+|----|----------|----------|
+| S27.1 | Schema `body_constitutions` + field `weakness` | ✅ |
+| S27.2 | SeedData 10 Thể đúng lore GAME_VISION | ✅ |
+| S27.3 | CharacterCreationPanel hiển thị weakness + passive | ✅ |
+| S27.4 | Backend API constitution (GET/choose/me) | ✅ |
+| S27.5 | Frontend typecheck + build pass | ✅ |
+
+### Mục tiêu
 Thay thế hệ nhân vật bằng 10 Thập Tuyệt Thể từ truyện Cổ Chân Nhân. Mỗi Thể là một "hệ" riêng với cơ chế passive và stat bonus độc đáo, được chọn một lần khi tạo nhân vật.
 
 ### Hoàn thành

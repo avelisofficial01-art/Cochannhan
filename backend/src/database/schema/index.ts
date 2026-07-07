@@ -51,6 +51,8 @@ export const bodyConstitutions = pgTable('body_constitutions', {
   realm_scaling: boolean('realm_scaling').notNull().default(false),
   // Rarity tier: common | rare | epic | legendary
   rarity: varchar('rarity', { length: 20 }).notNull().default('rare'),
+  // Weakness displayed in UI (e.g. "Attack thấp, không có Crit")
+  weakness: varchar('weakness', { length: 255 }).notNull().default(''),
   created_at: timestamp('created_at').defaultNow().notNull(),
 });
 

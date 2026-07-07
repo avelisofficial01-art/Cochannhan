@@ -7,6 +7,7 @@ interface Constitution {
   description: string;
   passive_ability: string;
   passive_description: string;
+  weakness: string;
   stat_bonuses: Record<string, number>;
   rarity: string;
   realm_scaling: boolean;
@@ -149,6 +150,9 @@ export default function CharacterCreationPanel({ onCreated }: Props): React.Reac
                       </div>
                       <p className="mt-1 text-xs text-gray-300 line-clamp-2">{c.description}</p>
                       <p className="mt-1 text-xs italic text-gray-400">⚡ {c.passive_description}</p>
+                      {c.weakness && (
+                        <p className="mt-1 text-xs text-red-400">⚠ Điểm yếu: {c.weakness}</p>
+                      )}
                     </button>
                   );
                 })}
@@ -158,6 +162,9 @@ export default function CharacterCreationPanel({ onCreated }: Props): React.Reac
                 <div className="rounded-lg border border-gu-gold/40 bg-gu-gold/5 p-3 text-sm">
                   <p className="font-bold text-gu-gold">{selected.name}</p>
                   <p className="mt-1 text-gray-300">{selected.passive_description}</p>
+                  {selected.weakness && (
+                    <p className="mt-1 text-xs text-red-400">⚠ Điểm yếu: {selected.weakness}</p>
+                  )}
                   {selected.realm_scaling && (
                     <p className="mt-1 text-xs text-green-400">★ Sức mạnh tăng khi đột phá cảnh giới</p>
                   )}
