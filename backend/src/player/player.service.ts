@@ -36,8 +36,6 @@ export async function getStats(accountId: string): Promise<PlayerStatsResponse |
   const player = await playerRepository.findByAccountId(accountId);
   if (!player) return null;
 
-  const stats = await playerRepository.findStatsByPlayerId(player.id);
-
   // Load and sum equipped Gu stats
   let guHp = 0;
   let guAtk = 0;
@@ -50,7 +48,7 @@ export async function getStats(accountId: string): Promise<PlayerStatsResponse |
     const equipped = guList.filter((g) => String(g.isEquipped) === 'true');
     for (const gu of equipped) {
       if (gu.stats) {
-        const mult = 1 + (gu.enhancement ?? 0) * 0.1; // +10% per enhancement level
+        const mult = 1 + (gu.enhancement ?? 0) * 0.1;
         guHp += Math.round((gu.stats.hp ?? 0) * mult);
         guAtk += Math.round((gu.stats.atk ?? 0) * mult);
         guDef += Math.round((gu.stats.def ?? 0) * mult);
@@ -59,18 +57,18 @@ export async function getStats(accountId: string): Promise<PlayerStatsResponse |
       }
     }
   } catch {
-    // ignore
+    // ignore gu errors
   }
 
   return calculatePlayerStats({
     realm: player.realm,
     baseHp: player.hp,
     baseMana: player.mana,
-    hpBonus: stats?.hp_bonus ?? 0,
-    atkBonus: stats?.atk_bonus ?? 0,
-    defBonus: stats?.def_bonus ?? 0,
-    critBonus: stats?.crit_bonus ?? 0,
-    moveSpeed: stats?.move_speed ?? 300,
+    hpBonus: 0,
+    atkBonus: 0,
+    defBonus: 0,
+    critBonus: 0,
+    moveSpeed: 300,
     daoId: player.dao_id,
     guHp,
     guAtk,
@@ -102,15 +100,6 @@ export async function createPlayer(
     current_y: 0,
   });
 
-  await playerRepository.createStats({
-    player_id: player.id,
-    hp_bonus: 0,
-    atk_bonus: 0,
-    def_bonus: 0,
-    crit_bonus: 0,
-    move_speed: 300,
-  });
-
   return toProfile(player);
 }
 
@@ -119,26 +108,11 @@ export async function getPlayerById(playerId: string): Promise<PlayerRow | null>
   return player ?? null;
 }
 
-export async function getPlayerStats(
-  playerId: string,
-): Promise<{ hpBonus: number; atkBonus: number; defBonus: number; critBonus: number; moveSpeed: number } | null> {
-  const stats = await playerRepository.findStatsByPlayerId(playerId);
-  if (!stats) return null;
-  return {
-    hpBonus: stats.hp_bonus,
-    atkBonus: stats.atk_bonus,
-    defBonus: stats.def_bonus,
-    critBonus: stats.crit_bonus,
-    moveSpeed: stats.move_speed,
-  };
-}
-
 export const playerService = {
   getProfile,
   getStats,
   createPlayer,
   getPlayerById,
-  getPlayerStats,
 };
 
 export { ERROR_CODES };

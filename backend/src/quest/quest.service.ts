@@ -459,8 +459,8 @@ export const questService = {
     try {
       const quests = await db
         .select()
-        .from(schema.questTemplates)
-        .where(eq(schema.questTemplates.flag_required, flagKey));
+        .from(schema.quests)
+        .where(eq(schema.quests.flag_required, flagKey));
 
       let acceptedAny = false;
       for (const quest of quests) {

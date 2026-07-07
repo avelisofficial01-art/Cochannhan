@@ -392,3 +392,32 @@ export const mapPortals = pgTable('map_portals', {
   label: varchar('label', { length: 100 }),
   min_realm: integer('min_realm').notNull().default(1),
 });
+
+// ============================================================
+// GAME CONFIG (key-value store for server settings)
+// ============================================================
+
+export const gameConfig = pgTable('game_config', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: varchar('key', { length: 100 }).notNull().unique(),
+  value: text('value').notNull(),
+  description: text('description'),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// ============================================================
+// COMBAT LOGS
+// ============================================================
+
+export const combatLogs = pgTable('combat_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  player_id: uuid('player_id')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  monster_id: uuid('monster_id').notNull(),
+  damage: integer('damage').notNull().default(0),
+  skill: varchar('skill', { length: 100 }),
+  is_critical: varchar('is_critical', { length: 5 }).notNull().default('false'),
+  damage_type: varchar('damage_type', { length: 50 }).notNull().default('physical'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});

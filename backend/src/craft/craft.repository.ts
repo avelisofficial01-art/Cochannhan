@@ -76,6 +76,8 @@ export async function logCraft(
   await db.insert(craftLogs).values({
     player_id: playerId,
     recipe_id: recipeId,
-    success: success ? 'true' : 'false',
+    result_type: 'item',
+    result_id: recipeId,
+    success,
   });
 }

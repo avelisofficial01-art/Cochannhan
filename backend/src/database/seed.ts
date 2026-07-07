@@ -1,707 +1,291 @@
 import { db } from './connection.js';
 import * as schema from './schema/index.js';
-import { eq, inArray } from 'drizzle-orm';
 import {
   bodyConstitutionSeeds,
-  npcSeeds,
-  itemSeeds,
-  monsterSeeds,
-  bacNguyenMonsterSeeds,
+  cultivationRealmSeeds,
+  dialogueSeeds,
+  equipmentSeeds,
+  gameConfigSeeds,
   guSeeds,
-  bossSeeds,
-  worldMapSeeds,
+  itemSeeds,
   mapPortalSeeds,
   mapSpawnSeeds,
-  dialogueSeeds,
-  chapter1QuestSeeds,
-  namCuongMapSeeds,
-  namCuongNpcSeeds,
-  namCuongMonsterSeeds,
-  namCuongBossSeeds,
-  namCuongItemSeeds,
-  namCuongPortalSeeds,
-  namCuongSpawnSeeds,
-  namCuongDialogueSeeds,
-  chapter2QuestSeeds,
+  monsterSeeds,
+  npcSeeds,
+  questSeeds,
+  worldMapSeeds,
 } from './seedData.js';
 
-const allMapSeeds = [...worldMapSeeds, ...namCuongMapSeeds];
-const allPortalSeeds = [...mapPortalSeeds, ...namCuongPortalSeeds];
-const allSpawnSeeds = [...mapSpawnSeeds, ...namCuongSpawnSeeds];
-const allNpcSeeds = [...npcSeeds, ...namCuongNpcSeeds];
-const allDialogueSeeds = [...dialogueSeeds, ...namCuongDialogueSeeds];
-const allItemSeeds = [...itemSeeds, ...namCuongItemSeeds];
-const allQuestSeeds = [...chapter1QuestSeeds, ...chapter2QuestSeeds];
-const allMonsterSeeds = [
-  ...monsterSeeds.map(m => ({ ...m, isBoss: false })),
-  ...bacNguyenMonsterSeeds.map(m => ({ ...m, isBoss: false })),
-  ...bossSeeds.map(b => ({ ...b, isBoss: true })),
-  ...namCuongMonsterSeeds.map(m => ({ ...m, isBoss: false })),
-  ...namCuongBossSeeds.map(b => ({ ...b, isBoss: true })),
-];
-
-
 export async function seedDatabase(): Promise<void> {
-  try {
-    // Check each critical table independently — allows partial re-seeding
-    // if some tables were created but others are empty (e.g. maps exist but no NPCs)
-    const [
-      existingMonsters,
-    ] = await Promise.all([
-      db.select().from(schema.monsterTemplates).limit(1),
-    ]);
+  console.log('[Seed] Starting database seed...');
 
-    const needsMonsters = existingMonsters.length === 0;
+  await seedGameConfig();
+  await seedCultivationRealms();
+  await seedBodyConstitutions();
+  await seedItems();
+  await seedEquipment();
+  await seedGu();
+  await seedMonsters();
+  await seedWorldMaps();
+  await seedMapPortals();
+  await seedMapSpawns();
+  await seedDialogues();
+  await seedNpcs();
+  await seedQuests();
 
-    console.log(`[Seed] Running self-healing database seed updates...`);
+  console.log('[Seed] Database seed completed.');
+}
 
-    // 1. Seed cultivation realms
-    console.log('[Seed] Seeding cultivation realms...');
-    const realms = [
-      { level: 1, name: 'Nhất Chuyển', stat_multiplier: 100, breakthrough_gold: 0, required_breakthrough: 'false', description: 'Realm level 1' },
-      { level: 2, name: 'Nhị Chuyển', stat_multiplier: 120, breakthrough_gold: 1000, required_breakthrough: 'true', description: 'Realm level 2' },
-      { level: 3, name: 'Tam Chuyển', stat_multiplier: 150, breakthrough_gold: 5000, required_breakthrough: 'true', description: 'Realm level 3' },
-      { level: 4, name: 'Tứ Chuyển', stat_multiplier: 200, breakthrough_gold: 20000, required_breakthrough: 'true', description: 'Realm level 4' },
-      { level: 5, name: 'Ngũ Chuyển', stat_multiplier: 300, breakthrough_gold: 100000, required_breakthrough: 'true', description: 'Realm level 5' },
-      { level: 6, name: 'Lục Chuyển (Tiên)', stat_multiplier: 500, breakthrough_gold: 500000, required_breakthrough: 'true', description: 'Realm level 6 (Immortal)' },
-      { level: 7, name: 'Thất Chuyển (Tiên)', stat_multiplier: 800, breakthrough_gold: 2000000, required_breakthrough: 'true', description: 'Realm level 7 (Immortal)' },
-      { level: 8, name: 'Bát Chuyển (Tiên)', stat_multiplier: 1300, breakthrough_gold: 10000000, required_breakthrough: 'true', description: 'Realm level 8 (Immortal)' },
-      { level: 9, name: 'Cửu Chuyển (Tôn)', stat_multiplier: 2100, breakthrough_gold: 99999999, required_breakthrough: 'true', description: 'Realm level 9 (Venerable)' },
-    ];
-    for (const r of realms) {
-      await db.insert(schema.cultivationRealms).values(r).onConflictDoNothing();
-    }
+async function seedGameConfig(): Promise<void> {
+  console.log('[Seed] Seeding game config...');
 
-    // 2. Seed body constitutions (Thập Tuyệt Thể)
-    console.log('[Seed] Seeding body constitutions (Thập Tuyệt Thể)...');
-    for (const bc of bodyConstitutionSeeds) {
-      await db
-        .insert(schema.bodyConstitutions)
-        .values({
-          id: bc.id,
-          name: bc.name,
-          description: bc.description,
-          stat_bonuses: JSON.parse(bc.stat_bonuses),
-          passive_ability: bc.passive_ability,
-          passive_description: bc.passive_description,
-          realm_scaling: bc.realm_scaling,
-          rarity: bc.rarity,
-        })
-        .onConflictDoNothing();
-    }
-
-    // 3. Seed items
-    const itemMap = new Map<string, string>(); // name -> id
-    const existingItems = await db.select().from(schema.itemTemplates);
-    if (existingItems.length === 0) {
-      console.log('[Seed] Seeding items...');
-      for (const item of allItemSeeds) {
-        const [inserted] = await db.insert(schema.itemTemplates).values({
-          name: item.name,
-          type: item.type,
-          description: item.description,
-          stackable: item.stackable,
-          max_stack: item.maxStack,
-          sell_price: item.sellPrice,
-          sprite: item.sprite,
-        }).returning();
-        if (inserted) {
-          itemMap.set(inserted.name, inserted.id);
-        }
-      }
-    } else {
-      for (const item of existingItems) {
-        itemMap.set(item.name, item.id);
-      }
-    }
-
-    // 3. Seed maps (or load existing map IDs for use by NPC/monster seeding)
-    const mapUuidMap = new Map<string, string>(); // ref -> UUID
-    let villageMapId: string | undefined;
-
-    console.log('[Seed] Seeding/loading maps...');
-    const allMaps = await db.select().from(schema.worldMaps);
-    for (const m of allMapSeeds) {
-      let found = allMaps.find((row) => row.name === m.name);
-      if (!found) {
-        console.log(`[Seed] Map "${m.name}" is missing. Seeding...`);
-        const [insertedWorldMap] = await db.insert(schema.worldMaps).values({
-          name: m.name,
-          region: m.region,
-          recommended_realm: m.recommended_realm,
-          is_safe_zone: m.is_safe_zone,
-          background: m.background,
-          width: m.width,
-          height: m.height,
-        }).returning();
-
-        await db.insert(schema.maps).values({
-          id: insertedWorldMap.id,
-          name: m.name,
-          background: m.background === 'bg_village' ? 'map_bac_nguyen' : m.background,
-          level_min: m.recommended_realm,
-          level_max: m.recommended_realm + 5,
-        }).onConflictDoNothing();
-
-        found = insertedWorldMap;
-      }
-
-      if (found) {
-        mapUuidMap.set(m.ref, found.id);
-        if (m.ref === 'lang_cothao') {
-          villageMapId = found.id;
-        }
-      }
-    }
-
-    if (villageMapId) {
-      await db.insert(schema.maps).values({
-        id: villageMapId,
-        name: 'bac_nguyen_village',
-        background: 'map_bac_nguyen',
-        level_min: 1,
-        level_max: 9,
-      }).onConflictDoNothing();
-    }
-
-    // 4. Seed portals (delete all and re-seed to apply config changes instantly)
-    console.log('[Seed] Refreshing portals...');
-    await db.delete(schema.mapPortals);
-    await db.delete(schema.portals);
-    for (const p of allPortalSeeds) {
-      const fromId = mapUuidMap.get(p.from_map_ref);
-      const toId = mapUuidMap.get(p.to_map_ref);
-      if (fromId && toId) {
-        await db.insert(schema.mapPortals).values({
-          from_map_id: fromId,
-          to_map_id: toId,
-          from_x: p.from_x,
-          from_y: p.from_y,
-          to_x: p.to_x,
-          to_y: p.to_y,
-          portal_name: p.portal_name,
-        });
-
-        // Also seed older portals table
-        await db.insert(schema.portals).values({
-          from_map: fromId,
-          to_map: toId,
-          x: p.from_x,
-          y: p.from_y,
-          condition: null,
-        });
-      }
-    }
-
-    // 4.5 Seed Item Templates
-    const dbItems = await db.select().from(schema.itemTemplates).limit(1);
-    const needsItems = dbItems.length === 0;
-    if (needsItems) {
-      console.log('[Seed] Seeding item templates...');
-      for (const item of allItemSeeds) {
-        await db.insert(schema.itemTemplates).values({
-          name: item.name,
-          type: item.type,
-          description: item.description,
-          stackable: item.stackable ?? 'false',
-          max_stack: item.maxStack ?? 1,
-          sell_price: item.sellPrice ?? 0,
-          sprite: item.sprite ?? null,
-        });
-      }
-    } else {
-      // Check and add any missing item templates
-      const allItems = await db.select().from(schema.itemTemplates);
-      for (const item of allItemSeeds) {
-        if (!allItems.some(i => i.name === item.name)) {
-          console.log(`[Seed] Item template "${item.name}" is missing. Seeding...`);
-          await db.insert(schema.itemTemplates).values({
-            name: item.name,
-            type: item.type,
-            description: item.description,
-            stackable: item.stackable ?? 'false',
-            max_stack: item.maxStack ?? 1,
-            sell_price: item.sellPrice ?? 0,
-            sprite: item.sprite ?? null,
-          });
-        }
-      }
-    }
-
-    // 5. Seed NPCs
-    const npcMap = new Map<string, string>(); // name -> UUID
-    const npcGiverIdMap = new Map<string, string>(); // ref name -> UUID
-    
-    // Always fetch existing NPCs to see what is already there
-    const dbNpcs = await db.select().from(schema.npcTemplates);
-    for (const n of dbNpcs) {
-      npcMap.set(n.name, n.id);
-      npcGiverIdMap.set(n.name, n.id);
-    }
-
-    // Now seed any NPCs that are missing in the DB
-    for (const npc of allNpcSeeds) {
-      if (!npcMap.has(npc.name)) {
-        console.log(`[Seed] NPC "${npc.name}" is missing. Seeding...`);
-        const defaultMapId = mapUuidMap.get('lang_cothao') || villageMapId;
-        if (!defaultMapId) {
-          console.warn(`[Seed] ⚠️ Cannot seed NPC "${npc.name}" — no valid map UUID found.`);
-          continue;
-        }
-        const npcMapId = npc.mapId ? (mapUuidMap.get(npc.mapId) || defaultMapId) : defaultMapId;
-        if (!npcMapId || npcMapId === '') {
-          console.warn(`[Seed] ⚠️ Cannot seed NPC "${npc.name}" — map_id is empty.`);
-          continue;
-        }
-        const [inserted] = await db.insert(schema.npcTemplates).values({
-          name: npc.name,
-          sprite: npc.sprite,
-          faction: npc.faction,
-          occupation: npc.occupation,
-          map_id: npcMapId,
-          x: npc.x,
-          y: npc.y,
-          has_shop: npc.hasShop ?? 'false',
-        }).returning();
-        if (inserted) {
-          npcMap.set(inserted.name, inserted.id);
-          npcGiverIdMap.set(npc.name, inserted.id);
-        }
-      }
-    }
-
-    // 6. Seed NPC Dialogues (delete all and re-seed to apply config changes instantly)
-    console.log('[Seed] Refreshing NPC dialogues...');
-    await db.delete(schema.npcDialogues);
-    const dialogueUuidMap = new Map<string, string>(); // ref -> UUID
-    for (const d of allDialogueSeeds) {
-      const npcId = npcMap.get(d.npc_ref);
-      if (npcId) {
-        const [inserted] = await db.insert(schema.npcDialogues).values({
-          npc_id: npcId,
-          order_index: d.order_index,
-          text: d.text,
-          speaker: d.speaker,
-          choices: d.choices ?? null,
-          condition_flag: d.condition_flag ?? '',
-          set_flag: d.set_flag ?? '',
-        }).returning();
-        if (inserted) {
-          dialogueUuidMap.set(d.ref, inserted.id);
-        }
-      }
-    }
-
-    // Now update next_dialogue_id links
-    for (const d of allDialogueSeeds) {
-      const dId = dialogueUuidMap.get(d.ref);
-      if (dId && d.choices) {
-        const parsedChoices = JSON.parse(d.choices) as Array<{ text: string; next_dialogue_ref: string; next_dialogue_id?: string }>;
-        let updated = false;
-        for (const choice of parsedChoices) {
-          const nextId = dialogueUuidMap.get(choice.next_dialogue_ref);
-          if (nextId) {
-            choice.next_dialogue_id = nextId;
-            updated = true;
-          }
-        }
-        if (updated) {
-          await db.update(schema.npcDialogues)
-            .set({ choices: JSON.stringify(parsedChoices) })
-            .where(eq(schema.npcDialogues.id, dId));
-        }
-      }
-    }
-
-    // 7. Seed Monsters
-    const monsterTemplateMap = new Map<string, string>(); // name -> UUID
-    if (needsMonsters) {
-      console.log('[Seed] Seeding monsters...');
-      const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId;
-      if (!defaultRegionMapId) {
-        console.warn('[Seed] ⚠️ Cannot seed monsters — no valid map UUID found. Skipping monster seeding.');
-      } else {
-      for (const m of allMonsterSeeds) {
-        await db.insert(schema.monsterTemplates).values({
-          name: m.name,
-          realm: m.realm === 'luyen_khi' ? 2 : 1,
-          hp: m.hp,
-          atk: m.atk,
-          def: m.def,
-          speed: m.speed * 40,
-          element: m.element,
-          sprite: m.sprite,
-          drop_table: m.drop_table,
-          map_id: defaultRegionMapId,
-          respawn_time: m.respawn_time,
-        }).returning().then(([inserted]) => {
-          if (inserted) {
-            monsterTemplateMap.set(inserted.name, inserted.id);
-          }
-        });
-      }
-      }
-    } else {
-      const allMonsters = await db.select().from(schema.monsterTemplates);
-      for (const m of allMonsters) {
-        monsterTemplateMap.set(m.name, m.id);
-      }
-      
-      // Check for any missing templates from both sets
-      const defaultRegionMapId = mapUuidMap.get('dongco_hoang') || mapUuidMap.get('lang_cothao') || villageMapId;
-      if (!defaultRegionMapId) {
-        console.warn('[Seed] ⚠️ Cannot seed missing monsters — no valid map UUID found.');
-      } else {
-      for (const m of allMonsterSeeds) {
-        if (!monsterTemplateMap.has(m.name)) {
-          console.log(`[Seed] Monster template "${m.name}" is missing. Seeding...`);
-          const [inserted] = await db.insert(schema.monsterTemplates).values({
-            name: m.name,
-            realm: m.realm === 'luyen_khi' ? 2 : 1,
-            hp: m.hp,
-            atk: m.atk,
-            def: m.def,
-            speed: m.speed * 40,
-            element: m.element,
-            sprite: m.sprite,
-            drop_table: m.drop_table,
-            map_id: defaultRegionMapId,
-            respawn_time: m.respawn_time,
-          }).returning();
-          if (inserted) {
-            monsterTemplateMap.set(inserted.name, inserted.id);
-          }
-        }
-      }
-      }
-    }
-
-    // 8. Seed Map Spawns (delete all and re-seed to apply config changes instantly)
-    console.log('[Seed] Refreshing map spawns...');
-    await db.delete(schema.mapSpawns);
-    let seededSpawnCount = 0;
-    let skippedSpawnCount = 0;
-    for (const s of allSpawnSeeds) {
-      const mapId = mapUuidMap.get(s.map_ref);
-      if (mapId) {
-        await db.insert(schema.mapSpawns).values({
-          map_id: mapId,
-          spawn_type: s.spawn_type,
-          spawn_ref: s.spawn_ref,
-          x: s.x,
-          y: s.y,
-          respawn_time: s.respawn_time,
-        });
-        seededSpawnCount++;
-      } else {
-        skippedSpawnCount++;
-        console.warn(`[Seed] ⚠️ Skipping spawn "${s.spawn_ref}" — map_ref "${s.map_ref}" not found in mapUuidMap`);
-      }
-    }
-    console.log(`[Seed] ✓ Seeded ${seededSpawnCount} map spawns (skipped ${skippedSpawnCount})`);
-
-    // 9. Seed Quest Templates (safely checking for missing/updated templates)
-    console.log('[Seed] Checking and seeding quest templates...');
-    const existingQuestsList = await db.select().from(schema.questTemplates);
-    for (const q of allQuestSeeds) {
-      const npcGiverId = q.npc_giver_ref ? npcGiverIdMap.get(q.npc_giver_ref) : null;
-      const found = existingQuestsList.find(eq => eq.name === q.name);
-
-      if (found) {
-        await db.update(schema.questTemplates)
-          .set({
-            type: q.type,
-            description: q.description,
-            npc_giver_id: npcGiverId ?? null,
-            prerequisites: q.prerequisites ?? null,
-            objectives: q.objectives,
-            rewards: q.rewards ?? null,
-            flag_required: q.flag_required ?? null,
-            flag_complete: q.flag_complete ?? null,
-            min_realm: q.min_realm ?? 1,
-          })
-          .where(eq(schema.questTemplates.id, found.id));
-      } else {
-        console.log(`[Seed] Quest template "${q.name}" is missing. Seeding...`);
-        await db.insert(schema.questTemplates).values({
-          name: q.name,
-          type: q.type,
-          description: q.description,
-          npc_giver_id: npcGiverId ?? null,
-          prerequisites: q.prerequisites ?? null,
-          objectives: q.objectives,
-          rewards: q.rewards ?? null,
-          flag_required: q.flag_required ?? null,
-          flag_complete: q.flag_complete ?? null,
-          is_repeatable: 'false',
-          min_realm: q.min_realm ?? 1,
-        });
-      }
-    }
-
-    // 10. Seed Gu templates, stats, skills, and synergies
-    console.log('[Seed] Checking and seeding Gu templates...');
-    const existingGuList = await db.select().from(schema.guTemplates);
-    for (const gu of guSeeds) {
-      const foundGu = existingGuList.find(g => g.name === gu.template.name);
-      if (!foundGu) {
-        console.log(`[Seed] Gu template "${gu.template.name}" is missing. Seeding...`);
-        const [insertedGu] = await db.insert(schema.guTemplates).values({
-          name: gu.template.name,
-          rank: gu.template.rank,
-          element: gu.template.element,
-          role: gu.template.role,
-          quality: gu.template.quality,
-          description: gu.template.description,
-          sprite: gu.template.sprite,
-          is_immortal: gu.template.is_immortal,
-          unique_world: gu.template.unique_world,
-          max_enhance: gu.template.max_enhance,
-          can_evolve: gu.template.can_evolve,
-        }).returning();
-
-        if (insertedGu) {
-          // Seed stats
-          await db.insert(schema.guStats).values({
-            gu_template_id: insertedGu.id,
-            hp: gu.stats.hp,
-            atk: gu.stats.atk,
-            def: gu.stats.def,
-            crit: gu.stats.crit,
-            crit_damage: gu.stats.crit_damage,
-            move_speed: gu.stats.move_speed,
-            attack_speed: gu.stats.attack_speed,
-            life_steal: gu.stats.life_steal,
-          });
-
-          // Seed skills
-          for (const skill of gu.skills) {
-            await db.insert(schema.guSkills).values({
-              gu_template_id: insertedGu.id,
-              skill_id: skill.skill_id,
-              name: skill.name,
-              type: skill.type,
-              description: skill.description,
-              cooldown: skill.cooldown,
-              damage_multiplier: skill.damage_multiplier,
-              target_type: skill.target_type,
-              aoe_radius: skill.aoe_radius,
-            });
-          }
-        }
-      }
-    }
-
-    // Seed default synergies
-    console.log('[Seed] Refreshing Gu synergies...');
-    await db.delete(schema.guSynergy);
-    const synergies = [
-      { result_name: 'Hỏa Phong Bạo', gu_a_name: 'Hỏa Cổ', gu_b_name: 'Phong Cổ', bonus_atk: 10, bonus_def: 0, bonus_hp: 0, result_description: 'Kết hợp Hỏa và Phong, tăng sức mạnh tấn công.' },
-      { result_name: 'Huyết Thạch Giáp', gu_a_name: 'Thạch Cổ', gu_b_name: 'Huyết Cổ', bonus_atk: 0, bonus_def: 15, bonus_hp: 0, result_description: 'Kết hợp Thổ và Huyết, tăng sức mạnh phòng ngự.' },
-      { result_name: 'Hỏa Độc Vụ', gu_a_name: 'Độc Cổ', gu_b_name: 'Hỏa Cổ', bonus_atk: 5, bonus_def: 5, bonus_hp: 0, result_description: 'Kết hợp Độc và Hỏa, tăng đều công thủ.' },
-    ];
-    for (const syn of synergies) {
-      const [guATemplate] = await db.select().from(schema.guTemplates).where(eq(schema.guTemplates.name, syn.gu_a_name)).limit(1);
-      const [guBTemplate] = await db.select().from(schema.guTemplates).where(eq(schema.guTemplates.name, syn.gu_b_name)).limit(1);
-      if (guATemplate && guBTemplate) {
-        await db.insert(schema.guSynergy).values({
-          gu_a: guATemplate.id,
-          gu_b: guBTemplate.id,
-          result_name: syn.result_name,
-          result_description: syn.result_description,
-          bonus_atk: syn.bonus_atk,
-          bonus_def: syn.bonus_def,
-          bonus_hp: syn.bonus_hp,
-        });
-      }
-    }
-
-    // 12. Seed Shop Data
-    console.log('[Seed] Seeding shops and shop items...');
-    await db.delete(schema.shopItems);
-    await db.delete(schema.shops);
-
-    const blacksmithNpcId = npcMap.get('Thợ rèn');
-    const merchantNpcId = npcMap.get('Thương nhân');
-
-    if (blacksmithNpcId) {
-      const [blacksmithShop] = await db.insert(schema.shops).values({
-        npc_id: blacksmithNpcId,
-        name: 'Tiệm Rèn Bắc Nguyên',
-      }).returning();
-      
-      const itemKiem = itemMap.get('Kiếm Băng Hàn');
-      const itemDa = itemMap.get('Đá Linh Hồn');
-
-      if (itemKiem) {
-        await db.insert(schema.shopItems).values({
-          shop_id: blacksmithShop.id,
-          item_id: itemKiem,
-          price: 300,
-          stock: null,
-        });
-      }
-      if (itemDa) {
-        await db.insert(schema.shopItems).values({
-          shop_id: blacksmithShop.id,
-          item_id: itemDa,
-          price: 20,
-          stock: null,
-        });
-      }
-    }
-
-    if (merchantNpcId) {
-      const [merchantShop] = await db.insert(schema.shops).values({
-        npc_id: merchantNpcId,
-        name: 'Tập Hóa Thương Nhân',
-      }).returning();
-
-      const itemHP = itemMap.get('Bình Hồi Máu Nhỏ');
-      const itemMP = itemMap.get('Bình Hồi Mana Nhỏ');
-      const itemHerb = itemMap.get('Thảo Dược');
-
-      if (itemHP) {
-        await db.insert(schema.shopItems).values({
-          shop_id: merchantShop.id,
-          item_id: itemHP,
-          price: 15,
-          stock: null,
-        });
-      }
-      if (itemMP) {
-        await db.insert(schema.shopItems).values({
-          shop_id: merchantShop.id,
-          item_id: itemMP,
-          price: 15,
-          stock: null,
-        });
-      }
-      if (itemHerb) {
-        await db.insert(schema.shopItems).values({
-          shop_id: merchantShop.id,
-          item_id: itemHerb,
-          price: 10,
-          stock: null,
-        });
-      }
-    }
-
-    const docVatMerchantNpcId = npcMap.get('Thương Nhân Độc Vật');
-    if (docVatMerchantNpcId) {
-      const [docVatShop] = await db.insert(schema.shops).values({
-        npc_id: docVatMerchantNpcId,
-        name: 'Tiệm Độc Vật Nam Cương',
-      }).returning();
-
-      const itemLuyenCoDan = itemMap.get('Luyện Cổ Đan');
-      const itemDocThao = itemMap.get('Độc Thảo');
-
-      if (itemLuyenCoDan) {
-        await db.insert(schema.shopItems).values({
-          shop_id: docVatShop.id,
-          item_id: itemLuyenCoDan,
-          price: 150,
-          stock: null,
-        });
-      }
-      if (itemDocThao) {
-        await db.insert(schema.shopItems).values({
-          shop_id: docVatShop.id,
-          item_id: itemDocThao,
-          price: 30,
-          stock: null,
-        });
-      }
-    }
-
-    // Refresh map config spawns and portals
-    await refreshMapConfig();
-
-    // Verify spawn data exists in DB after seed
-    const allSpawns = await db.select().from(schema.mapSpawns);
-    if (allSpawns.length > 0) {
-      console.log(`[Seed] 📊 Total map spawns in DB: ${allSpawns.length}`);
-    } else {
-      console.warn('[Seed] ⚠️ ZERO map spawns in database after refresh!');
-    }
-
-    console.log('[Seed] ✅ Database seeding completed successfully.');
-  } catch (err) {
-    console.error('[Seed] ❌ Database seeding FAILED:', err);
-    throw err;
+  for (const config of gameConfigSeeds) {
+    await db
+      .insert(schema.gameConfig)
+      .values(config)
+      .onConflictDoNothing();
   }
 }
 
-/**
- * Always refresh map spawns and portals (config data that may change between deploys).
- * Delete + re-insert pattern ensures idempotency without needing unique constraints.
- */
-async function refreshMapConfig(): Promise<void> {
-  const allMaps = await db.select().from(schema.worldMaps);
-  if (allMaps.length === 0) return; // Maps haven't been seeded yet
+async function seedCultivationRealms(): Promise<void> {
+  console.log('[Seed] Seeding cultivation realms...');
 
-  const mapUuidMap = new Map<string, string>();
-  for (const m of allMaps) {
-    const seed = allMapSeeds.find((s) => s.name === m.name);
-    if (seed) {
-      mapUuidMap.set(seed.ref, m.id);
-    } else {
-      mapUuidMap.set(m.name, m.id);
+  for (const realm of cultivationRealmSeeds) {
+    await db
+      .insert(schema.cultivationRealms)
+      .values(realm)
+      .onConflictDoNothing();
+  }
+}
+
+async function seedBodyConstitutions(): Promise<void> {
+  console.log('[Seed] Seeding body constitutions...');
+
+  for (const constitution of bodyConstitutionSeeds) {
+    await db
+      .insert(schema.bodyConstitutions)
+      .values(constitution)
+      .onConflictDoNothing();
+  }
+}
+
+async function seedItems(): Promise<void> {
+  console.log('[Seed] Seeding item templates...');
+
+  for (const item of itemSeeds) {
+    await db
+      .insert(schema.itemTemplates)
+      .values({
+        name: item.name,
+        type: item.type,
+        rarity: item.rarity,
+        description: item.description,
+        effects: item.effects,
+        stack_limit: item.stack_limit,
+        sell_price: item.sell_price,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+async function seedEquipment(): Promise<void> {
+  console.log('[Seed] Seeding equipment templates...');
+
+  for (const equipment of equipmentSeeds) {
+    await db
+      .insert(schema.equipmentTemplates)
+      .values({
+        name: equipment.name,
+        slot: equipment.slot,
+        rarity: equipment.rarity,
+        required_realm: equipment.required_realm,
+        stat_bonuses: equipment.stat_bonuses,
+        description: equipment.description,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+async function seedGu(): Promise<void> {
+  console.log('[Seed] Seeding Gu templates...');
+
+  for (const gu of guSeeds) {
+    await db
+      .insert(schema.guTemplates)
+      .values({
+        name: gu.name,
+        type: gu.type,
+        rank: gu.rank,
+        dao_affinity: gu.dao_affinity,
+        description: gu.description,
+        effects: gu.effects,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+async function seedMonsters(): Promise<void> {
+  console.log('[Seed] Seeding monster templates...');
+
+  const itemIdByRef = await getItemIdByRef();
+
+  for (const monster of monsterSeeds) {
+    const dropTable = monster.drop_table.map(drop => ({
+      itemId: itemIdByRef.get(drop.item_ref) ?? null,
+      itemRef: drop.item_ref,
+      chance: drop.chance,
+      quantity: drop.quantity,
+    }));
+
+    await db
+      .insert(schema.monsterTemplates)
+      .values({
+        name: monster.name,
+        realm: monster.realm,
+        hp: monster.hp,
+        atk: monster.atk,
+        def: monster.def,
+        spd: monster.spd,
+        exp_reward: monster.exp_reward,
+        gold_reward: monster.gold_reward,
+        respawn_time: monster.respawn_time,
+        ai_type: monster.ai_type,
+        drop_table: dropTable,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+async function seedWorldMaps(): Promise<void> {
+  console.log('[Seed] Seeding world maps...');
+
+  for (const map of worldMapSeeds) {
+    await db
+      .insert(schema.worldMaps)
+      .values({
+        name: map.name,
+        region: map.region,
+        recommended_realm: map.recommended_realm,
+        is_safe_zone: map.is_safe_zone,
+        background: map.background,
+        width: map.width,
+        height: map.height,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+async function seedMapPortals(): Promise<void> {
+  console.log('[Seed] Seeding map portals...');
+
+  for (const portal of mapPortalSeeds) {
+    await db
+      .insert(schema.mapPortals)
+      .values(portal)
+      .onConflictDoNothing();
+  }
+}
+
+async function seedMapSpawns(): Promise<void> {
+  console.log('[Seed] Seeding map spawns...');
+
+  const monsterIdByRef = await getMonsterIdByRef();
+
+  for (const spawn of mapSpawnSeeds) {
+    const monsterId = monsterIdByRef.get(spawn.monster_ref);
+    if (!monsterId) {
+      console.warn(`[Seed] Skip spawn. Missing monster ref: ${spawn.monster_ref}`);
+      continue;
+    }
+
+    await db
+      .insert(schema.mapSpawns)
+      .values({
+        map_id: spawn.map_id,
+        monster_id: monsterId,
+        spawn_x: spawn.spawn_x,
+        spawn_y: spawn.spawn_y,
+        max_count: spawn.max_count,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+async function seedDialogues(): Promise<void> {
+  console.log('[Seed] Seeding dialogues...');
+
+  for (const dialogue of dialogueSeeds) {
+    await db
+      .insert(schema.dialogues)
+      .values(dialogue)
+      .onConflictDoNothing();
+  }
+}
+
+async function seedNpcs(): Promise<void> {
+  console.log('[Seed] Seeding NPCs...');
+
+  for (const npc of npcSeeds) {
+    await db
+      .insert(schema.npcs)
+      .values(npc)
+      .onConflictDoNothing();
+  }
+}
+
+async function seedQuests(): Promise<void> {
+  console.log('[Seed] Seeding quests...');
+
+  for (const quest of questSeeds) {
+    await db
+      .insert(schema.quests)
+      .values({
+        title: quest.title,
+        description: quest.description,
+        type: quest.type,
+        flag_required: quest.flag_required,
+        objectives: quest.objectives,
+        rewards: quest.rewards,
+        min_realm: quest.min_realm,
+        is_repeatable: quest.is_repeatable,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+async function getItemIdByRef(): Promise<Map<string, string>> {
+  const rows = await db.select().from(schema.itemTemplates);
+  const result = new Map<string, string>();
+
+  for (const item of itemSeeds) {
+    const row = rows.find(candidate => candidate.name === item.name);
+    if (row) {
+      result.set(item.ref, row.id);
     }
   }
 
-  const mapIds = Array.from(mapUuidMap.values());
+  return result;
+}
 
-  // Delete old spawns + portals for known maps
-  if (mapIds.length > 0) {
-    await db.delete(schema.mapSpawns).where(inArray(schema.mapSpawns.map_id, mapIds));
-    await db.delete(schema.mapPortals).where(inArray(schema.mapPortals.from_map_id, mapIds));
-  }
+async function getMonsterIdByRef(): Promise<Map<string, string>> {
+  const rows = await db.select().from(schema.monsterTemplates);
+  const result = new Map<string, string>();
 
-  // Insert map spawns
-  let spawnCount = 0;
-  for (const s of allSpawnSeeds) {
-    const mapId = mapUuidMap.get(s.map_ref);
-    if (mapId) {
-      await db.insert(schema.mapSpawns).values({
-        map_id: mapId,
-        spawn_type: s.spawn_type,
-        spawn_ref: s.spawn_ref,
-        x: s.x,
-        y: s.y,
-        respawn_time: s.respawn_time,
-      });
-      spawnCount++;
+  for (const monster of monsterSeeds) {
+    const row = rows.find(candidate => candidate.name === monster.name);
+    if (row) {
+      result.set(monster.ref, row.id);
     }
   }
 
-  // Insert map portals
-  let portalCount = 0;
-  for (const p of allPortalSeeds) {
-    const fromMapId = mapUuidMap.get(p.from_map_ref);
-    const toMapId = mapUuidMap.get(p.to_map_ref);
-    if (fromMapId && toMapId) {
-      await db.insert(schema.mapPortals).values({
-        from_map_id: fromMapId,
-        to_map_id: toMapId,
-        from_x: p.from_x,
-        from_y: p.from_y,
-        to_x: p.to_x,
-        to_y: p.to_y,
-        portal_name: p.portal_name,
-      });
+  return result;
+}
 
-      // Also seed older portals table
-      await db.insert(schema.portals).values({
-        from_map: fromMapId,
-        to_map: toMapId,
-        x: p.from_x,
-        y: p.from_y,
-      });
-      portalCount++;
-    }
-  }
-
-  console.log(`[Seed] Map config refreshed: ${spawnCount} spawns, ${portalCount} portals across ${mapIds.length} maps`);
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seedDatabase()
+    .then(() => process.exit(0))
+    .catch(error => {
+      console.error('[Seed] Database seed failed:', error);
+      process.exit(1);
+    });
 }

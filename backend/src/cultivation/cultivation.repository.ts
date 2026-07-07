@@ -5,11 +5,11 @@ import type { CultivationRealm, PlayerCultivation } from '@co-dao/shared';
 
 function toCamelRealm(row: typeof cultivationRealms.$inferSelect): CultivationRealm {
   return {
-    id: row.id,
+    id: String(row.id),
     name: row.name,
     level: row.level,
-    statMultiplier: row.stat_multiplier,
-    requiredBreakthrough: row.required_breakthrough,
+    statMultiplier: row.max_hp_bonus ?? 100,
+    requiredBreakthrough: row.level > 1 ? 'true' : 'false',
     breakthroughGold: row.breakthrough_gold,
     breakthroughItemId: row.breakthrough_item_id,
     description: row.description,

@@ -5,22 +5,29 @@ import {
   playerEquipment,
 } from '../database/schema/index.js';
 
-// ── Helpers ──
+function getStatBonus(statBonuses: unknown, key: string): number {
+  if (!statBonuses || typeof statBonuses !== 'object' || !(key in statBonuses)) {
+    return 0;
+  }
+
+  const value = (statBonuses as Record<string, unknown>)[key];
+  return typeof value === 'number' ? value : 0;
+}
 
 function toCamelEquipment(row: typeof equipmentTemplates.$inferSelect): Record<string, unknown> {
   return {
     id: row.id,
     name: row.name,
-    type: row.type,
+    type: row.slot,
     slot: row.slot,
-    tier: row.tier,
-    baseHp: row.base_hp,
-    baseAtk: row.base_atk,
-    baseDef: row.base_def,
-    baseCrit: row.base_crit,
-    requiredLevel: row.required_level,
+    tier: row.rarity,
+    baseHp: getStatBonus(row.stat_bonuses, 'hp'),
+    baseAtk: getStatBonus(row.stat_bonuses, 'atk'),
+    baseDef: getStatBonus(row.stat_bonuses, 'def'),
+    baseCrit: getStatBonus(row.stat_bonuses, 'crit'),
+    requiredLevel: row.required_realm,
     description: row.description,
-    icon: row.icon,
+    icon: null,
   };
 }
 
@@ -36,8 +43,6 @@ function toCamelPlayerEquip(row: typeof playerEquipment.$inferSelect): Record<st
   };
 }
 
-// ── Equipment Templates ──
-
 export async function getAllTemplates(): Promise<Record<string, unknown>[]> {
   const rows = await db.select().from(equipmentTemplates);
   return rows.map(toCamelEquipment);
@@ -47,8 +52,6 @@ export async function getTemplateById(id: string): Promise<Record<string, unknow
   const rows = await db.select().from(equipmentTemplates).where(eq(equipmentTemplates.id, id)).limit(1);
   return rows.length > 0 ? toCamelEquipment(rows[0]) : null;
 }
-
-// ── Player Equipment ──
 
 export async function getPlayerEquipment(playerId: string): Promise<Record<string, unknown>[]> {
   const rows = await db

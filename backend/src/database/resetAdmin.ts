@@ -1,15 +1,14 @@
 /**
- * Reset admin HP + ATK only (keep realm, gold, exp untouched).
- * Run: npx ts-node -e "import('./resetAdmin.js').then(m=>m.resetAdmin())"
- * Or:  npm run reset-admin (if script added to package.json)
+ * Reset admin: set HP + Mana rất cao, reset realm=1, xóa quest + story flags.
+ * Run: npm run reset-admin
  */
 import { db } from './connection.js';
 import * as schema from './schema/index.js';
 import { eq } from 'drizzle-orm';
 
 const ADMIN_USERNAMES = ['admin', 'Admin', 'ADMIN'];
-const HP_BONUS = 999_999;
-const ATK_BONUS = 999_999;
+const HP_VALUE = 9_999_999;
+const MANA_VALUE = 9_999_999;
 
 export async function resetAdmin(): Promise<void> {
   console.log('[resetAdmin] Looking for admin account...');
@@ -61,30 +60,12 @@ export async function resetAdmin(): Promise<void> {
   const player = players[0];
   console.log(`[resetAdmin] Found player: ${player.name} (${player.id})`);
 
-  // Update playerStats: only hp_bonus + atk_bonus
-  const existing = await db
-    .select()
-    .from(schema.playerStats)
-    .where(eq(schema.playerStats.player_id, player.id))
-    .limit(1);
-
-  if (existing.length > 0) {
-    await db
-      .update(schema.playerStats)
-      .set({ hp_bonus: HP_BONUS, atk_bonus: ATK_BONUS })
-      .where(eq(schema.playerStats.player_id, player.id));
-    console.log(`[resetAdmin] ✅ Updated playerStats: hp_bonus=${HP_BONUS}, atk_bonus=${ATK_BONUS}`);
-  } else {
-    await db.insert(schema.playerStats).values({
-      player_id: player.id,
-      hp_bonus: HP_BONUS,
-      atk_bonus: ATK_BONUS,
-      def_bonus: 0,
-      crit_bonus: 0,
-      move_speed: 300,
-    });
-    console.log(`[resetAdmin] ✅ Inserted playerStats: hp_bonus=${HP_BONUS}, atk_bonus=${ATK_BONUS}`);
-  }
+  // Set HP + Mana rất cao trực tiếp trong players table
+  await db
+    .update(schema.players)
+    .set({ hp: HP_VALUE, mana: MANA_VALUE })
+    .where(eq(schema.players.id, player.id));
+  console.log(`[resetAdmin] ✅ Set hp=${HP_VALUE}, mana=${MANA_VALUE}`);
 
   // Reset realm (tu vi) to 1
   await db

@@ -69,6 +69,9 @@ Current Module: ✅ Sprint 27 — Thập Tuyệt Thể System
 - [x] Frontend: `CharacterCreationPanel.tsx` — 2 bước chọn tên + Thể
 - [x] Frontend: `GamePage.tsx` — nếu chưa có nhân vật hiển thị panel tạo nhân vật
 - [x] Build + typecheck pass
+- [x] Seed pipeline: `seedData.ts`/`seed.ts` khớp schema hiện tại, self-healing dữ liệu nền
+- [x] Repository compatibility: inventory/monster/npc/quest/world/shop map đúng schema hiện tại và giữ API contract cũ
+- [x] Verification: `npm run build`, `npm run lint`, `npm run typecheck` pass
 
 # Sprint 26 Checklist
 

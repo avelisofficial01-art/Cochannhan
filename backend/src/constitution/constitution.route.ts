@@ -20,7 +20,11 @@ router.get('/', async (_req: AuthenticatedRequest, res: Response) => {
 // GET /api/constitution/me — get current player's constitution
 router.get('/me', authenticate, resolvePlayer, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const playerId = req.playerId!;
+    const playerId = req.playerId;
+    if (!playerId) {
+      res.status(401).json({ success: false, message: 'Player not resolved' });
+      return;
+    }
     const constitution = await constitutionService.getPlayerConstitution(playerId);
     res.json({ success: true, data: constitution });
   } catch (err) {
@@ -32,7 +36,11 @@ router.get('/me', authenticate, resolvePlayer, async (req: AuthenticatedRequest,
 // POST /api/constitution/choose — choose constitution at character creation
 router.post('/choose', authenticate, resolvePlayer, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const playerId = req.playerId!;
+    const playerId = req.playerId;
+    if (!playerId) {
+      res.status(401).json({ success: false, message: 'Player not resolved' });
+      return;
+    }
     const { constitutionId } = req.body as { constitutionId: number };
     if (!constitutionId || typeof constitutionId !== 'number') {
       res.status(400).json({ success: false, message: 'constitutionId is required' });

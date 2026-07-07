@@ -1,7 +1,6 @@
 import {
   calculateDamage,
   processStatusTick,
-  buildCombatStats,
   canAct,
 } from '@co-dao/shared';
 import type { DamageInput, MonsterInstance, MonsterTemplate, CombatResult } from '@co-dao/shared';
@@ -177,49 +176,39 @@ export async function executePlayerAttack(
   // Set target to attacking player
   target.targetId = playerId;
 
-  // Get player stats
-  const playerStatRow = await playerService.getPlayerStats(playerId);
+  // Get player stats via getStats (uses realm + Gu bonuses)
+  const playerStatRow = await playerService.getStats(player.account_id);
   if (!playerStatRow) return null;
 
-  // Build combat stats
-  const playerCombatStats = buildCombatStats({
-    hpBonus: playerStatRow.hpBonus,
-    atkBonus: playerStatRow.atkBonus,
-    defBonus: playerStatRow.defBonus,
-    critBonus: playerStatRow.critBonus,
+  // Use computed stats directly from PlayerStatsResponse
+  const playerCombatStats = {
+    hp: playerStatRow.hp,
+    atk: playerStatRow.atk,
+    def: playerStatRow.def,
+    crit: playerStatRow.crit,
+    critDamage: playerStatRow.critDamage,
     moveSpeed: playerStatRow.moveSpeed,
-    baseHp: player.hp,
-    baseAtk: 10, // base atk from realm
-    baseDef: 5,
-  });
+  };
 
-  let skillMultiplier = 1.0;
+  const skillMultiplier = 1.0;
   let skillName: string | null = null;
   let damageType: DamageInput['damageType'] = 'physical';
 
   if (skillId) {
-    const [skillRow] = await db
+    // Look up Gu template directly by id (guSkills removed — use guTemplates)
+    const [guTemplate] = await db
       .select()
-      .from(schema.guSkills)
-      .where(eq(schema.guSkills.skill_id, skillId))
+      .from(schema.guTemplates)
+      .where(eq(schema.guTemplates.id, skillId))
       .limit(1);
-    if (skillRow) {
-      skillMultiplier = (skillRow.damage_multiplier ?? 100) / 100;
-      skillName = skillRow.name;
-
-      const [guTemplate] = await db
-        .select()
-        .from(schema.guTemplates)
-        .where(eq(schema.guTemplates.id, skillRow.gu_template_id))
-        .limit(1);
-      if (guTemplate && guTemplate.element) {
-        const lowerElement = guTemplate.element.toLowerCase();
-        const validTypes = [
-          'physical', 'fire', 'water', 'lightning', 'wind', 'earth', 'wood', 'ice', 'poison', 'blood', 'soul', 'space', 'time', 'light', 'dark'
-        ];
-        if (validTypes.includes(lowerElement)) {
-          damageType = lowerElement as DamageInput['damageType'];
-        }
+    if (guTemplate) {
+      skillName = guTemplate.name;
+      const lowerElement = (guTemplate.dao_affinity ?? '').toLowerCase();
+      const validTypes = [
+        'physical', 'fire', 'water', 'lightning', 'wind', 'earth', 'wood', 'ice', 'poison', 'blood', 'soul', 'space', 'time', 'light', 'dark'
+      ];
+      if (validTypes.includes(lowerElement)) {
+        damageType = lowerElement as DamageInput['damageType'];
       }
     }
   }

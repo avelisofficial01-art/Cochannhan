@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { db } from './database/connection.js';
-import { worldMaps, mapPortals, mapSpawns, monsterTemplates, npcTemplates, questTemplates, players, accounts, playerQuests, playerStats, storyFlags } from './database/schema/index.js';
+import { worldMaps, mapPortals, mapSpawns, monsterTemplates, npcs, quests, players, accounts, playerQuests, storyFlags } from './database/schema/index.js';
 import { eq, or, and } from 'drizzle-orm';
 import authRouter from './auth/auth.route.js';
 import playerRouter from './player/player.route.js';
@@ -113,9 +113,9 @@ app.get('/api/health', async (_req, res) => {
   try {
     const [mapsCount, npcsCount, monstersCount, questsCount] = await Promise.all([
       db.select().from(worldMaps).then(r => r.length),
-      db.select().from(npcTemplates).then(r => r.length),
+      db.select().from(npcs).then(r => r.length),
       db.select().from(monsterTemplates).then(r => r.length),
-      db.select().from(questTemplates).then(r => r.length),
+      db.select().from(quests).then(r => r.length),
     ]).catch(() => [0, 0, 0, 0]);
 
     res.json({
@@ -179,13 +179,6 @@ app.post('/api/admin/seed', async (_req, res) => {
         current_map: 'bac_nguyen_village', current_x: 500, current_y: 400,
       }).where(eq(players.id, existingPlayer.id));
 
-      const [existingStats] = await db.select().from(playerStats).where(eq(playerStats.player_id, existingPlayer.id));
-      if (existingStats) {
-        await db.update(playerStats).set({ hp_bonus: 0, atk_bonus: 500, def_bonus: 500, crit_bonus: 95, move_speed: 600 })
-          .where(eq(playerStats.id, existingStats.id));
-      } else {
-        await db.insert(playerStats).values({ player_id: existingPlayer.id, hp_bonus: 0, atk_bonus: 500, def_bonus: 500, crit_bonus: 95, move_speed: 600 });
-      }
       playerId = existingPlayer.id;
     } else {
       const [player] = await db.insert(players).values({
@@ -194,7 +187,6 @@ app.post('/api/admin/seed', async (_req, res) => {
         current_map: 'bac_nguyen_village', current_x: 500, current_y: 400,
       }).returning({ id: players.id });
 
-      await db.insert(playerStats).values({ player_id: player.id, hp_bonus: 0, atk_bonus: 500, def_bonus: 500, crit_bonus: 95, move_speed: 600 });
       playerId = player.id;
     }
 
@@ -212,7 +204,7 @@ app.post('/api/admin/seed', async (_req, res) => {
     }
 
     // Auto-accept all quests
-    const allQuests = await db.select().from(questTemplates);
+    const allQuests = await db.select().from(quests);
     let acceptedCount = 0;
     for (const qt of allQuests) {
       const [existingPq] = await db.select().from(playerQuests)
@@ -221,11 +213,9 @@ app.post('/api/admin/seed', async (_req, res) => {
           eq(playerQuests.quest_id, qt.id)
         ));
       if (!existingPq) {
-        const objectives = JSON.parse(qt.objectives as string) as { type: string; target: string; count: number }[];
-        const progress = objectives.map((obj, idx) => ({ index: idx, current: 0, target: obj.count }));
         await db.insert(playerQuests).values({
           player_id: playerId, quest_id: qt.id, status: 'active',
-          objectives_progress: JSON.stringify(progress),
+          progress: {},
         });
         acceptedCount++;
       }
@@ -568,14 +558,15 @@ io.on('connection', async (socket) => {
         }
 
         // Fetch NPCs
-        const npcs = await db.select().from(npcTemplates).where(eq(npcTemplates.map_id, map.id));
-        socket.emit('map:npcs', npcs.map(n => ({
+        const npcList = await db.select().from(npcs).where(eq(npcs.map_id, map.id));
+        socket.emit('map:npcs', npcList.map(n => ({
           id: n.id,
           name: n.name,
-          sprite: n.sprite,
+          sprite: n.sprite ?? n.role,
           x: n.x,
           y: n.y,
-          hasShop: n.has_shop === 'true',
+          hasShop: n.shop_id !== null,
+          dialogueId: n.dialogue_id ?? null,
         })));
 
         // Fetch Portals
@@ -590,7 +581,7 @@ io.on('connection', async (socket) => {
               from_y: p.from_y,
               to_x: p.to_x,
               to_y: p.to_y,
-              portal_name: p.portal_name,
+              portal_name: p.label ?? '',
               to_map_id: targetMap.id,
               to_map_name: targetMap.name,
             });
@@ -603,28 +594,26 @@ io.on('connection', async (socket) => {
       const spawns = await db.select().from(mapSpawns).where(eq(mapSpawns.map_id, map.id));
       console.log(`[Map:Join] 🔍 Found ${spawns.length} spawn records for map "${map.name}" (id=${map.id})`);
           for (const spawn of spawns) {
-      if (spawn.spawn_type === 'monster' || spawn.spawn_type === 'boss') {
-        const [tmpl] = await db.select().from(monsterTemplates).where(eq(monsterTemplates.name, spawn.spawn_ref)).limit(1);
-        if (tmpl) {
-          console.log(`[Map:Join] 🐾 Spawning "${tmpl.name}" at (${spawn.x},${spawn.y}) — type=${spawn.spawn_type}`);
-          const camelTemplate = {
-                  id: tmpl.id,
-                  name: tmpl.name,
-                  realm: tmpl.realm,
-                  hp: tmpl.hp,
-                  atk: tmpl.atk,
-                  def: tmpl.def,
-                  speed: tmpl.speed,
-                  element: tmpl.element as 'physical' | 'fire' | 'water' | 'lightning' | 'wind' | 'earth' | 'wood' | 'ice' | 'poison' | 'blood' | 'soul' | 'space' | 'time' | 'light' | 'dark',
-                  sprite: tmpl.sprite,
-                  dropTable: tmpl.drop_table ? JSON.parse(tmpl.drop_table) : null,
-                  mapId: map.id,
-                  respawnTime: tmpl.respawn_time,
-                };
-          combatService.spawnMonster(camelTemplate, spawn.x, spawn.y);
-        } else {
-          console.warn(`[Map:Join] ⚠️ Monster template NOT FOUND for spawn_ref="${spawn.spawn_ref}" (type=${spawn.spawn_type})`);
-        }
+            const [tmpl] = await db.select().from(monsterTemplates).where(eq(monsterTemplates.id, spawn.monster_id)).limit(1);
+            if (tmpl) {
+              console.log(`[Map:Join] 🐾 Spawning "${tmpl.name}" at (${spawn.spawn_x},${spawn.spawn_y})`);
+              const camelTemplate = {
+                id: tmpl.id,
+                name: tmpl.name,
+                realm: tmpl.realm,
+                hp: tmpl.hp,
+                atk: tmpl.atk,
+                def: tmpl.def,
+                speed: tmpl.spd,
+                element: 'physical' as const,
+                sprite: tmpl.ai_type,
+                dropTable: Array.isArray(tmpl.drop_table) ? (tmpl.drop_table as import('@co-dao/shared').DropEntry[]) : null,
+                mapId: map.id,
+                respawnTime: tmpl.respawn_time,
+              };
+              combatService.spawnMonster(camelTemplate, spawn.spawn_x, spawn.spawn_y);
+            } else {
+              console.warn(`[Map:Join] ⚠️ Monster NOT FOUND for monster_id="${spawn.monster_id}"`);
             }
           }
           initializedMaps.add(map.id);
@@ -645,7 +634,7 @@ io.on('connection', async (socket) => {
           sprite: inst.template.sprite,
         })));
 
-        console.log(`[Socket] 📤 Emitted map:init + ${npcs.length} NPCs + ${portalsWithTarget.length} portals + ${activeMonsters.length} monsters`);
+        console.log(`[Socket] 📤 Emitted map:init + ${npcList.length} NPCs + ${portalsWithTarget.length} portals + ${activeMonsters.length} monsters`);
       } else {
         console.warn(`[Socket] ⚠️ No map found for "${targetMapId}" — falling back to first map`);
         // Try one more time with first map

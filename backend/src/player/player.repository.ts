@@ -1,11 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../database/connection.js';
-import { players, playerStats } from '../database/schema/index.js';
+import { players } from '../database/schema/index.js';
 
 export type PlayerRow = typeof players.$inferSelect;
 export type PlayerInsert = typeof players.$inferInsert;
-export type PlayerStatsRow = typeof playerStats.$inferSelect;
-export type PlayerStatsInsert = typeof playerStats.$inferInsert;
 
 // ─── Player ──────────────────────────────────────────────────
 
@@ -51,29 +49,10 @@ async function updatePosition(
     .where(eq(players.id, id));
 }
 
-// ─── Player Stats ────────────────────────────────────────────
-
-async function findStatsByPlayerId(
-  playerId: string,
-): Promise<PlayerStatsRow | undefined> {
-  const [row] = await db
-    .select()
-    .from(playerStats)
-    .where(eq(playerStats.player_id, playerId));
-  return row;
-}
-
-async function createStats(data: PlayerStatsInsert): Promise<PlayerStatsRow> {
-  const [row] = await db.insert(playerStats).values(data).returning();
-  return row;
-}
-
 export const playerRepository = {
   findByAccountId,
   findById,
   create,
   update,
   updatePosition,
-  findStatsByPlayerId,
-  createStats,
 };
